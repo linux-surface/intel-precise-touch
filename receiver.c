@@ -69,6 +69,20 @@ static void ipts_receiver_handle_clear_mem_window(struct ipts_context *ipts,
 			&sensor_mode_cmd, sizeof(struct ipts_set_mode_cmd));
 }
 
+static void ipts_receiver_handle_quiesce_io(struct ipts_context *ipts,
+		struct ipts_response *msg)
+{
+	if (msg->status != IPTS_ME_STATUS_SUCCESS) {
+		dev_err(ipts->dev, "0x%08x failed - status = %d\n",
+				msg->code, msg->status);
+		return;
+	}
+
+	if (ipts->status == IPTS_HOST_STATUS_RESTARTING)
+		ipts_control_start(ipts);
+}
+
+
 static void ipts_receiver_handle_response(struct ipts_context *ipts,
 		struct ipts_response *msg, u32 msg_len)
 {
@@ -85,6 +99,9 @@ static void ipts_receiver_handle_response(struct ipts_context *ipts,
 	case IPTS_RSP(CLEAR_MEM_WINDOW):
 		ipts_receiver_handle_clear_mem_window(ipts, msg,
 				&cmd_status, &ret);
+		break;
+	case IPTS_RSP(QUIESCE_IO):
+		ipts_receiver_handle_quiesce_io(ipts, msg);
 		break;
 	}
 }

@@ -63,6 +63,7 @@ static int ipts_init_remove(struct mei_cl_device *cldev)
 
 	dev_info(&cldev->dev, "Removing IPTS\n");
 
+	ipts_control_stop(ipts);
 	mei_cldev_disable(cldev);
 	kthread_stop(ipts->receiver_loop);
 
