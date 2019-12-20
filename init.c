@@ -6,6 +6,8 @@
 #include <linux/mod_devicetable.h>
 
 #include "context.h"
+#include "control.h"
+#include "receiver.h"
 
 #define IPTS_MEI_UUID UUID_LE(0x3e8d0870, 0x271a, 0x4208, \
 	0x8e, 0xb5, 0x9a, 0xcb, 0x94, 0x02, 0xae, 0x04)
@@ -47,13 +49,22 @@ static int ipts_init_probe(struct mei_cl_device *cldev,
 
 	mei_cldev_set_drvdata(cldev, ipts);
 
+	ipts->receiver_loop = kthread_run(ipts_receiver_loop, (void *)ipts,
+			"ipts_receiver_loop");
+
+	ipts_control_start(ipts);
+
 	return 0;
 }
 
 static int ipts_init_remove(struct mei_cl_device *cldev)
 {
+	struct ipts_context *ipts = mei_cldev_get_drvdata(cldev);
+
 	dev_info(&cldev->dev, "Removing IPTS\n");
+
 	mei_cldev_disable(cldev);
+	kthread_stop(ipts->receiver_loop);
 
 	return 0;
 }
