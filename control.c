@@ -22,7 +22,7 @@ int ipts_control_send(struct ipts_context *ipts,
 
 	ret = mei_cldev_send(ipts->client_dev, (u8 *)&msg,
 			sizeof(msg.code) + size);
-	if (ret) {
+	if (ret < 0) {
 		dev_err(ipts->dev, "%s: error 0x%X:%d\n", __func__, cmd, ret);
 		return ret;
 	}
