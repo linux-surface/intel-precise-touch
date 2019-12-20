@@ -7,6 +7,8 @@
 #include <linux/mei_cl_bus.h>
 #include <linux/types.h>
 
+#include "protocol/responses.h"
+
 /*
  * IPTS driver states
  */
@@ -27,6 +29,7 @@ struct ipts_buffer_info {
 struct ipts_context {
 	struct mei_cl_device *client_dev;
 	struct device *dev;
+	struct ipts_device_info device_info;
 
 	struct ipts_buffer_info touch_data[16];
 	struct ipts_buffer_info feedback[16];

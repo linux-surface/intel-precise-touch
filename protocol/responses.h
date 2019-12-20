@@ -8,10 +8,28 @@
 
 #include "enums.h"
 
+struct ipts_device_info {
+	u16 vendor_id;
+	u16 device_id;
+	u32 hw_rev;
+	u32 fw_rev;
+
+	/*
+	 * Max size of one frame returned by Touch IC in bytes. This data
+	 * will be TOUCH_RAW_DATA_HDR, followed by a payload. The payload can
+	 * be raw data or a HID structure depending on mode.
+	 */
+	u32 frame_size;
+	u32 feedback_size;
+	u8 reserved[24];
+};
+static_assert(sizeof(struct ipts_device_info) == 44);
+
 /*
  * Responses are sent from the ME to the host, reacting to a command.
  */
 union ipts_response_data {
+	struct ipts_device_info device_info;
 	u8 reserved[80];
 };
 struct ipts_response {
