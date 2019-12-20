@@ -6,10 +6,17 @@
 #include <linux/build_bug.h>
 #include <linux/types.h>
 
+struct ipts_set_mode_cmd {
+	enum ipts_sensor_mode sensor_mode;
+	u8 reserved[12];
+};
+static_assert(sizeof(struct ipts_set_mode_cmd) == 16);
+
 /*
  * Commands are sent from the host to the ME
  */
 union ipts_command_data {
+	struct ipts_set_mode_cmd set_mode;
 	u8 reserved[320];
 };
 struct ipts_command {

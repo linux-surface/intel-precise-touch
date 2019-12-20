@@ -4,6 +4,8 @@
 
 #include "context.h"
 #include "control.h"
+#include "protocol/commands.h"
+#include "protocol/enums.h"
 #include "protocol/events.h"
 #include "protocol/responses.h"
 
@@ -40,10 +42,38 @@ static void ipts_receiver_handle_get_device_info(struct ipts_context *ipts,
 			IPTS_CMD(CLEAR_MEM_WINDOW), NULL, 0);
 }
 
+static void ipts_receiver_handle_clear_mem_window(struct ipts_context *ipts,
+		struct ipts_response *msg, int *cmd_status, int *ret)
+{
+	struct ipts_set_mode_cmd sensor_mode_cmd;
+
+	if (msg->status != IPTS_ME_STATUS_TIMEOUT &&
+			msg->status != IPTS_ME_STATUS_SUCCESS) {
+		dev_err(ipts->dev, "0x%08x failed - status = %d\n",
+				msg->code, msg->status);
+		return;
+	}
+
+	if (ipts->status == IPTS_HOST_STATUS_STOPPING)
+		return;
+
+	// TODO: Allocate resources
+
+	ipts->status = IPTS_HOST_STATUS_RESOURCE_READY;
+
+	// We only support multitouch mode at the moment
+	memset(&sensor_mode_cmd, 0, sizeof(struct ipts_set_mode_cmd));
+	sensor_mode_cmd.sensor_mode = IPTS_SENSOR_MODE_MULTITOUCH;
+
+	*cmd_status = ipts_control_send(ipts, IPTS_CMD(SET_MODE),
+			&sensor_mode_cmd, sizeof(struct ipts_set_mode_cmd));
+}
+
 static void ipts_receiver_handle_response(struct ipts_context *ipts,
 		struct ipts_response *msg, u32 msg_len)
 {
 	int cmd_status = 0;
+	int ret = 0;
 
 	switch (msg->code) {
 	case IPTS_RSP(NOTIFY_DEV_READY):
@@ -51,6 +81,10 @@ static void ipts_receiver_handle_response(struct ipts_context *ipts,
 		break;
 	case IPTS_RSP(GET_DEVICE_INFO):
 		ipts_receiver_handle_get_device_info(ipts, msg, &cmd_status);
+		break;
+	case IPTS_RSP(CLEAR_MEM_WINDOW):
+		ipts_receiver_handle_clear_mem_window(ipts, msg,
+				&cmd_status, &ret);
 		break;
 	}
 }

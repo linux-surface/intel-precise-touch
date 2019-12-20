@@ -33,4 +33,11 @@ enum ipts_me_status {
 };
 static_assert(sizeof(enum ipts_me_status) == 4);
 
+enum ipts_sensor_mode {
+	IPTS_SENSOR_MODE_SINGLETOUCH = 0,
+	IPTS_SENSOR_MODE_MULTITOUCH,
+	IPTS_SENSOR_MODE_MAX
+};
+static_assert(sizeof(enum ipts_sensor_mode) == 4);
+
 #endif /* _IPTS_PROTOCOL_ENUMS_H_ */
