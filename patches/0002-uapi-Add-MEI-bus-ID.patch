@@ -1,0 +1,25 @@
+From a4eb1983357fd1598a916191b4b03855fb002237 Mon Sep 17 00:00:00 2001
+From: Dorian Stoll <dorian.stoll@tmsp.io>
+Date: Fri, 20 Dec 2019 23:15:58 +0100
+Subject: [PATCH] uapi: Add MEI bus ID
+
+Signed-off-by: Dorian Stoll <dorian.stoll@tmsp.io>
+---
+ include/uapi/linux/input.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/include/uapi/linux/input.h b/include/uapi/linux/input.h
+index f056b2a00d5c..a5f991fc557a 100644
+--- a/include/uapi/linux/input.h
++++ b/include/uapi/linux/input.h
+@@ -270,6 +270,7 @@ struct input_mask {
+ #define BUS_RMI			0x1D
+ #define BUS_CEC			0x1E
+ #define BUS_INTEL_ISHTP		0x1F
++#define BUS_MEI			0x44
+ 
+ /*
+  * MT_TOOL types
+-- 
+2.24.1
+

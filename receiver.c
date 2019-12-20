@@ -4,6 +4,7 @@
 
 #include "context.h"
 #include "control.h"
+#include "hid.h"
 #include "protocol/commands.h"
 #include "protocol/enums.h"
 #include "protocol/events.h"
@@ -36,7 +37,8 @@ static void ipts_receiver_handle_get_device_info(struct ipts_context *ipts,
 	memcpy(&ipts->device_info, &msg->data.device_info,
 			sizeof(struct ipts_device_info));
 
-	// TODO: Initialize HID
+	if (ipts_hid_init(ipts))
+		return;
 
 	*cmd_status = ipts_control_send(ipts,
 			IPTS_CMD(CLEAR_MEM_WINDOW), NULL, 0);

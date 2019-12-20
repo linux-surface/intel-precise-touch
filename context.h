@@ -4,6 +4,7 @@
 #define _IPTS_CONTEXT_H_
 
 #include <linux/kthread.h>
+#include <linux/input.h>
 #include <linux/mei_cl_bus.h>
 #include <linux/types.h>
 
@@ -37,6 +38,9 @@ struct ipts_context {
 	enum ipts_host_status status;
 
 	struct task_struct *receiver_loop;
+
+	struct input_dev *stylus;
+	int stylus_tool;
 };
 
 #endif /* _IPTS_CONTEXT_H_ */
