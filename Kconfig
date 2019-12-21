@@ -14,3 +14,11 @@ config TOUCHSCREEN_IPTS
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called ipts.
+
+config TOUCHSCREEN_IPTS_DEBUG
+	tristate "Intel Precise Touch & Stylus - Debugging"
+	depends on TOUCHSCREEN_IPTS
+	help
+	  Enables additional debugging in the IPTS driver.
+
+	  If unsure say N.

@@ -23,4 +23,14 @@ struct ipts_feedback {
 };
 static_assert(sizeof(struct ipts_feedback) == 64);
 
+struct ipts_stylus_report {
+	u8 reserved[6];
+	u16 timestamp;
+	u16 mode;
+	u16 x;
+	u16 y;
+	u16 pressure;
+};
+static_assert(sizeof(struct ipts_stylus_report) == 16);
+
 #endif /* _IPTS_PROTOCOL_TOUCH_H_ */

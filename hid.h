@@ -5,6 +5,11 @@
 
 #include "context.h"
 
+enum ipts_report_type {
+	IPTS_REPORT_TYPE_STYLUS,
+	IPTS_REPORT_TYPE_MAX
+};
+
 int ipts_hid_init(struct ipts_context *ipts);
 int ipts_hid_loop(void *data);
 
