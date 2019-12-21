@@ -126,7 +126,6 @@ int ipts_hid_loop(void *data)
 		if (doorbell == last_doorbell)
 			goto sleep;
 
-		dev_info(ipts->dev, "%d\n", doorbell);
 		ll_timeout = ktime_get_seconds() + 5;
 
 		while (last_doorbell != doorbell) {
