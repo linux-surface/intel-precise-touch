@@ -19,9 +19,8 @@ static enum ipts_report_type ipts_hid_parse_report_type(
 {
 	// If the number 0x460 is written at offset 28,
 	// the report describes a stylus
-	if (*(u16 *)&data->data[28] == 0x460) {
+	if (*(u16 *)&data->data[28] == 0x460)
 		return IPTS_REPORT_TYPE_STYLUS;
-	}
 
 	return IPTS_REPORT_TYPE_MAX;
 }
@@ -35,11 +34,10 @@ static void ipts_hid_handle_stylus_report(struct ipts_context *ipts,
 	int button = report.mode & 0x4;
 	int rubber = report.mode & 0x8;
 
-	if (prox && rubber) {
+	if (prox && rubber)
 		tool = BTN_TOOL_RUBBER;
-	} else {
+	else
 		tool = BTN_TOOL_PEN;
-	}
 
 	// Fake proximity out to switch tools
 	if (ipts->stylus_tool != tool) {
@@ -83,7 +81,7 @@ static void ipts_hid_handle_input(struct ipts_context *ipts, int buffer_id)
 	buffer = ipts->touch_data[buffer_id];
 	data = (struct ipts_touch_data *)buffer.address;
 
-#if CONFIG_TOUCHSCREEN_IPTS_DEBUG
+#ifdef CONFIG_TOUCHSCREEN_IPTS_DEBUG
 	dev_info(ipts->dev, "Buffer %d\n", buffer_id);
 	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE, 32, 1,
 			data->data, data->size, false);
@@ -144,7 +142,6 @@ int ipts_hid_loop(void *data)
 static int ipts_hid_create_stylus_input(struct ipts_context *ipts)
 {
 	int ret;
-	char name[64];
 
 	ipts->stylus = devm_input_allocate_device(ipts->dev);
 	if (!ipts->stylus)
