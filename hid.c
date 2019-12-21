@@ -3,6 +3,7 @@
 #include <linux/delay.h>
 #include <linux/input.h>
 #include <linux/kthread.h>
+#include <linux/ktime.h>
 
 #include "context.h"
 #include "control.h"
@@ -101,9 +102,11 @@ static void ipts_hid_handle_input(struct ipts_context *ipts, int buffer_id)
 
 int ipts_hid_loop(void *data)
 {
+	time64_t ll_timeout;
 	u32 doorbell, last_doorbell;
 	struct ipts_context *ipts;
 
+	ll_timeout = ktime_get_seconds() + 5;
 	ipts = (struct ipts_context *)data;
 	last_doorbell = 0;
 	doorbell = 0;
@@ -120,19 +123,21 @@ int ipts_hid_loop(void *data)
 		// all of the touch data buffers. If the doorbell didn't
 		// change, there is no work for us to do.
 		doorbell = *(u32 *)ipts->doorbell.address;
-		if (doorbell == last_doorbell) {
-			msleep(20);
-			continue;
-		}
+		if (doorbell == last_doorbell)
+			goto sleep;
 
 		dev_info(ipts->dev, "%d\n", doorbell);
+		ll_timeout = ktime_get_seconds() + 5;
 
 		while (last_doorbell != doorbell) {
 			ipts_hid_handle_input(ipts, last_doorbell % 16);
 			last_doorbell++;
 		}
-
-		msleep(20);
+sleep:
+		if (ll_timeout > ktime_get_seconds())
+			usleep_range(10000, 15000);
+		else
+			msleep(300);
 	}
 
 	dev_info(ipts->dev, "Stopping input loop\n");
