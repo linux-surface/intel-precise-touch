@@ -32,10 +32,18 @@ struct ipts_context {
 	struct mei_cl_device *client_dev;
 	struct device *dev;
 	struct ipts_device_info device_info;
+	enum ipts_host_status status;
 
 	struct ipts_buffer_info touch_data[16];
 	struct ipts_buffer_info feedback[16];
-	enum ipts_host_status status;
+
+	/*
+	 * These buffers are not actually used by anything, but they need
+	 * to be allocated and passed to the ME to get proper functionality.
+	 */
+	struct ipts_buffer_info doorbell;
+	struct ipts_buffer_info workqueue;
+	struct ipts_buffer_info host2me;
 
 	struct task_struct *receiver_loop;
 

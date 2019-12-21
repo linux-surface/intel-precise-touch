@@ -12,12 +12,31 @@ struct ipts_set_mode_cmd {
 };
 static_assert(sizeof(struct ipts_set_mode_cmd) == 16);
 
+struct ipts_set_mem_window_cmd {
+	u32 touch_data_buffer_addr_lower[16];
+	u32 touch_data_buffer_addr_upper[16];
+	u32 workqueue_addr_lower;
+	u32 workqueue_addr_upper;
+	u32 doorbell_addr_lower;
+	u32 doorbell_addr_upper;
+	u32 feedback_buffer_addr_lower[16];
+	u32 feedback_buffer_addr_upper[16];
+	u32 host2me_addr_lower;
+	u32 host2me_addr_upper;
+	u32 host2me_size;
+	u8 reserved1;
+	u8 workqueue_item_size;
+	u16 workqueue_size;
+	u8 reserved[32];
+};
+static_assert(sizeof(struct ipts_set_mem_window_cmd) == 320);
+
 /*
  * Commands are sent from the host to the ME
  */
 union ipts_command_data {
 	struct ipts_set_mode_cmd set_mode;
-	u8 reserved[320];
+	struct ipts_set_mem_window_cmd set_mem_window;
 };
 struct ipts_command {
 	u32 code;

@@ -22,10 +22,10 @@ static int ipts_init_probe(struct mei_cl_device *cldev,
 
 	// Setup the DMA bit mask
 	if (!dma_coerce_mask_and_coherent(&cldev->dev, DMA_BIT_MASK(64))) {
-		dev_dbg(&cldev->dev, "IPTS using DMA_BIT_MASK(64)\n");
+		dev_info(&cldev->dev, "IPTS using DMA_BIT_MASK(64)\n");
 	} else if (!dma_coerce_mask_and_coherent(&cldev->dev,
 			DMA_BIT_MASK(32))) {
-		dev_dbg(&cldev->dev, "IPTS using DMA_BIT_MASK(32)");
+		dev_info(&cldev->dev, "IPTS using DMA_BIT_MASK(32)");
 	} else {
 		dev_err(&cldev->dev, "No suitable DMA for IPTS available\n");
 		return -EFAULT;

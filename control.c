@@ -6,6 +6,7 @@
 #include "context.h"
 #include "protocol/commands.h"
 #include "protocol/events.h"
+#include "resources.h"
 
 int ipts_control_send(struct ipts_context *ipts,
 		u32 cmd, void *data, u32 size)
@@ -48,12 +49,12 @@ void ipts_control_stop(struct ipts_context *ipts)
 	if (old_status < IPTS_HOST_STATUS_RESOURCE_READY)
 		return;
 
-	// TODO: Free resources
+	ipts_resources_free(ipts);
 }
 
 int ipts_control_restart(struct ipts_context *ipts)
 {
-	dev_dbg(ipts->dev, "Restarting IPTS\n");
+	dev_info(ipts->dev, "Restarting IPTS\n");
 	ipts_control_stop(ipts);
 
 	ipts->status = IPTS_HOST_STATUS_RESTARTING;
