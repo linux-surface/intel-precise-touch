@@ -5,7 +5,9 @@
 
 #include "context.h"
 #include "protocol/commands.h"
+#include "protocol/enums.h"
 #include "protocol/events.h"
+#include "protocol/touch.h"
 #include "resources.h"
 
 int ipts_control_send(struct ipts_context *ipts,
@@ -29,6 +31,29 @@ int ipts_control_send(struct ipts_context *ipts,
 	}
 
 	return 0;
+}
+
+int ipts_control_send_feedback(struct ipts_context *ipts,
+		u32 buffer, u32 transaction)
+{
+	struct ipts_buffer_info feedback_buffer;
+	struct ipts_feedback *feedback;
+	struct ipts_feedback_cmd cmd;
+
+	feedback_buffer = ipts->feedback[buffer];
+	feedback = (struct ipts_feedback *)feedback_buffer.address;
+
+	memset(feedback, 0, sizeof(struct ipts_feedback));
+	memset(&cmd, 0, sizeof(struct ipts_feedback_cmd));
+
+	feedback->type = IPTS_FEEDBACK_TYPE_NONE;
+	feedback->transaction = transaction;
+
+	cmd.buffer = buffer;
+	cmd.transaction = transaction;
+
+	return ipts_control_send(ipts, IPTS_CMD(FEEDBACK),
+			&cmd, sizeof(struct ipts_feedback_cmd));
 }
 
 int ipts_control_start(struct ipts_context *ipts)

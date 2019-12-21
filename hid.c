@@ -1,13 +1,72 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <linux/delay.h>
 #include <linux/input.h>
+#include <linux/kthread.h>
 
 #include "context.h"
+#include "control.h"
+#include "protocol/touch.h"
 
 // HACK: Workaround for DKMS build without BUS_MEI patch
 #ifndef BUS_MEI
 #define BUS_MEI 0x44
 #endif
+
+static void ipts_hid_handle_input(struct ipts_context *ipts, int buffer_id)
+{
+	struct ipts_buffer_info buffer;
+	struct ipts_touch_data *data;
+
+	buffer = ipts->touch_data[buffer_id];
+	data = (struct ipts_touch_data *)buffer.address;
+
+	dev_info(ipts->dev, "Buffer %d\n", data->buffer);
+	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE, 32, 1,
+			data->data, data->size, false);
+
+	ipts_control_send_feedback(ipts, buffer_id, data->data[0]);
+}
+
+int ipts_hid_loop(void *data)
+{
+	u32 doorbell, last_doorbell;
+	struct ipts_context *ipts;
+
+	ipts = (struct ipts_context *)data;
+	last_doorbell = 0;
+	doorbell = 0;
+
+	dev_info(ipts->dev, "Starting input loop\n");
+
+	while (!kthread_should_stop()) {
+		if (ipts->status != IPTS_HOST_STATUS_STARTED) {
+			msleep(1000);
+			continue;
+		}
+
+		// IPTS will increment the doorbell after it filled up
+		// all of the touch data buffers. If the doorbell didn't
+		// change, there is no work for us to do.
+		doorbell = *(u32 *)ipts->doorbell.address;
+		if (doorbell == last_doorbell) {
+			msleep(100);
+			continue;
+		}
+
+		dev_info(ipts->dev, "%d\n", doorbell);
+
+		while (last_doorbell != doorbell) {
+			ipts_hid_handle_input(ipts, last_doorbell % 16);
+			last_doorbell++;
+		}
+
+		msleep(100);
+	}
+
+	dev_info(ipts->dev, "Stopping input loop\n");
+	return 0;
+}
 
 static int ipts_hid_create_stylus_input(struct ipts_context *ipts)
 {

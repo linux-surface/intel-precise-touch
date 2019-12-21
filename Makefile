@@ -25,6 +25,7 @@ sources += protocol/commands.h
 sources += protocol/enums.h
 sources += protocol/events.h
 sources += protocol/responses.h
+sources += protocol/touch.h
 sources += receiver.c
 sources += receiver.h
 sources += resources.c

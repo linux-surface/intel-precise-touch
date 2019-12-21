@@ -40,4 +40,26 @@ enum ipts_sensor_mode {
 };
 static_assert(sizeof(enum ipts_sensor_mode) == 4);
 
+enum ipts_touch_data_type {
+	IPTS_TOUCH_DATA_TYPE_FRAME = 0,
+	IPTS_TOUCH_DATA_TYPE_ERROR,
+	IPTS_TOUCH_DATA_TYPE_VENDOR_DATA,
+	IPTS_TOUCH_DATA_TYPE_HID_REPORT,
+	IPTS_TOUCH_DATA_TYPE_GET_FEATURES,
+	IPTS_TOUCH_DATA_TYPE_MAX
+};
+static_assert(sizeof(enum ipts_touch_data_type) == 4);
+
+enum ipts_feedback_type {
+	IPTS_FEEDBACK_TYPE_NONE = 0,
+	IPTS_FEEDBACK_TYPE_SOFT_RESET,
+	IPTS_FEEDBACK_TYPE_GOTO_ARMED,
+	IPTS_FEEDBACK_TYPE_GOTO_SENSING,
+	IPTS_FEEDBACK_TYPE_GOTO_SLEEP,
+	IPTS_FEEDBACK_TYPE_GOTO_DOZE,
+	IPTS_FEEDBACK_TYPE_HARD_RESET,
+	IPTS_FEEDBACK_TYPE_MAX
+};
+static_assert(sizeof(enum ipts_feedback_type) == 4);
+
 #endif /* _IPTS_PROTOCOL_ENUMS_H_ */

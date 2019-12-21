@@ -46,6 +46,7 @@ struct ipts_context {
 	struct ipts_buffer_info host2me;
 
 	struct task_struct *receiver_loop;
+	struct task_struct *hid_loop;
 
 	struct input_dev *stylus;
 	int stylus_tool;
