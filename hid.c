@@ -18,6 +18,11 @@
 static enum ipts_report_type ipts_hid_parse_report_type(
 		struct ipts_context *ipts, struct ipts_touch_data *data)
 {
+	// If the buffer doesn't contain touch data
+	// we don't care about it
+	if (data->type != IPTS_TOUCH_DATA_TYPE_FRAME)
+		return IPTS_REPORT_TYPE_MAX;
+
 	// If the number 0x460 is written at offset 28,
 	// the report describes a stylus
 	if (*(u16 *)&data->data[28] == 0x460)
