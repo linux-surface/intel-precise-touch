@@ -25,11 +25,11 @@ static_assert(sizeof(struct ipts_feedback) == 64);
 
 struct ipts_stylus_report {
 	u8 reserved[6];
-	u16 timestamp;
-	u16 mode;
-	u16 x;
-	u16 y;
-	u16 pressure;
+	__be16 timestamp;
+	__be16 mode;
+	__be16 x;
+	__be16 y;
+	__be16 pressure;
 };
 static_assert(sizeof(struct ipts_stylus_report) == 16);
 
