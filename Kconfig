@@ -16,7 +16,7 @@ config TOUCHSCREEN_IPTS
 	  module will be called ipts.
 
 config TOUCHSCREEN_IPTS_DEBUG
-	tristate "Intel Precise Touch & Stylus - Debugging"
+	bool "Intel Precise Touch & Stylus - Debugging"
 	depends on TOUCHSCREEN_IPTS
 	help
 	  Enables additional debugging in the IPTS driver.
