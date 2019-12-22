@@ -134,9 +134,9 @@ int ipts_hid_loop(void *data)
 		}
 sleep:
 		if (ll_timeout > ktime_get_seconds())
-			usleep_range(10000, 15000);
+			usleep_range(5000, 30000);
 		else
-			msleep(300);
+			msleep(200);
 	}
 
 	dev_info(ipts->dev, "Stopping input loop\n");
