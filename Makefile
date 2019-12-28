@@ -12,6 +12,7 @@ ipts-objs += hid.o
 ipts-objs += init.o
 ipts-objs += receiver.o
 ipts-objs += resources.o
+ipts-objs += stylus.o
 
 sources := Makefile
 sources += dkms.conf
@@ -30,6 +31,8 @@ sources += receiver.c
 sources += receiver.h
 sources += resources.c
 sources += resources.h
+sources += stylus.c
+sources += stylus.h
 
 KVERSION := "$(shell uname -r)"
 KDIR := /lib/modules/$(KVERSION)/build
