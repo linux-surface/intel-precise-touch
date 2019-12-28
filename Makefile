@@ -6,6 +6,8 @@
 MODULE_NAME    := "ipts"
 MODULE_VERSION := "2019-12-20"
 
+DEBUG ?= n
+
 obj-$(CONFIG_TOUCHSCREEN_IPTS) += ipts.o
 ipts-objs := control.o
 ipts-objs += hid.o
@@ -37,12 +39,13 @@ sources += stylus.h
 KVERSION := "$(shell uname -r)"
 KDIR := /lib/modules/$(KVERSION)/build
 MDIR := /usr/src/$(MODULE_NAME)-$(MODULE_VERSION)
+CONF := CONFIG_TOUCHSCREEN_IPTS=m CONFIG_TOUCHSCREEN_IPTS_DEBUG=$(DEBUG)
 
 all:
-	$(MAKE) -C $(KDIR) M=$(PWD) CONFIG_TOUCHSCREEN_IPTS=m modules
+	$(MAKE) -C $(KDIR) M=$(PWD) $(CONF) modules
 
 clean:
-	$(MAKE) -C $(KDIR) M=$(PWD) CONFIG_TOUCHSCREEN_IPTS=m clean
+	$(MAKE) -C $(KDIR) M=$(PWD) $(CONF) clean
 
 dkms-install: $(sources)
 	mkdir -p $(MDIR)
