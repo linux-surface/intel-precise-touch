@@ -11,13 +11,13 @@
 #endif
 
 static void ipts_stylus_handle_report(struct ipts_context *ipts,
-		struct ipts_stylus_report report)
+		struct ipts_stylus_report *report)
 {
 	int tool;
-	int prox = report.mode & 0x1;
-	int touch = report.mode & 0x2;
-	int button = report.mode & 0x4;
-	int rubber = report.mode & 0x8;
+	int prox = report->mode & 0x1;
+	int touch = report->mode & 0x2;
+	int button = report->mode & 0x4;
+	int rubber = report->mode & 0x8;
 
 	if (prox && rubber)
 		tool = BTN_TOOL_RUBBER;
@@ -35,9 +35,9 @@ static void ipts_stylus_handle_report(struct ipts_context *ipts,
 	input_report_key(ipts->stylus, ipts->stylus_tool, prox);
 	input_report_key(ipts->stylus, BTN_STYLUS, button);
 
-	input_report_abs(ipts->stylus, ABS_X, report.x);
-	input_report_abs(ipts->stylus, ABS_Y, report.y);
-	input_report_abs(ipts->stylus, ABS_PRESSURE, report.pressure);
+	input_report_abs(ipts->stylus, ABS_X, report->x);
+	input_report_abs(ipts->stylus, ABS_Y, report->y);
+	input_report_abs(ipts->stylus, ABS_PRESSURE, report->pressure);
 
 	input_report_abs(ipts->stylus, ABS_TILT_X, 9000);
 	input_report_abs(ipts->stylus, ABS_TILT_Y, 9000);
@@ -55,7 +55,7 @@ void ipts_stylus_parse_report(struct ipts_context *ipts,
 	reports = (struct ipts_stylus_report *)&data->data[34];
 
 	for (i = 0; i < count; i++)
-		ipts_stylus_handle_report(ipts, reports[i]);
+		ipts_stylus_handle_report(ipts, &reports[i]);
 }
 
 int ipts_stylus_init(struct ipts_context *ipts)
