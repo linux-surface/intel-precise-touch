@@ -49,7 +49,7 @@ struct ipts_context {
 	struct task_struct *hid_loop;
 
 	struct input_dev *stylus;
-	int stylus_tool;
+	__u16 stylus_tool;
 };
 
 #endif /* _IPTS_CONTEXT_H_ */
