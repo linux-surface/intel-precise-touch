@@ -52,7 +52,7 @@ void ipts_stylus_parse_report(struct ipts_context *ipts,
 	struct ipts_stylus_report *reports;
 
 	count = data->data[32];
-	reports = (struct ipts_stylus_report *)&data->data[34];
+	reports = (struct ipts_stylus_report *)&data->data[40];
 
 	for (i = 0; i < count; i++)
 		ipts_stylus_handle_report(ipts, &reports[i]);

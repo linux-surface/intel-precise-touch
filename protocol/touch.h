@@ -24,12 +24,14 @@ struct ipts_feedback {
 static_assert(sizeof(struct ipts_feedback) == 64);
 
 struct ipts_stylus_report {
-	u8 reserved[6];
 	__be16 timestamp;
 	__be16 mode;
 	__be16 x;
 	__be16 y;
 	__be16 pressure;
+	__be16 altitude;
+	__be16 azimuth;
+	__be16 reserved;
 };
 static_assert(sizeof(struct ipts_stylus_report) == 16);
 
