@@ -2,9 +2,11 @@
 
 #include <linux/input.h>
 #include <linux/kernel.h>
+#include <asm/fpu/api.h>
 
 #include "context.h"
 #include "protocol/touch.h"
+#include "fpmath.h"
 
 // HACK: Workaround for DKMS build without BUS_MEI patch
 #ifndef BUS_MEI
@@ -19,11 +21,24 @@ static void ipts_stylus_handle_report(struct ipts_context *ipts,
 	__u16 x = le16_to_cpu(report->x);
 	__u16 y = le16_to_cpu(report->y);
 	__u16 pressure = le16_to_cpu(report->pressure);
+	__u16 altitude = le16_to_cpu(report->altitude);
+	__u16 azimuth = le16_to_cpu(report->azimuth);
 
 	__u8 prox = mode & 0x1;
 	__u8 touch = mode & 0x2;
 	__u8 button = mode & 0x4;
 	__u8 rubber = mode & 0x8;
+
+	int tilt_x = 0;
+	int tilt_y = 0;
+
+	// avoid unnecessary computations
+	// altitude is zero if stylus does not touch the screen
+	if (altitude) {
+		kernel_fpu_begin();
+		fpm_altitude_azimuth_to_tilt(altitude, azimuth, &tilt_x, &tilt_y);
+		kernel_fpu_end();
+	}
 
 	if (prox && rubber)
 		tool = BTN_TOOL_RUBBER;
@@ -45,8 +60,8 @@ static void ipts_stylus_handle_report(struct ipts_context *ipts,
 	input_report_abs(ipts->stylus, ABS_Y, y);
 	input_report_abs(ipts->stylus, ABS_PRESSURE, pressure);
 
-	input_report_abs(ipts->stylus, ABS_TILT_X, 9000);
-	input_report_abs(ipts->stylus, ABS_TILT_Y, 9000);
+	input_report_abs(ipts->stylus, ABS_TILT_X, tilt_x);
+	input_report_abs(ipts->stylus, ABS_TILT_Y, tilt_y);
 
 	input_sync(ipts->stylus);
 }
@@ -82,9 +97,9 @@ int ipts_stylus_init(struct ipts_context *ipts)
 	input_set_abs_params(ipts->stylus, ABS_Y, 0, 7200, 0, 0);
 	input_abs_set_res(ipts->stylus, ABS_Y, 38);
 	input_set_abs_params(ipts->stylus, ABS_PRESSURE, 0, 4096, 0, 0);
-	input_set_abs_params(ipts->stylus, ABS_TILT_X, 0, 18000, 0, 0);
+	input_set_abs_params(ipts->stylus, ABS_TILT_X, -9000, 9000, 0, 0);
 	input_abs_set_res(ipts->stylus, ABS_TILT_X, 5730);
-	input_set_abs_params(ipts->stylus, ABS_TILT_Y, 0, 18000, 0, 0);
+	input_set_abs_params(ipts->stylus, ABS_TILT_Y, -9000, 9000, 0, 0);
 	input_abs_set_res(ipts->stylus, ABS_TILT_Y, 5730);
 	input_set_capability(ipts->stylus, EV_KEY, BTN_TOUCH);
 	input_set_capability(ipts->stylus, EV_KEY, BTN_STYLUS);

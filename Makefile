@@ -15,6 +15,7 @@ ipts-objs += init.o
 ipts-objs += receiver.o
 ipts-objs += resources.o
 ipts-objs += stylus.o
+ipts-objs += fpmath.o
 
 sources := Makefile
 sources += dkms.conf
@@ -35,11 +36,15 @@ sources += resources.c
 sources += resources.h
 sources += stylus.c
 sources += stylus.h
+sources += fpmath.c
+sources += fpmath.h
 
 KVERSION := "$(shell uname -r)"
 KDIR := /lib/modules/$(KVERSION)/build
 MDIR := /usr/src/$(MODULE_NAME)-$(MODULE_VERSION)
 CONF := CONFIG_TOUCHSCREEN_IPTS=m CONFIG_TOUCHSCREEN_IPTS_DEBUG=$(DEBUG)
+
+CFLAGS_fpmath.o := -mhard-float -msse2
 
 all:
 	$(MAKE) -C $(KDIR) M=$(PWD) $(CONF) modules
