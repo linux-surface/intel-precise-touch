@@ -60,6 +60,9 @@ int ipts_control_start(struct ipts_context *ipts)
 {
 	ipts->status = IPTS_HOST_STATUS_INIT;
 
+	// TODO(tmsp): implement support for changing the mode
+	ipts->mode = IPTS_SENSOR_MODE_MULTITOUCH;
+
 	return ipts_control_send(ipts, IPTS_CMD(NOTIFY_DEV_READY), NULL, 0);
 }
 

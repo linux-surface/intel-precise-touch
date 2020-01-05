@@ -9,7 +9,9 @@ struct ipts_touch_data {
 	u32 type;
 	u32 size;
 	u32 buffer;
-	u8 reserved[52];
+	u8 reserved1[20];
+	u8 transaction;
+	u8 reserved2[31];
 	u8 data[];
 } __packed;
 

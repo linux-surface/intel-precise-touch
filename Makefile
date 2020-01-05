@@ -14,6 +14,7 @@ ipts-objs += init.o
 ipts-objs += params.o
 ipts-objs += receiver.o
 ipts-objs += resources.o
+ipts-objs += singletouch.o
 ipts-objs += stylus.o
 
 sources := Makefile
@@ -37,6 +38,8 @@ sources += receiver.c
 sources += receiver.h
 sources += resources.c
 sources += resources.h
+sources += singletouch.c
+sources += singletouch.h
 sources += stylus.c
 sources += stylus.h
 

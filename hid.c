@@ -9,12 +9,18 @@
 #include "control.h"
 #include "hid.h"
 #include "params.h"
+#include "protocol/enums.h"
 #include "protocol/touch.h"
+#include "singletouch.h"
 #include "stylus.h"
 
 static enum ipts_report_type ipts_hid_parse_report_type(
 		struct ipts_context *ipts, struct ipts_touch_data *data)
 {
+	// If the buffer contains HID data, we are in single touch mode
+	if (data->type == IPTS_TOUCH_DATA_TYPE_HID_REPORT)
+		return IPTS_REPORT_TYPE_SINGLETOUCH;
+
 	// If the buffer doesn't contain touch data
 	// we don't care about it
 	if (data->type != IPTS_TOUCH_DATA_TYPE_FRAME)
@@ -46,12 +52,15 @@ static void ipts_hid_handle_input(struct ipts_context *ipts, int buffer_id)
 	case IPTS_REPORT_TYPE_STYLUS:
 		ipts_stylus_parse_report(ipts, data);
 		break;
+	case IPTS_REPORT_TYPE_SINGLETOUCH:
+		ipts_singletouch_parse_report(ipts, data);
+		break;
 	case IPTS_REPORT_TYPE_MAX:
 		// ignore
 		break;
 	}
 
-	ipts_control_send_feedback(ipts, buffer_id, data->data[0]);
+	ipts_control_send_feedback(ipts, buffer_id, data->transaction);
 }
 
 int ipts_hid_loop(void *data)
@@ -102,6 +111,10 @@ int ipts_hid_init(struct ipts_context *ipts)
 	int ret;
 
 	ret = ipts_stylus_init(ipts);
+	if (ret)
+		return ret;
+
+	ret = ipts_singletouch_init(ipts);
 	if (ret)
 		return ret;
 

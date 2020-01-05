@@ -65,9 +65,8 @@ static void ipts_receiver_handle_clear_mem_window(struct ipts_context *ipts,
 
 	ipts->status = IPTS_HOST_STATUS_RESOURCE_READY;
 
-	// We only support multitouch mode at the moment
 	memset(&sensor_mode_cmd, 0, sizeof(struct ipts_set_mode_cmd));
-	sensor_mode_cmd.sensor_mode = IPTS_SENSOR_MODE_MULTITOUCH;
+	sensor_mode_cmd.sensor_mode = ipts->mode;
 
 	*cmd_status = ipts_control_send(ipts, IPTS_CMD(SET_MODE),
 			&sensor_mode_cmd, sizeof(struct ipts_set_mode_cmd));
@@ -136,6 +135,43 @@ static void ipts_receiver_handle_set_mem_window(struct ipts_context *ipts,
 	dev_info(ipts->dev, "IPTS enabled\n");
 }
 
+static void ipts_receiver_handle_ready_for_data(struct ipts_context *ipts,
+		struct ipts_response *msg)
+{
+	if (msg->status != IPTS_ME_STATUS_SENSOR_DISABLED &&
+			msg->status != IPTS_ME_STATUS_SUCCESS) {
+		dev_err(ipts->dev, "0x%08x failed - status = %d\n",
+				msg->code, msg->status);
+		return;
+	}
+
+	if (ipts->mode != IPTS_SENSOR_MODE_SINGLETOUCH ||
+			ipts->status != IPTS_HOST_STATUS_STARTED)
+		return;
+
+	// Increment the doorbell manually to indicate that a new buffer
+	// filled with touch data is available
+	*((u32 *)ipts->doorbell.address) += 1;
+}
+
+static void ipts_recever_handle_feedback(struct ipts_context *ipts,
+		struct ipts_response *msg, int *cmd_status)
+{
+	if (msg->status != IPTS_ME_STATUS_COMPAT_CHECK_FAIL &&
+			msg->status != IPTS_ME_STATUS_SUCCESS &&
+			msg->status != IPTS_ME_STATUS_INVALID_PARAMS) {
+		dev_err(ipts->dev, "0x%08x failed - status = %d\n",
+				msg->code, msg->status);
+		return;
+	}
+
+	if (ipts->mode != IPTS_SENSOR_MODE_SINGLETOUCH)
+		return;
+
+	*cmd_status = ipts_control_send(ipts,
+			IPTS_CMD(READY_FOR_DATA), NULL, 0);
+}
+
 static void ipts_receiver_handle_quiesce_io(struct ipts_context *ipts,
 		struct ipts_response *msg)
 {
@@ -172,6 +208,12 @@ static int ipts_receiver_handle_response(struct ipts_context *ipts,
 		break;
 	case IPTS_RSP(SET_MEM_WINDOW):
 		ipts_receiver_handle_set_mem_window(ipts, msg, &cmd_status);
+		break;
+	case IPTS_RSP(READY_FOR_DATA):
+		ipts_receiver_handle_ready_for_data(ipts, msg);
+		break;
+	case IPTS_RSP(FEEDBACK):
+		ipts_recever_handle_feedback(ipts, msg, &cmd_status);
 		break;
 	case IPTS_RSP(QUIESCE_IO):
 		ipts_receiver_handle_quiesce_io(ipts, msg);

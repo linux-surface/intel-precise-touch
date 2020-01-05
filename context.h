@@ -8,6 +8,7 @@
 #include <linux/mei_cl_bus.h>
 #include <linux/types.h>
 
+#include "protocol/enums.h"
 #include "protocol/responses.h"
 
 /*
@@ -33,6 +34,7 @@ struct ipts_context {
 	struct device *dev;
 	struct ipts_device_info device_info;
 	enum ipts_host_status status;
+	enum ipts_sensor_mode mode;
 
 	struct ipts_buffer_info touch_data[16];
 	struct ipts_buffer_info feedback[16];
@@ -49,6 +51,7 @@ struct ipts_context {
 	struct task_struct *hid_loop;
 
 	struct input_dev *stylus;
+	struct input_dev *touch;
 	u16 stylus_tool;
 };
 

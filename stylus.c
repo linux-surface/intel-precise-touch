@@ -5,6 +5,7 @@
 #include <linux/kernel.h>
 
 #include "context.h"
+#include "protocol/enums.h"
 #include "protocol/touch.h"
 #include "fpmath.h"
 
@@ -76,6 +77,9 @@ void ipts_stylus_parse_report(struct ipts_context *ipts,
 int ipts_stylus_init(struct ipts_context *ipts)
 {
 	int ret;
+
+	if (ipts->mode != IPTS_SENSOR_MODE_MULTITOUCH)
+		return 0;
 
 	ipts->stylus = devm_input_allocate_device(ipts->dev);
 	if (!ipts->stylus)
