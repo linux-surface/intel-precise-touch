@@ -6,13 +6,12 @@
 MODULE_NAME    := "ipts"
 MODULE_VERSION := "2019-12-20"
 
-DEBUG ?= n
-
 obj-$(CONFIG_TOUCHSCREEN_IPTS) += ipts.o
 ipts-objs := control.o
 ipts-objs += fpmath.o
 ipts-objs += hid.o
 ipts-objs += init.o
+ipts-objs += params.o
 ipts-objs += receiver.o
 ipts-objs += resources.o
 ipts-objs += stylus.o
@@ -27,6 +26,8 @@ sources += fpmath.h
 sources += hid.c
 sources += hid.h
 sources += init.c
+sources += params.c
+sources += params.h
 sources += protocol/commands.h
 sources += protocol/enums.h
 sources += protocol/events.h
@@ -42,15 +43,14 @@ sources += stylus.h
 KVERSION := "$(shell uname -r)"
 KDIR := /lib/modules/$(KVERSION)/build
 MDIR := /usr/src/$(MODULE_NAME)-$(MODULE_VERSION)
-CONF := CONFIG_TOUCHSCREEN_IPTS=m CONFIG_TOUCHSCREEN_IPTS_DEBUG=$(DEBUG)
 
 CFLAGS_fpmath.o := -mhard-float -msse2
 
 all:
-	$(MAKE) -C $(KDIR) M=$(PWD) $(CONF) modules
+	$(MAKE) -C $(KDIR) M=$(PWD) CONFIG_TOUCHSCREEN_IPTS=m modules
 
 clean:
-	$(MAKE) -C $(KDIR) M=$(PWD) $(CONF) clean
+	$(MAKE) -C $(KDIR) M=$(PWD) CONFIG_TOUCHSCREEN_IPTS=m clean
 
 dkms-install: $(sources)
 	mkdir -p $(MDIR)

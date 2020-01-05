@@ -8,6 +8,7 @@
 #include "context.h"
 #include "control.h"
 #include "hid.h"
+#include "params.h"
 #include "protocol/touch.h"
 #include "stylus.h"
 
@@ -35,11 +36,11 @@ static void ipts_hid_handle_input(struct ipts_context *ipts, int buffer_id)
 	buffer = ipts->touch_data[buffer_id];
 	data = (struct ipts_touch_data *)buffer.address;
 
-#ifdef CONFIG_TOUCHSCREEN_IPTS_DEBUG
-	dev_info(ipts->dev, "Buffer %d\n", buffer_id);
-	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE, 32, 1,
-			data->data, data->size, false);
-#endif
+	if (ipts_params.debug) {
+		dev_info(ipts->dev, "Buffer %d\n", buffer_id);
+		print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE, 32, 1,
+				data->data, data->size, false);
+	}
 
 	switch (ipts_hid_parse_report_type(ipts, data)) {
 	case IPTS_REPORT_TYPE_STYLUS:
