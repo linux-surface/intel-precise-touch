@@ -34,7 +34,7 @@ union ipts_response_data {
 };
 struct ipts_response {
 	u32 code;
-	enum ipts_me_status status;
+	u32 status;
 	union ipts_response_data data;
 };
 static_assert(sizeof(struct ipts_response) == 88);

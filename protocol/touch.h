@@ -6,7 +6,7 @@
 #include <linux/types.h>
 
 struct ipts_touch_data {
-	enum ipts_touch_data_type type;
+	u32 type;
 	u32 size;
 	u32 buffer;
 	u8 reserved[52];
@@ -15,7 +15,7 @@ struct ipts_touch_data {
 static_assert(sizeof(struct ipts_touch_data) == 64);
 
 struct ipts_feedback {
-	enum ipts_feedback_type type;
+	u32 type;
 	u32 size;
 	u32 transaction;
 	u8 reserved[52];

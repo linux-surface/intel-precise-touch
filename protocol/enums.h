@@ -3,8 +3,6 @@
 #ifndef _IPTS_PROTOCOL_ENUMS_H_
 #define _IPTS_PROTOCOL_ENUMS_H_
 
-#include <linux/build_bug.h>
-
 /*
  * IPTS ME state
  */
@@ -31,14 +29,12 @@ enum ipts_me_status {
 	IPTS_ME_STATUS_QUIESCE_IO_IN_PROGRESS,
 	IPTS_ME_STATUS_MAX
 };
-static_assert(sizeof(enum ipts_me_status) == 4);
 
 enum ipts_sensor_mode {
 	IPTS_SENSOR_MODE_SINGLETOUCH = 0,
 	IPTS_SENSOR_MODE_MULTITOUCH,
 	IPTS_SENSOR_MODE_MAX
 };
-static_assert(sizeof(enum ipts_sensor_mode) == 4);
 
 enum ipts_touch_data_type {
 	IPTS_TOUCH_DATA_TYPE_FRAME = 0,
@@ -48,7 +44,6 @@ enum ipts_touch_data_type {
 	IPTS_TOUCH_DATA_TYPE_GET_FEATURES,
 	IPTS_TOUCH_DATA_TYPE_MAX
 };
-static_assert(sizeof(enum ipts_touch_data_type) == 4);
 
 enum ipts_feedback_type {
 	IPTS_FEEDBACK_TYPE_NONE = 0,
@@ -60,6 +55,5 @@ enum ipts_feedback_type {
 	IPTS_FEEDBACK_TYPE_HARD_RESET,
 	IPTS_FEEDBACK_TYPE_MAX
 };
-static_assert(sizeof(enum ipts_feedback_type) == 4);
 
 #endif /* _IPTS_PROTOCOL_ENUMS_H_ */
