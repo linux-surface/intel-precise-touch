@@ -10,7 +10,6 @@ struct ipts_set_mode_cmd {
 	u32 sensor_mode;
 	u8 reserved[12];
 };
-static_assert(sizeof(struct ipts_set_mode_cmd) == 16);
 
 struct ipts_set_mem_window_cmd {
 	u32 touch_data_buffer_addr_lower[16];
@@ -29,14 +28,12 @@ struct ipts_set_mem_window_cmd {
 	u16 workqueue_size;
 	u8 reserved[32];
 };
-static_assert(sizeof(struct ipts_set_mem_window_cmd) == 320);
 
 struct ipts_feedback_cmd {
 	u32 buffer;
 	u32 transaction;
 	u8 reserved[8];
 };
-static_assert(sizeof(struct ipts_feedback_cmd) == 16);
 
 /*
  * Commands are sent from the host to the ME
@@ -49,6 +46,10 @@ struct ipts_command {
 		struct ipts_feedback_cmd feedback;
 	} data;
 };
+
+static_assert(sizeof(struct ipts_set_mode_cmd) == 16);
+static_assert(sizeof(struct ipts_set_mem_window_cmd) == 320);
+static_assert(sizeof(struct ipts_feedback_cmd) == 16);
 static_assert(sizeof(struct ipts_command) == 324);
 
 #endif /* _IPTS_PROTOCOL_COMMANDS_H_ */

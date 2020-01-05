@@ -12,7 +12,6 @@ struct ipts_touch_data {
 	u8 reserved[52];
 	u8 data[];
 };
-static_assert(sizeof(struct ipts_touch_data) == 64);
 
 struct ipts_feedback {
 	u32 type;
@@ -21,7 +20,6 @@ struct ipts_feedback {
 	u8 reserved[52];
 	u8 data[];
 };
-static_assert(sizeof(struct ipts_feedback) == 64);
 
 struct ipts_stylus_report {
 	u16 timestamp;
@@ -33,11 +31,14 @@ struct ipts_stylus_report {
 	u16 azimuth;
 	u16 reserved;
 };
-static_assert(sizeof(struct ipts_stylus_report) == 16);
 
 #define IPTS_STYLUS_REPORT_MODE_PROXIMITY	BIT(0)
 #define IPTS_STYLUS_REPORT_MODE_TOUCH		BIT(1)
 #define IPTS_STYLUS_REPORT_MODE_BUTTON		BIT(2)
 #define IPTS_STYLUS_REPORT_MODE_RUBBER		BIT(3)
+
+static_assert(sizeof(struct ipts_touch_data) == 64);
+static_assert(sizeof(struct ipts_feedback) == 64);
+static_assert(sizeof(struct ipts_stylus_report) == 16);
 
 #endif /* _IPTS_PROTOCOL_TOUCH_H_ */

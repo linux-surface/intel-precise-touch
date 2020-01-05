@@ -23,7 +23,6 @@ struct ipts_device_info {
 	u32 feedback_size;
 	u8 reserved[24];
 };
-static_assert(sizeof(struct ipts_device_info) == 44);
 
 /*
  * Responses are sent from the ME to the host, reacting to a command.
@@ -36,6 +35,8 @@ struct ipts_response {
 		u8 reserved[80];
 	} data;
 };
+
+static_assert(sizeof(struct ipts_device_info) == 44);
 static_assert(sizeof(struct ipts_response) == 88);
 
 #endif /* _IPTS_PROTOCOL_RESPONSES_H_ */
