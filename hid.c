@@ -10,23 +10,6 @@
 #include "hid.h"
 #include "params.h"
 #include "protocol/touch.h"
-#include "stylus.h"
-
-static enum ipts_report_type ipts_hid_parse_report_type(
-		struct ipts_context *ipts, struct ipts_touch_data *data)
-{
-	// If the buffer doesn't contain touch data
-	// we don't care about it
-	if (data->type != IPTS_TOUCH_DATA_TYPE_FRAME)
-		return IPTS_REPORT_TYPE_MAX;
-
-	// If the number 0x460 is written at offset 28,
-	// the report describes a stylus
-	if (*(u16 *)&data->data[28] == 0x460)
-		return IPTS_REPORT_TYPE_STYLUS;
-
-	return IPTS_REPORT_TYPE_MAX;
-}
 
 static void ipts_hid_handle_input(struct ipts_context *ipts, int buffer_id)
 {
@@ -42,14 +25,7 @@ static void ipts_hid_handle_input(struct ipts_context *ipts, int buffer_id)
 				data->data, data->size, false);
 	}
 
-	switch (ipts_hid_parse_report_type(ipts, data)) {
-	case IPTS_REPORT_TYPE_STYLUS:
-		ipts_stylus_parse_report(ipts, data);
-		break;
-	case IPTS_REPORT_TYPE_MAX:
-		// ignore
-		break;
-	}
+	// TODO: forward to user-space
 
 	ipts_control_send_feedback(ipts, buffer_id, data->data[0]);
 }
@@ -94,16 +70,5 @@ sleep:
 	}
 
 	dev_info(ipts->dev, "Stopping input loop\n");
-	return 0;
-}
-
-int ipts_hid_init(struct ipts_context *ipts)
-{
-	int ret;
-
-	ret = ipts_stylus_init(ipts);
-	if (ret)
-		return ret;
-
 	return 0;
 }

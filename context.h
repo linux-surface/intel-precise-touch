@@ -47,9 +47,6 @@ struct ipts_context {
 
 	struct task_struct *receiver_loop;
 	struct task_struct *hid_loop;
-
-	struct input_dev *stylus;
-	u16 stylus_tool;
 };
 
 #endif /* _IPTS_CONTEXT_H_ */
