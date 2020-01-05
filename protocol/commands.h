@@ -41,14 +41,13 @@ static_assert(sizeof(struct ipts_feedback_cmd) == 16);
 /*
  * Commands are sent from the host to the ME
  */
-union ipts_command_data {
-	struct ipts_set_mode_cmd set_mode;
-	struct ipts_set_mem_window_cmd set_mem_window;
-	struct ipts_feedback_cmd feedback;
-};
 struct ipts_command {
 	u32 code;
-	union ipts_command_data data;
+	union {
+		struct ipts_set_mode_cmd set_mode;
+		struct ipts_set_mem_window_cmd set_mem_window;
+		struct ipts_feedback_cmd feedback;
+	} data;
 };
 static_assert(sizeof(struct ipts_command) == 324);
 

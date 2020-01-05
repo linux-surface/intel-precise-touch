@@ -28,14 +28,13 @@ static_assert(sizeof(struct ipts_device_info) == 44);
 /*
  * Responses are sent from the ME to the host, reacting to a command.
  */
-union ipts_response_data {
-	struct ipts_device_info device_info;
-	u8 reserved[80];
-};
 struct ipts_response {
 	u32 code;
 	u32 status;
-	union ipts_response_data data;
+	union {
+		struct ipts_device_info device_info;
+		u8 reserved[80];
+	} data;
 };
 static_assert(sizeof(struct ipts_response) == 88);
 
