@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <asm/fpu/api.h>
 #include <linux/input.h>
 #include <linux/kernel.h>
-#include <asm/fpu/api.h>
 
 #include "context.h"
 #include "protocol/touch.h"
@@ -36,7 +36,8 @@ static void ipts_stylus_handle_report(struct ipts_context *ipts,
 	// altitude is zero if stylus does not touch the screen
 	if (altitude) {
 		kernel_fpu_begin();
-		fpm_altitude_azimuth_to_tilt(altitude, azimuth, &tilt_x, &tilt_y);
+		fpm_altitude_azimuth_to_tilt(altitude, azimuth,
+				&tilt_x, &tilt_y);
 		kernel_fpu_end();
 	}
 

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <linux/cpufeature.h>
 #include <linux/dma-mapping.h>
 #include <linux/mei_cl_bus.h>
 #include <linux/module.h>
 #include <linux/mod_devicetable.h>
-#include <asm/cpufeature.h>
 
 #include "context.h"
 #include "control.h"
