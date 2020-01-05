@@ -6,33 +6,39 @@
 #include <linux/types.h>
 
 struct ipts_touch_data {
-	enum ipts_touch_data_type type;
+	u32 type;
 	u32 size;
 	u32 buffer;
 	u8 reserved[52];
 	u8 data[];
-};
-static_assert(sizeof(struct ipts_touch_data) == 64);
+} __packed;
 
 struct ipts_feedback {
-	enum ipts_feedback_type type;
+	u32 type;
 	u32 size;
 	u32 transaction;
 	u8 reserved[52];
 	u8 data[];
-};
-static_assert(sizeof(struct ipts_feedback) == 64);
+} __packed;
 
 struct ipts_stylus_report {
-	__le16 timestamp;
-	__le16 mode;
-	__le16 x;
-	__le16 y;
-	__le16 pressure;
-	__le16 altitude;
-	__le16 azimuth;
-	__le16 reserved;
-};
+	u16 timestamp;
+	u16 mode;
+	u16 x;
+	u16 y;
+	u16 pressure;
+	u16 altitude;
+	u16 azimuth;
+	u16 reserved;
+} __packed;
+
+#define IPTS_STYLUS_REPORT_MODE_PROXIMITY	BIT(0)
+#define IPTS_STYLUS_REPORT_MODE_TOUCH		BIT(1)
+#define IPTS_STYLUS_REPORT_MODE_BUTTON		BIT(2)
+#define IPTS_STYLUS_REPORT_MODE_RUBBER		BIT(3)
+
+static_assert(sizeof(struct ipts_touch_data) == 64);
+static_assert(sizeof(struct ipts_feedback) == 64);
 static_assert(sizeof(struct ipts_stylus_report) == 16);
 
 #endif /* _IPTS_PROTOCOL_TOUCH_H_ */

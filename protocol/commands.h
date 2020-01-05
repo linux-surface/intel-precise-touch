@@ -7,10 +7,9 @@
 #include <linux/types.h>
 
 struct ipts_set_mode_cmd {
-	enum ipts_sensor_mode sensor_mode;
+	u32 sensor_mode;
 	u8 reserved[12];
-};
-static_assert(sizeof(struct ipts_set_mode_cmd) == 16);
+} __packed;
 
 struct ipts_set_mem_window_cmd {
 	u32 touch_data_buffer_addr_lower[16];
@@ -28,28 +27,29 @@ struct ipts_set_mem_window_cmd {
 	u8 workqueue_item_size;
 	u16 workqueue_size;
 	u8 reserved[32];
-};
-static_assert(sizeof(struct ipts_set_mem_window_cmd) == 320);
+} __packed;
 
 struct ipts_feedback_cmd {
 	u32 buffer;
 	u32 transaction;
 	u8 reserved[8];
-};
-static_assert(sizeof(struct ipts_feedback_cmd) == 16);
+} __packed;
 
 /*
  * Commands are sent from the host to the ME
  */
-union ipts_command_data {
-	struct ipts_set_mode_cmd set_mode;
-	struct ipts_set_mem_window_cmd set_mem_window;
-	struct ipts_feedback_cmd feedback;
-};
 struct ipts_command {
 	u32 code;
-	union ipts_command_data data;
-};
+	union {
+		struct ipts_set_mode_cmd set_mode;
+		struct ipts_set_mem_window_cmd set_mem_window;
+		struct ipts_feedback_cmd feedback;
+	} data;
+} __packed;
+
+static_assert(sizeof(struct ipts_set_mode_cmd) == 16);
+static_assert(sizeof(struct ipts_set_mem_window_cmd) == 320);
+static_assert(sizeof(struct ipts_feedback_cmd) == 16);
 static_assert(sizeof(struct ipts_command) == 324);
 
 #endif /* _IPTS_PROTOCOL_COMMANDS_H_ */

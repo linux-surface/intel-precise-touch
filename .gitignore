@@ -1,3 +1,4 @@
+.*
 *.o
 *.ko
 *.mod*
@@ -6,3 +7,6 @@
 modules.order
 Module.symvers
 Mkfile.old
+
+!.gitignore
+!.gitattributes

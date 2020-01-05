@@ -16,27 +16,20 @@
 static void ipts_stylus_handle_report(struct ipts_context *ipts,
 		struct ipts_stylus_report *report)
 {
-	__u16 tool;
-	__u16 mode = le16_to_cpu(report->mode);
-	__u16 x = le16_to_cpu(report->x);
-	__u16 y = le16_to_cpu(report->y);
-	__u16 pressure = le16_to_cpu(report->pressure);
-	__u16 altitude = le16_to_cpu(report->altitude);
-	__u16 azimuth = le16_to_cpu(report->azimuth);
-
-	__u8 prox = mode & 0x1;
-	__u8 touch = mode & 0x2;
-	__u8 button = mode & 0x4;
-	__u8 rubber = mode & 0x8;
+	u16 tool;
+	u8 prox = report->mode & IPTS_STYLUS_REPORT_MODE_PROXIMITY;
+	u8 touch = report->mode & IPTS_STYLUS_REPORT_MODE_TOUCH;
+	u8 button = report->mode & IPTS_STYLUS_REPORT_MODE_BUTTON;
+	u8 rubber = report->mode & IPTS_STYLUS_REPORT_MODE_RUBBER;
 
 	int tilt_x = 0;
 	int tilt_y = 0;
 
 	// avoid unnecessary computations
 	// altitude is zero if stylus does not touch the screen
-	if (altitude) {
+	if (report->altitude) {
 		kernel_fpu_begin();
-		fpm_altitude_azimuth_to_tilt(altitude, azimuth,
+		fpm_altitude_azimuth_to_tilt(report->altitude, report->azimuth,
 				&tilt_x, &tilt_y);
 		kernel_fpu_end();
 	}
@@ -57,9 +50,9 @@ static void ipts_stylus_handle_report(struct ipts_context *ipts,
 	input_report_key(ipts->stylus, ipts->stylus_tool, prox);
 	input_report_key(ipts->stylus, BTN_STYLUS, button);
 
-	input_report_abs(ipts->stylus, ABS_X, x);
-	input_report_abs(ipts->stylus, ABS_Y, y);
-	input_report_abs(ipts->stylus, ABS_PRESSURE, pressure);
+	input_report_abs(ipts->stylus, ABS_X, report->x);
+	input_report_abs(ipts->stylus, ABS_Y, report->y);
+	input_report_abs(ipts->stylus, ABS_PRESSURE, report->pressure);
 
 	input_report_abs(ipts->stylus, ABS_TILT_X, tilt_x);
 	input_report_abs(ipts->stylus, ABS_TILT_Y, tilt_y);

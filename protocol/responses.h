@@ -22,21 +22,21 @@ struct ipts_device_info {
 	u32 frame_size;
 	u32 feedback_size;
 	u8 reserved[24];
-};
-static_assert(sizeof(struct ipts_device_info) == 44);
+} __packed;
 
 /*
  * Responses are sent from the ME to the host, reacting to a command.
  */
-union ipts_response_data {
-	struct ipts_device_info device_info;
-	u8 reserved[80];
-};
 struct ipts_response {
 	u32 code;
-	enum ipts_me_status status;
-	union ipts_response_data data;
-};
+	u32 status;
+	union {
+		struct ipts_device_info device_info;
+		u8 reserved[80];
+	} data;
+} __packed;
+
+static_assert(sizeof(struct ipts_device_info) == 44);
 static_assert(sizeof(struct ipts_response) == 88);
 
 #endif /* _IPTS_PROTOCOL_RESPONSES_H_ */
