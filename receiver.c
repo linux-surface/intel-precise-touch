@@ -38,6 +38,10 @@ static void ipts_receiver_handle_get_device_info(struct ipts_context *ipts,
 	memcpy(&ipts->device_info, &msg->data.device_info,
 			sizeof(struct ipts_device_info));
 
+	dev_info(ipts->dev, "Device %04hX:%04hX found\n",
+			ipts->device_info.vendor_id,
+			ipts->device_info.device_id);
+
 	if (ipts_hid_init(ipts))
 		return;
 
