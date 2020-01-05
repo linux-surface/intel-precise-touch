@@ -7,6 +7,7 @@
 
 struct ipts_modparams {
 	bool debug;
+	bool singletouch;
 };
 
 extern struct ipts_modparams ipts_params;

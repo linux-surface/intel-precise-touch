@@ -4,6 +4,7 @@
 #include <linux/types.h>
 
 #include "context.h"
+#include "params.h"
 #include "protocol/commands.h"
 #include "protocol/enums.h"
 #include "protocol/events.h"
@@ -60,8 +61,10 @@ int ipts_control_start(struct ipts_context *ipts)
 {
 	ipts->status = IPTS_HOST_STATUS_INIT;
 
-	// TODO(tmsp): implement support for changing the mode
-	ipts->mode = IPTS_SENSOR_MODE_MULTITOUCH;
+	if (ipts_params.singletouch)
+		ipts->mode = IPTS_SENSOR_MODE_SINGLETOUCH;
+	else
+		ipts->mode = IPTS_SENSOR_MODE_MULTITOUCH;
 
 	return ipts_control_send(ipts, IPTS_CMD(NOTIFY_DEV_READY), NULL, 0);
 }

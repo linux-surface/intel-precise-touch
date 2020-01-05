@@ -13,9 +13,15 @@
 
 struct ipts_modparams ipts_params = {
 	.debug = false,
+	.singletouch = false,
 };
 
 IPTS_PARM(debug, bool, 0400);
 IPTS_DESC(debug,
 	"Enable additional debugging in the IPTS driver (default: false)"
+);
+
+IPTS_PARM(singletouch, bool, 0400);
+IPTS_DESC(singletouch,
+	"Enables IPTS single touch mode (disables stylus) (default: false)"
 );
