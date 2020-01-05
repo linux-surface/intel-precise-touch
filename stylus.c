@@ -16,18 +16,18 @@
 static void ipts_stylus_handle_report(struct ipts_context *ipts,
 		struct ipts_stylus_report *report)
 {
-	__u16 tool;
-	__u16 mode = le16_to_cpu(report->mode);
-	__u16 x = le16_to_cpu(report->x);
-	__u16 y = le16_to_cpu(report->y);
-	__u16 pressure = le16_to_cpu(report->pressure);
-	__u16 altitude = le16_to_cpu(report->altitude);
-	__u16 azimuth = le16_to_cpu(report->azimuth);
+	u16 tool;
+	u16 mode = le16_to_cpu(report->mode);
+	u16 x = le16_to_cpu(report->x);
+	u16 y = le16_to_cpu(report->y);
+	u16 pressure = le16_to_cpu(report->pressure);
+	u16 altitude = le16_to_cpu(report->altitude);
+	u16 azimuth = le16_to_cpu(report->azimuth);
 
-	__u8 prox = mode & 0x1;
-	__u8 touch = mode & 0x2;
-	__u8 button = mode & 0x4;
-	__u8 rubber = mode & 0x8;
+	u8 prox = mode & 0x1;
+	u8 touch = mode & 0x2;
+	u8 button = mode & 0x4;
+	u8 rubber = mode & 0x8;
 
 	int tilt_x = 0;
 	int tilt_y = 0;
