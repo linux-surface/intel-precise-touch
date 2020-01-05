@@ -11,7 +11,7 @@ struct ipts_touch_data {
 	u32 buffer;
 	u8 reserved[52];
 	u8 data[];
-};
+} __packed;
 
 struct ipts_feedback {
 	u32 type;
@@ -19,7 +19,7 @@ struct ipts_feedback {
 	u32 transaction;
 	u8 reserved[52];
 	u8 data[];
-};
+} __packed;
 
 struct ipts_stylus_report {
 	u16 timestamp;
@@ -30,7 +30,7 @@ struct ipts_stylus_report {
 	u16 altitude;
 	u16 azimuth;
 	u16 reserved;
-};
+} __packed;
 
 #define IPTS_STYLUS_REPORT_MODE_PROXIMITY	BIT(0)
 #define IPTS_STYLUS_REPORT_MODE_TOUCH		BIT(1)
