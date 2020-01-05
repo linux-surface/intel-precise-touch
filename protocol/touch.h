@@ -35,4 +35,9 @@ struct ipts_stylus_report {
 };
 static_assert(sizeof(struct ipts_stylus_report) == 16);
 
+#define IPTS_STYLUS_REPORT_MODE_PROXIMITY	BIT(0)
+#define IPTS_STYLUS_REPORT_MODE_TOUCH		BIT(1)
+#define IPTS_STYLUS_REPORT_MODE_BUTTON		BIT(2)
+#define IPTS_STYLUS_REPORT_MODE_RUBBER		BIT(3)
+
 #endif /* _IPTS_PROTOCOL_TOUCH_H_ */

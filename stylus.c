@@ -17,10 +17,10 @@ static void ipts_stylus_handle_report(struct ipts_context *ipts,
 		struct ipts_stylus_report *report)
 {
 	u16 tool;
-	u8 prox = report->mode & 0x1;
-	u8 touch = report->mode & 0x2;
-	u8 button = report->mode & 0x4;
-	u8 rubber = report->mode & 0x8;
+	u8 prox = report->mode & IPTS_STYLUS_REPORT_MODE_PROXIMITY;
+	u8 touch = report->mode & IPTS_STYLUS_REPORT_MODE_TOUCH;
+	u8 button = report->mode & IPTS_STYLUS_REPORT_MODE_BUTTON;
+	u8 rubber = report->mode & IPTS_STYLUS_REPORT_MODE_RUBBER;
 
 	int tilt_x = 0;
 	int tilt_y = 0;
