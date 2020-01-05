@@ -25,10 +25,9 @@ own parser for it directly in the driver. Other changes are a significant
 removal of unused and dead code compared to the driver provided by Intel.
 
 ### Working
-* Stylus input (tested on SB2, should theoretically work on other devices)
+* Stylus input, including tild (tested on SB2, should work on other devices)
 
 ### Not working
-* Reading the tilt value of the stylus
 * Finger touch input
 * Support for IPTS on gen7
 
