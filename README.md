@@ -26,6 +26,7 @@ removal of unused and dead code compared to the driver provided by Intel.
 
 ### Working
 * Stylus input, including tild (tested on SB2, should work on other devices)
+* Single touch input (again, tested on SB2, should work on other devices)
 
 ### Not working
 * Finger touch input
