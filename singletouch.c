@@ -16,13 +16,12 @@
 void ipts_singletouch_parse_report(struct ipts_context *ipts,
 		struct ipts_touch_data *data)
 {
-	u8 touch = data->data[1];
-	u16 x = *(u16 *)&data->data[2];
-	u16 y = *(u16 *)&data->data[4];
+	struct ipts_singletouch_report *report =
+		(struct ipts_singletouch_report *)&data->data[1];
 
-	input_report_key(ipts->touch, BTN_TOUCH, touch);
-	input_report_abs(ipts->touch, ABS_X, x);
-	input_report_abs(ipts->touch, ABS_Y, y);
+	input_report_key(ipts->touch, BTN_TOUCH, report->touch);
+	input_report_abs(ipts->touch, ABS_X, report->x);
+	input_report_abs(ipts->touch, ABS_Y, report->y);
 
 	input_sync(ipts->touch);
 }

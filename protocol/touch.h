@@ -34,6 +34,12 @@ struct ipts_stylus_report {
 	u16 reserved;
 } __packed;
 
+struct ipts_singletouch_report {
+	u8 touch;
+	u16 x;
+	u16 y;
+} __packed;
+
 #define IPTS_STYLUS_REPORT_MODE_PROXIMITY	BIT(0)
 #define IPTS_STYLUS_REPORT_MODE_TOUCH		BIT(1)
 #define IPTS_STYLUS_REPORT_MODE_BUTTON		BIT(2)
@@ -42,5 +48,6 @@ struct ipts_stylus_report {
 static_assert(sizeof(struct ipts_touch_data) == 64);
 static_assert(sizeof(struct ipts_feedback) == 64);
 static_assert(sizeof(struct ipts_stylus_report) == 16);
+static_assert(sizeof(struct ipts_singletouch_report) == 5);
 
 #endif /* _IPTS_PROTOCOL_TOUCH_H_ */
