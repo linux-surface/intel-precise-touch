@@ -6,6 +6,7 @@
 #include <linux/kthread.h>
 #include <linux/input.h>
 #include <linux/mei_cl_bus.h>
+#include <linux/miscdevice.h>
 #include <linux/types.h>
 
 #include "protocol/responses.h"
@@ -33,6 +34,8 @@ struct ipts_context {
 	struct device *dev;
 	struct ipts_device_info device_info;
 	enum ipts_host_status status;
+
+	struct ipts_uapi_device *uapi_dev;
 
 	struct ipts_buffer_info touch_data[16];
 	struct ipts_buffer_info feedback[16];
