@@ -10,11 +10,13 @@
 #include "hid.h"
 #include "params.h"
 #include "protocol/touch.h"
+#include "uapi.h"
 
 static void ipts_hid_handle_input(struct ipts_context *ipts, int buffer_id)
 {
 	struct ipts_buffer_info buffer;
 	struct ipts_touch_data *data;
+	u32 size;
 
 	buffer = ipts->touch_data[buffer_id];
 	data = (struct ipts_touch_data *)buffer.address;
@@ -25,7 +27,8 @@ static void ipts_hid_handle_input(struct ipts_context *ipts, int buffer_id)
 				data->data, data->size, false);
 	}
 
-	// TODO: forward to user-space
+	size = sizeof(struct ipts_touch_data) + data->size;
+	ipts_uapi_push(ipts->uapi_dev, data, size);
 
 	ipts_control_send_feedback(ipts, buffer_id, data->data[0]);
 }

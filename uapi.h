@@ -19,5 +19,6 @@ struct ipts_uapi_device {
 
 struct ipts_uapi_device *ipts_uapi_device_init(struct ipts_context *ctx);
 void ipts_uapi_device_free(struct ipts_uapi_device *dev);
+void ipts_uapi_push(struct ipts_uapi_device *dev, const void *data, u32 size);
 
 #endif /* _IPTS_UAPI_H */
