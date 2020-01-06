@@ -31,9 +31,6 @@ int ipts_singletouch_init(struct ipts_context *ipts)
 {
 	int ret;
 
-	if (ipts->mode != IPTS_SENSOR_MODE_SINGLETOUCH)
-		return 0;
-
 	ipts->touch = devm_input_allocate_device(ipts->dev);
 	if (!ipts->touch)
 		return -ENOMEM;
@@ -50,7 +47,7 @@ int ipts_singletouch_init(struct ipts_context *ipts)
 	ipts->touch->id.version = ipts->device_info.fw_rev;
 
 	ipts->touch->phys = "heci3";
-	ipts->touch->name = "Intel Precise Touchscreen";
+	ipts->touch->name = "Intel Precise Touchscreen (Singletouch)";
 
 	ret = input_register_device(ipts->touch);
 	if (ret) {
