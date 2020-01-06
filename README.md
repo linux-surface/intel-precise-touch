@@ -25,8 +25,11 @@ own parser for it directly in the driver. Other changes are a significant
 removal of unused and dead code compared to the driver provided by Intel.
 
 ### Working
-* Stylus input, including tild (tested on SB2, should work on other devices)
-* Single touch input (again, tested on SB2, should work on other devices)
+* Stylus input, including tilt
+* Single touch input
+
+These features are tested on a Surface Book 2 (MSHW0137), but should
+work on other devices too.
 
 ### Not working
 * Finger touch input
@@ -49,15 +52,3 @@ removal of unused and dead code compared to the driver provided by Intel.
 * Make sure you applied the patches from `patches/` to your kernel
 * Run `sudo make dkms-install`
 * Reboot
-
-### Kconfig options
-* `CONFIG_TOUCHSCREEN_IPTS=[y/m/n]`
-* `CONFIG_TOUCHSCREEN_IPTS_DEBUG=[y/n]`
-
-When building out-of-tree, `CONFIG_TOUCHSCREEN_IPTS_DEBUG` can be enabled by
-passing `DEBUG=y` to the `make all` command.
-
-Enabling the debug option will cause the driver to dump the touch data buffers
-into dmesg, encoded as hexadecimal. For proper reverse engineering, the
-resulting HID data is required though, which can only be fetched using the old
-IPTS driver on a kernel that supports it (5.3 or lower).
