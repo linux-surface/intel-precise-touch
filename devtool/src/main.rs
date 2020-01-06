@@ -3,30 +3,11 @@ use std::fs::File;
 use std::os::unix::io::AsRawFd;
 use std::io::Read;
 
+mod interface;
+use interface::ioctl;
+use interface::DeviceInfo;
+
 const DEFAULT_EVENT_FILE_PATH: &str = "/dev/ipts";
-
-
-mod ioctl {
-    use nix::{ioctl_none, ioctl_read};
-
-    #[repr(C)]
-    #[derive(Debug, Default)]
-    pub struct IptsDeviceInfo {
-        pub vendor_id: u16,
-        pub product_id: u16,
-        pub hw_rev: u32,
-        pub fw_rev: u32,
-        pub frame_size: u32,
-        pub feedback_size: u32,
-        pub reserved: [u8; 24],
-    }
-
-    ioctl_read!(ipts_get_device_info, 0x86, 0x01, IptsDeviceInfo);
-    ioctl_none!(ipts_start, 0x86, 0x02);
-    ioctl_none!(ipts_stop,  0x86, 0x03);
-}
-
-use ioctl::IptsDeviceInfo;
 
 
 struct Device {
@@ -43,8 +24,8 @@ impl Device {
         Ok(Device { file })
     }
 
-    pub fn get_info(&self) -> nix::Result<IptsDeviceInfo> {
-        let mut devinfo = IptsDeviceInfo::default();
+    pub fn get_info(&self) -> nix::Result<DeviceInfo> {
+        let mut devinfo = DeviceInfo::default();
 
         unsafe {
             ioctl::ipts_get_device_info(self.file.as_raw_fd(), &mut devinfo as *mut _)?
@@ -66,6 +47,11 @@ impl Device {
 }
 
 
+unsafe fn as_data_header<'a>(buf: &'a [u8]) -> &'a interface::TouchDataHeader {
+    std::mem::transmute(buf.as_ptr())
+}
+
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut device = Device::open()?;
     let devinfo = device.get_info()?;
@@ -74,11 +60,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     device.start()?;
 
+    let hdr_len = std::mem::size_of::<interface::TouchDataHeader>();
+
     let mut buf = vec![0; 4096];
+    let mut received = 0;
     loop {
-        let len = device.file.read(&mut buf[..])?;
-        println!("received data (size: {})", len);
-        println!("  {:02x?}", &buf[0..16]);
-        println!("  {:02x?}", &buf[16..32]);
+        let len = device.file.read(&mut buf[received..])?;
+        received += len;
+
+        if received >= hdr_len {
+            let (buf_hdr, buf_data) = buf.split_at_mut(hdr_len);
+            let hdr = unsafe { as_data_header(buf_hdr) };
+
+            received -= hdr_len;
+            while received < hdr.size as usize {
+                let len = device.file.read(&mut buf_data[received..])?;
+                received += len;
+            }
+
+            println!("frame received: type: {}, size: {}, bufid: {}", hdr.ty, hdr.size, hdr.buffer);
+            received = 0;
+        }
     }
 }
