@@ -181,17 +181,23 @@ fn read_loop(mut device: Device, tx: TxState) -> Result<(), Box<dyn std::error::
         received += len;
 
         if received >= hdr_len {
-            let (buf_hdr, buf_data) = buf.split_at_mut(hdr_len);
-            let hdr = unsafe { as_data_header(buf_hdr) };
+            let (a, b) = {
+                let (buf_hdr, buf_data) = buf.split_at_mut(hdr_len);
+                let hdr = unsafe { as_data_header(buf_hdr) };
 
-            received -= hdr_len;
-            while received < hdr.size as usize {
-                let len = device.file.read(&mut buf_data[received..])?;
-                received += len;
-            }
+                received -= hdr_len;
+                while received < hdr.size as usize {
+                    let len = device.file.read(&mut buf_data[received..])?;
+                    received += len;
+                }
 
-            handle_frame(&tx, hdr, &buf_data[..hdr.size as usize]);
-            received -= hdr.size as usize;
+                handle_frame(&tx, hdr, &buf_data[..hdr.size as usize]);
+
+                (hdr_len + hdr.size as usize, received - hdr.size as usize)
+            };
+
+            received = b;
+            buf.copy_within(a..a+b, 0);
         }
     }
 }
