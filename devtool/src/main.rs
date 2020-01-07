@@ -148,15 +148,16 @@ fn read_loop(mut device: Device, tx: TxState) -> Result<(), Box<dyn std::error::
 
 
 fn draw(area: &DrawingArea, cr: &cairo::Context, state: &CommonState) {
-    let (prox, x, y) = {
+    let (x, y, prox, pressure) = {
         let stylus = state.stylus.lock().unwrap();
-        (stylus.proximity, stylus.x, stylus.y)
+        (stylus.x, stylus.y, stylus.proximity, stylus.pressure)
     };
 
     let w = area.get_allocated_width() as f64;
     let h = area.get_allocated_height() as f64;
     let x = x as f64 / 9600.0 * w;
     let y = y as f64 / 7200.0 * h;
+    let p = pressure as f64 / 4096.0;
 
     cr.set_source_rgb(1.0, 1.0, 1.0);
     cr.paint();
@@ -172,6 +173,12 @@ fn draw(area: &DrawingArea, cr: &cairo::Context, state: &CommonState) {
         cr.move_to(0.0, y);
         cr.line_to(w, y);
         cr.stroke();
+
+        if p > 0.0 {
+            cr.arc(x, y, p * 25.0, 0.0, 2.0 * std::f64::consts::PI);
+            cr.fill();
+            cr.stroke();
+        }
     }
 }
 
