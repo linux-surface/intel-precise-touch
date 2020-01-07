@@ -1,6 +1,7 @@
 use std::io::Read;
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::convert::TryFrom;
 
 use gtk::prelude::*;
 use gdk::prelude::*;
@@ -13,7 +14,9 @@ use gtk::DrawingArea;
 use gdk::WindowState;
 
 mod interface;
-use interface::TouchDataHeader;
+use interface::TouchRawDataHeader;
+use interface::TouchDataType;
+use interface::TouchFrameType;
 
 mod device;
 use device::Device;
@@ -101,8 +104,8 @@ fn setup_shared_state() -> (TxState, RxState) {
 }
 
 
-unsafe fn as_data_header<'a>(buf: &'a [u8]) -> &'a TouchDataHeader {
-    let ptr: *const TouchDataHeader = std::mem::transmute(buf.as_ptr());
+unsafe fn as_data_header<'a>(buf: &'a [u8]) -> &'a TouchRawDataHeader {
+    let ptr: *const TouchRawDataHeader = std::mem::transmute(buf.as_ptr());
     &*ptr
 }
 
@@ -141,7 +144,7 @@ fn handle_stylus_report(tx: &TxState, stylus: &interface::StylusData) {
         x: stylus.x,
         y: stylus.y,
         pressure: stylus.pressure,
-        proximity: (stylus.mode & interface::IPTS_STYLUS_REPORT_MODE_PROXIMITY) != 0,
+        proximity: (stylus.mode & interface::STYLUS_REPORT_MODE_PROXIMITY) != 0,
     });
 }
 
@@ -155,24 +158,39 @@ fn handle_stylus_frame(tx: &TxState, data: &[u8]) {
     }
 }
 
-fn handle_frame(tx: &TxState, header: &TouchDataHeader, data: &[u8]) {
-    if header.ty != interface::IPTS_TOUCH_DATA_TYPE_FRAME {
-        return;
-    }
+fn handle_touch_data_frame(tx: &TxState, data: &[u8]) {
+    use pretty_hex::PrettyHex;
 
-    match unsafe { as_u16(&data[28..30]) } {
-        0x400 => handle_touch_frame(tx, data),
-        0x460 => handle_stylus_frame(tx, data),
-        x => {
-            println!("warning: unimplemented frame type: {}", x);
+    // Data:
+    // xx xx                        u16 (counter)
+    // 01 00                        u16
+    // 01 00 00 00 / 02 00 00 00    u32
+    // 00 00 00 00                  u32
+    // 00 00                        u16
+    // 06 00 / 07 00 / 08 00        u16
+
+    match TouchFrameType::try_from(unsafe { as_u16(&data[14..16]) }) {
+        Ok(TouchFrameType::Stylus) => handle_stylus_frame(tx, data),
+        Ok(TouchFrameType::Touch)  => handle_touch_frame(tx, data),
+        Err(x) => {
+            println!("warning: unimplemented data frame type: {}", x.number);
+            println!("{:?}", (&data).hex_dump());
         },
+    }
+}
+
+fn handle_frame(tx: &TxState, header: &TouchRawDataHeader, data: &[u8]) {
+    match TouchDataType::try_from(header.data_type) {
+        Ok(TouchDataType::Frame) => handle_touch_data_frame(tx, data),
+        Ok(ty)  => println!("warning: unimplemented header type: {:?}", ty),
+        Err(ty) => println!("error: unknown header type {}", ty.number),
     }
 }
 
 fn read_loop(mut device: Device, tx: TxState) -> Result<(), Box<dyn std::error::Error>> {
     device.start()?;
 
-    let hdr_len = std::mem::size_of::<interface::TouchDataHeader>();
+    let hdr_len = std::mem::size_of::<interface::TouchRawDataHeader>();
 
     let mut buf = vec![0; 4096];
     let mut received = 0;
@@ -186,14 +204,14 @@ fn read_loop(mut device: Device, tx: TxState) -> Result<(), Box<dyn std::error::
                 let hdr = unsafe { as_data_header(buf_hdr) };
 
                 received -= hdr_len;
-                while received < hdr.size as usize {
+                while received < hdr.data_size as usize {
                     let len = device.file.read(&mut buf_data[received..])?;
                     received += len;
                 }
 
-                handle_frame(&tx, hdr, &buf_data[..hdr.size as usize]);
+                handle_frame(&tx, hdr, &buf_data[..hdr.data_size as usize]);
 
-                (hdr_len + hdr.size as usize, received - hdr.size as usize)
+                (hdr_len + hdr.data_size as usize, received - hdr.data_size as usize)
             };
 
             received = b;
