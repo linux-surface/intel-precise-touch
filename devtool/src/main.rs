@@ -140,8 +140,8 @@ fn read_loop(mut device: Device, tx: TxState) -> Result<(), Box<dyn std::error::
                 received += len;
             }
 
-            handle_frame(&tx, hdr, &buf_data[..received]);
-            received = 0;
+            handle_frame(&tx, hdr, &buf_data[..hdr.size as usize]);
+            received -= hdr.size as usize;
         }
     }
 }
