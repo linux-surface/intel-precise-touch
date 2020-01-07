@@ -6,3 +6,8 @@ edition = "2018"
 
 [dependencies]
 nix = "0.16.1"
+gtk = "0.8.0"
+gio = "0.8.0"
+cairo-rs = "0.8.0"
+gdk = "0.12.0"
+glib = "0.9.0"

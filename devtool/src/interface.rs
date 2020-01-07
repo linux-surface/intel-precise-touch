@@ -33,6 +33,11 @@ pub struct StylusData {
 }
 
 
+pub const IPTS_TOUCH_DATA_TYPE_FRAME: u32 = 0;
+
+pub const IPTS_STYLUS_REPORT_MODE_PROXIMITY: u16 = 1;
+
+
 pub mod ioctl {
     use nix::{ioctl_none, ioctl_read};
     use super::DeviceInfo;
