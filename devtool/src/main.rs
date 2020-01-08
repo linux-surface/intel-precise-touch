@@ -1,7 +1,7 @@
 use std::io::Read;
 use std::sync::Arc;
 use std::sync::Mutex;
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 
 use gtk::prelude::*;
 use gdk::prelude::*;
@@ -114,16 +114,11 @@ unsafe fn as_stylus_report<'a>(buf: &'a [u8]) -> &'a interface::StylusData {
     &*ptr
 }
 
-unsafe fn as_u16(buf: &[u8]) -> u16 {
-    let ptr: *const u16 = std::mem::transmute(buf.as_ptr());
-    *ptr
-}
-
 
 fn handle_touch_frame(tx: &TxState, data: &[u8]) {
     let height = data[44];
     let width  = data[45];
-    let size   = unsafe { as_u16(&data[154..156]) };
+    let size =  u16::from_le_bytes(data[154..156].try_into().unwrap());
 
     if height as u16 * width as u16 != size {
         println!("warning: touch data sizes do not match");
@@ -169,12 +164,13 @@ fn handle_touch_data_frame(tx: &TxState, data: &[u8]) {
     // 00 00                        u16
     // 06 00 / 07 00 / 08 00        u16
 
-    match TouchFrameType::try_from(unsafe { as_u16(&data[14..16]) }) {
+    let ty =  u16::from_le_bytes(data[14..16].try_into().unwrap());
+    match TouchFrameType::try_from(ty) {
         Ok(TouchFrameType::Stylus) => handle_stylus_frame(tx, data),
         Ok(TouchFrameType::Touch)  => handle_touch_frame(tx, data),
         Err(x) => {
             println!("warning: unimplemented data frame type: {}", x.number);
-            println!("{:?}", (&data).hex_dump());
+            println!("{:?}", data.hex_dump());
         },
     }
 }
