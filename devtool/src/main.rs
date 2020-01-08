@@ -17,6 +17,7 @@ mod interface;
 use interface::TouchRawDataHeader;
 use interface::TouchDataType;
 use interface::TouchFrameType;
+use interface::mem::PackedDataStruct;
 
 mod device;
 use device::Device;
@@ -104,17 +105,6 @@ fn setup_shared_state() -> (TxState, RxState) {
 }
 
 
-unsafe fn as_data_header<'a>(buf: &'a [u8]) -> &'a TouchRawDataHeader {
-    let ptr: *const TouchRawDataHeader = std::mem::transmute(buf.as_ptr());
-    &*ptr
-}
-
-unsafe fn as_stylus_report<'a>(buf: &'a [u8]) -> &'a interface::StylusData {
-    let ptr: *const interface::StylusData = std::mem::transmute(buf.as_ptr());
-    &*ptr
-}
-
-
 fn handle_touch_frame(tx: &TxState, data: &[u8]) {
     let height = data[44];
     let width  = data[45];
@@ -147,7 +137,7 @@ fn handle_stylus_frame(tx: &TxState, data: &[u8]) {
     for i in 0..data[32] as usize {
         let len = std::mem::size_of::<interface::StylusData>();
         let index = 40 + i * len;
-        let report = unsafe { as_stylus_report(&data[index..index+len]) };
+        let report = interface::StylusData::ref_from_bytes(&data[index..index+len]).unwrap();
 
         handle_stylus_report(tx, report);
     }
@@ -186,7 +176,7 @@ fn handle_frame(tx: &TxState, header: &TouchRawDataHeader, data: &[u8]) {
 fn read_loop(mut device: Device, tx: TxState) -> Result<(), Box<dyn std::error::Error>> {
     device.start()?;
 
-    let hdr_len = std::mem::size_of::<interface::TouchRawDataHeader>();
+    let hdr_len = std::mem::size_of::<TouchRawDataHeader>();
 
     let mut buf = vec![0; 4096];
     let mut received = 0;
@@ -197,7 +187,7 @@ fn read_loop(mut device: Device, tx: TxState) -> Result<(), Box<dyn std::error::
         if received >= hdr_len {
             let (a, b) = {
                 let (buf_hdr, buf_data) = buf.split_at_mut(hdr_len);
-                let hdr = unsafe { as_data_header(buf_hdr) };
+                let hdr = TouchRawDataHeader::ref_from_bytes(buf_hdr).unwrap();
 
                 received -= hdr_len;
                 while received < hdr.data_size as usize {

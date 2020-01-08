@@ -83,6 +83,12 @@ pub const STYLUS_REPORT_MODE_BUTTON:    u16 = 4;
 pub const STYLUS_REPORT_MODE_RUBBER:    u16 = 8;
 
 
+unsafe impl mem::PackedDataStruct for DeviceInfo {}
+unsafe impl mem::PackedDataStruct for TouchRawDataHeader {}
+unsafe impl mem::PackedDataStruct for TouchHidPrivateData {}
+unsafe impl mem::PackedDataStruct for StylusData {}
+
+
 pub mod ioctl {
     use nix::{ioctl_none, ioctl_read};
     use super::DeviceInfo;
@@ -92,6 +98,39 @@ pub mod ioctl {
     ioctl_none!(ipts_stop,  0x86, 0x03);
 }
 
+pub mod mem {
+    pub struct TransmuteError;
+
+    impl std::fmt::Display for TransmuteError {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "transmutation with invalid length")
+        }
+    }
+
+    impl std::fmt::Debug for TransmuteError {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "transmutation with invalid length")
+        }
+    }
+
+    impl std::error::Error for TransmuteError {}
+
+
+    pub unsafe fn transmute_ref_from_bytes<'a, T>(buf: &'a [u8]) -> Result<&'a T, TransmuteError> {
+        if buf.len() == std::mem::size_of::<T>() {
+            let ptr: *const T = std::mem::transmute(buf.as_ptr());
+            Ok(&*ptr)
+        } else {
+            Err(TransmuteError)
+        }
+    }
+
+    pub unsafe trait PackedDataStruct: Sized {
+        fn ref_from_bytes<'a>(buf: &'a [u8]) -> Result<&'a Self, TransmuteError> {
+            unsafe { transmute_ref_from_bytes(buf) }
+        }
+    }
+}
 
 #[cfg(test)]
 mod test {
