@@ -177,32 +177,51 @@ fn read_loop(mut device: Device, tx: TxState) -> Result<(), Box<dyn std::error::
     device.start()?;
 
     let hdr_len = std::mem::size_of::<TouchRawDataHeader>();
+    let buf_len = 4096;
 
-    let mut buf = vec![0; 4096];
-    let mut received = 0;
+    let mut buf = vec![0; buf_len];
+    let (mut head, mut tail) = (0, 0);
     loop {
-        let len = device.file.read(&mut buf[received..])?;
-        received += len;
+        tail += device.file.read(&mut buf[tail..])?;
 
-        if received >= hdr_len {
-            let (a, b) = {
-                let (buf_hdr, buf_data) = buf.split_at_mut(hdr_len);
-                let hdr = TouchRawDataHeader::ref_from_bytes(buf_hdr).unwrap();
+        while tail - head > hdr_len {
+            let (buf_hdr, buf_data) = buf.split_at_mut(head + hdr_len);
+            let hdr = TouchRawDataHeader::ref_from_bytes(&buf_hdr[head..]).unwrap();
 
-                received -= hdr_len;
-                while received < hdr.data_size as usize {
-                    let len = device.file.read(&mut buf_data[received..])?;
-                    received += len;
-                }
+            // not enough space at all: bail
+            if buf_len < hdr_len + hdr.data_size as usize {
+                Err(format!("not enough space for data frame: need {}", hdr.data_size))?;
+            }
 
-                handle_frame(&tx, hdr, &buf_data[..hdr.data_size as usize]);
+            // not enough space at end of buffer: relocate and try again
+            if buf_data.len() < hdr.data_size as usize {
+                drop(hdr);
+                drop(buf_hdr);
+                drop(buf_data);
 
-                (hdr_len + hdr.data_size as usize, received - hdr.data_size as usize)
-            };
+                buf.copy_within(head..tail, 0);
+                tail -= head;
+                head = 0;
 
-            received = b;
-            buf.copy_within(a..a+b, 0);
+                continue;
+            }
+
+            // read until full frame available
+            head += hdr_len;
+            while tail - head < hdr.data_size as usize {
+                tail += device.file.read(&mut buf_data[tail-head..])?;
+            }
+
+            handle_frame(&tx, hdr, &buf_data[..hdr.data_size as usize]);
+            head += hdr.data_size as usize;
         }
+
+        // preemptive relocation
+        if head < tail {
+            buf.copy_within(head..tail, 0);
+        }
+        tail -= head;
+        head = 0;
     }
 }
 
