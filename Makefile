@@ -8,6 +8,7 @@ MODULE_VERSION := "2019-12-20"
 
 obj-$(CONFIG_TOUCHSCREEN_IPTS) += ipts.o
 ipts-objs := control.o
+ipts-objs += devices.o
 ipts-objs += fpmath.o
 ipts-objs += hid.o
 ipts-objs += init.o
@@ -22,6 +23,8 @@ sources += dkms.conf
 sources += context.h
 sources += control.c
 sources += control.h
+sources += devices.c
+sources += devices.h
 sources += fpmath.c
 sources += fpmath.h
 sources += hid.c

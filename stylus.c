@@ -5,6 +5,7 @@
 #include <linux/kernel.h>
 
 #include "context.h"
+#include "devices.h"
 #include "protocol/enums.h"
 #include "protocol/touch.h"
 #include "fpmath.h"
@@ -61,10 +62,30 @@ static void ipts_stylus_handle_report(struct ipts_context *ipts,
 	input_sync(ipts->stylus);
 }
 
-void ipts_stylus_parse_report(struct ipts_context *ipts,
+static void ipts_stylus_parse_report_gen1(struct ipts_context *ipts,
 		struct ipts_touch_data *data)
 {
-	int count, i;
+	u8 count, i;
+	struct ipts_stylus_report report;
+	struct ipts_stylus_report_gen1 *reports;
+
+	count = data->data[32];
+	reports = (struct ipts_stylus_report_gen1 *)&data->data[44];
+
+	for (i = 0; i < count; i++) {
+		report.mode = reports[i].mode;
+		report.x = reports[i].x;
+		report.y = reports[i].y;
+		report.pressure = reports[i].pressure;
+
+		ipts_stylus_handle_report(ipts, &report);
+	}
+}
+
+static void ipts_stylus_parse_report_gen2(struct ipts_context *ipts,
+		struct ipts_touch_data *data)
+{
+	u8 count, i;
 	struct ipts_stylus_report *reports;
 
 	count = data->data[32];
@@ -74,13 +95,29 @@ void ipts_stylus_parse_report(struct ipts_context *ipts,
 		ipts_stylus_handle_report(ipts, &reports[i]);
 }
 
+void ipts_stylus_parse_report(struct ipts_context *ipts,
+		struct ipts_touch_data *data)
+{
+	struct ipts_device_config cfg = ipts_devices_get_config(ipts);
+
+	if (cfg.stylus_protocol == IPTS_STYLUS_PROTOCOL_GEN1)
+		ipts_stylus_parse_report_gen1(ipts, data);
+	else
+		ipts_stylus_parse_report_gen2(ipts, data);
+}
+
 int ipts_stylus_init(struct ipts_context *ipts)
 {
 	int ret;
+	u16 pressure;
+	struct ipts_device_config cfg;
 
 	ipts->stylus = devm_input_allocate_device(ipts->dev);
 	if (!ipts->stylus)
 		return -ENOMEM;
+
+	cfg = ipts_devices_get_config(ipts);
+	pressure = cfg.max_stylus_pressure;
 
 	ipts->stylus_tool = BTN_TOOL_PEN;
 
@@ -91,7 +128,7 @@ int ipts_stylus_init(struct ipts_context *ipts)
 	input_abs_set_res(ipts->stylus, ABS_X, 34);
 	input_set_abs_params(ipts->stylus, ABS_Y, 0, 7200, 0, 0);
 	input_abs_set_res(ipts->stylus, ABS_Y, 38);
-	input_set_abs_params(ipts->stylus, ABS_PRESSURE, 0, 4096, 0, 0);
+	input_set_abs_params(ipts->stylus, ABS_PRESSURE, 0, pressure, 0, 0);
 	input_set_abs_params(ipts->stylus, ABS_TILT_X, -9000, 9000, 0, 0);
 	input_abs_set_res(ipts->stylus, ABS_TILT_X, 5730);
 	input_set_abs_params(ipts->stylus, ABS_TILT_Y, -9000, 9000, 0, 0);

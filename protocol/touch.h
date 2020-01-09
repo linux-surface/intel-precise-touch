@@ -34,6 +34,14 @@ struct ipts_stylus_report {
 	u16 reserved;
 } __packed;
 
+struct ipts_stylus_report_gen1 {
+	u8 mode;
+	u16 x;
+	u16 y;
+	u16 pressure;
+	u8 reserved[5];
+} __packed;
+
 struct ipts_singletouch_report {
 	u8 touch;
 	u16 x;
@@ -48,6 +56,7 @@ struct ipts_singletouch_report {
 static_assert(sizeof(struct ipts_touch_data) == 64);
 static_assert(sizeof(struct ipts_feedback) == 64);
 static_assert(sizeof(struct ipts_stylus_report) == 16);
+static_assert(sizeof(struct ipts_stylus_report_gen1) == 12);
 static_assert(sizeof(struct ipts_singletouch_report) == 5);
 
 #endif /* _IPTS_PROTOCOL_TOUCH_H_ */
