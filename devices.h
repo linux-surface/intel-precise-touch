@@ -5,8 +5,6 @@
 
 #include <linux/types.h>
 
-#include "context.h"
-
 /*
  * These names are somewhat random, but without samples from every device
  * it is hard to pinpoint some specific pattern. In fact it could be that
@@ -27,6 +25,6 @@ struct ipts_device_config {
 	enum ipts_stylus_protocol stylus_protocol;
 };
 
-struct ipts_device_config ipts_devices_get_config(struct ipts_context *ipts);
+struct ipts_device_config ipts_devices_get_config(u32 vendor, u32 device);
 
 #endif /* _IPTS_DEVICES_H_ */

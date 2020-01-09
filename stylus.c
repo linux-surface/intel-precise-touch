@@ -98,26 +98,26 @@ static void ipts_stylus_parse_report_gen2(struct ipts_context *ipts,
 void ipts_stylus_parse_report(struct ipts_context *ipts,
 		struct ipts_touch_data *data)
 {
-	struct ipts_device_config cfg = ipts_devices_get_config(ipts);
-
-	if (cfg.stylus_protocol == IPTS_STYLUS_PROTOCOL_GEN1)
+	switch (ipts->device_cfg.stylus_protocol) {
+	case IPTS_STYLUS_PROTOCOL_GEN1:
 		ipts_stylus_parse_report_gen1(ipts, data);
-	else
+		break;
+	case IPTS_STYLUS_PROTOCOL_GEN2:
 		ipts_stylus_parse_report_gen2(ipts, data);
+		break;
+	}
 }
 
 int ipts_stylus_init(struct ipts_context *ipts)
 {
 	int ret;
 	u16 pressure;
-	struct ipts_device_config cfg;
 
 	ipts->stylus = devm_input_allocate_device(ipts->dev);
 	if (!ipts->stylus)
 		return -ENOMEM;
 
-	cfg = ipts_devices_get_config(ipts);
-	pressure = cfg.max_stylus_pressure;
+	pressure = ipts->device_cfg.max_stylus_pressure;
 
 	ipts->stylus_tool = BTN_TOOL_PEN;
 

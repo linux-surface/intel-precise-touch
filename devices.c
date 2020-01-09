@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "context.h"
+#include <linux/kernel.h>
+#include <linux/types.h>
+
 #include "devices.h"
 
 static const struct ipts_device_config ipts_devices[] = {
@@ -18,13 +20,10 @@ static const struct ipts_device_config ipts_devices[] = {
 	},
 };
 
-struct ipts_device_config ipts_devices_get_config(struct ipts_context *ipts)
+struct ipts_device_config ipts_devices_get_config(u32 vendor, u32 device)
 {
 	int i;
 	struct ipts_device_config cfg;
-
-	u32 vendor = ipts->device_info.vendor_id;
-	u32 device = ipts->device_info.device_id;
 
 	for (i = 0; i < ARRAY_SIZE(ipts_devices); i++) {
 		cfg = ipts_devices[i];

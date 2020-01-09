@@ -8,6 +8,7 @@
 #include <linux/mei_cl_bus.h>
 #include <linux/types.h>
 
+#include "devices.h"
 #include "protocol/enums.h"
 #include "protocol/responses.h"
 
@@ -33,6 +34,7 @@ struct ipts_context {
 	struct mei_cl_device *client_dev;
 	struct device *dev;
 	struct ipts_device_info device_info;
+	struct ipts_device_config device_cfg;
 
 	enum ipts_host_status status;
 	enum ipts_sensor_mode mode;
