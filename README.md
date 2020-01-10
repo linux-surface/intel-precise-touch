@@ -25,15 +25,20 @@ own parser for it directly in the driver. Other changes are a significant
 removal of unused and dead code compared to the driver provided by Intel.
 
 ### Working
-* Stylus input, including tilt
-* Single touch input
-
-These features are tested on a Surface Book 2 (MSHW0137), but should
-work on other devices too.
+* Stylus input
+* Singletouch finger input
 
 ### Not working
-* Finger touch input
+* Multitouch finger input
 * Support for IPTS on gen7
+
+### Tested devices
+* Surface Book 2
+* Surface Book 1
+* Surface Pro 4
+
+If you have one of the other surface devices that use IPTS (SP4 and upwards),
+feel free to give it a shot and report back the results!
 
 ### Building (in-tree)
 * Add this repository as `drivers/input/touchscreen/ipts`
