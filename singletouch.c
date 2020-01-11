@@ -34,6 +34,8 @@ int ipts_singletouch_init(struct ipts_context *ipts)
 	if (!ipts->touch)
 		return -ENOMEM;
 
+	__set_bit(INPUT_PROP_DIRECT, ipts->stylus->propbit);
+
 	input_set_capability(ipts->touch, EV_KEY, BTN_TOUCH);
 	input_set_abs_params(ipts->touch, ABS_X, 0, 32767, 0, 0);
 	input_abs_set_res(ipts->touch, ABS_X, 112);
