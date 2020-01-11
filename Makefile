@@ -19,6 +19,7 @@ ipts-objs += singletouch.o
 ipts-objs += stylus.o
 
 sources := Makefile
+sources += Kconfig
 sources += dkms.conf
 sources += context.h
 sources += control.c
@@ -57,6 +58,9 @@ all:
 
 clean:
 	$(MAKE) -C $(KDIR) M=$(PWD) CONFIG_TOUCHSCREEN_IPTS=m clean
+
+check:
+	$(KDIR)/scripts/checkpatch.pl -f -q --no-tree $(sources)
 
 dkms-install: $(sources)
 	mkdir -p $(MDIR)
