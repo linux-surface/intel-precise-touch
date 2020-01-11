@@ -83,8 +83,8 @@ static void ipts_stylus_parse_report_gen1(struct ipts_context *ipts,
 		report.altitude = 0;
 		report.azimuth = 0;
 
-		// Use the doorbell to emulate a timestamp
-		report.timestamp = *(u16 *)ipts->doorbell.address;
+		// Use the buffer ID to emulate a timestamp
+		report.timestamp = data->buffer;
 
 		ipts_stylus_handle_report(ipts, &report);
 	}
