@@ -8,11 +8,6 @@
 #include "protocol/enums.h"
 #include "protocol/touch.h"
 
-// HACK: Workaround for DKMS build without BUS_MEI patch
-#ifndef BUS_MEI
-#define BUS_MEI 0x44
-#endif
-
 void ipts_singletouch_parse_report(struct ipts_context *ipts,
 		struct ipts_touch_data *data)
 {

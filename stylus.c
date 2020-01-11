@@ -10,11 +10,6 @@
 #include "protocol/touch.h"
 #include "fpmath.h"
 
-// HACK: Workaround for DKMS build without BUS_MEI patch
-#ifndef BUS_MEI
-#define BUS_MEI 0x44
-#endif
-
 static void ipts_stylus_handle_report(struct ipts_context *ipts,
 		struct ipts_stylus_report *report)
 {

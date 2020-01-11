@@ -12,6 +12,11 @@
 #include "protocol/enums.h"
 #include "protocol/responses.h"
 
+// HACK: Workaround for DKMS build without BUS_MEI patch
+#ifndef BUS_MEI
+#define BUS_MEI 0x44
+#endif
+
 /*
  * IPTS driver states
  */
