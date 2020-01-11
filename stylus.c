@@ -55,6 +55,7 @@ static void ipts_stylus_handle_report(struct ipts_context *ipts,
 	input_report_abs(ipts->stylus, ABS_X, report->x);
 	input_report_abs(ipts->stylus, ABS_Y, report->y);
 	input_report_abs(ipts->stylus, ABS_PRESSURE, report->pressure);
+	input_report_abs(ipts->stylus, ABS_MISC, report->timestamp);
 
 	input_report_abs(ipts->stylus, ABS_TILT_X, tilt_x);
 	input_report_abs(ipts->stylus, ABS_TILT_Y, tilt_y);
@@ -77,6 +78,13 @@ static void ipts_stylus_parse_report_gen1(struct ipts_context *ipts,
 		report.x = reports[i].x;
 		report.y = reports[i].y;
 		report.pressure = reports[i].pressure;
+
+		// The gen1 protocol doesn't support tilting the stylus
+		report.altitude = 0;
+		report.azimuth = 0;
+
+		// Use the doorbell to emulate a timestamp
+		report.timestamp = *(u16 *)ipts->doorbell.address;
 
 		ipts_stylus_handle_report(ipts, &report);
 	}
@@ -133,6 +141,7 @@ int ipts_stylus_init(struct ipts_context *ipts)
 	input_abs_set_res(ipts->stylus, ABS_TILT_X, 5730);
 	input_set_abs_params(ipts->stylus, ABS_TILT_Y, -9000, 9000, 0, 0);
 	input_abs_set_res(ipts->stylus, ABS_TILT_Y, 5730);
+	input_set_abs_params(ipts->stylus, ABS_MISC, 0, 65535, 0, 0);
 	input_set_capability(ipts->stylus, EV_KEY, BTN_TOUCH);
 	input_set_capability(ipts->stylus, EV_KEY, BTN_STYLUS);
 	input_set_capability(ipts->stylus, EV_KEY, BTN_TOOL_PEN);
