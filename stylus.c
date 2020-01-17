@@ -6,9 +6,9 @@
 
 #include "context.h"
 #include "devices.h"
+#include "math.h"
 #include "protocol/enums.h"
 #include "protocol/touch.h"
-#include "fpmath.h"
 
 static void ipts_stylus_handle_report(struct ipts_context *ipts,
 		struct ipts_stylus_report *report)
@@ -19,16 +19,14 @@ static void ipts_stylus_handle_report(struct ipts_context *ipts,
 	u8 button = report->mode & IPTS_STYLUS_REPORT_MODE_BUTTON;
 	u8 rubber = report->mode & IPTS_STYLUS_REPORT_MODE_RUBBER;
 
-	int tilt_x = 0;
-	int tilt_y = 0;
+	s32 tx = 0;
+	s32 ty = 0;
 
 	// avoid unnecessary computations
 	// altitude is zero if stylus does not touch the screen
 	if (report->altitude) {
-		kernel_fpu_begin();
-		fpm_altitude_azimuth_to_tilt(report->altitude, report->azimuth,
-				&tilt_x, &tilt_y);
-		kernel_fpu_end();
+		ipts_math_altitude_azimuth_to_tilt(report->altitude,
+				report->azimuth, &tx, &ty);
 	}
 
 	if (prox && rubber)
@@ -52,8 +50,8 @@ static void ipts_stylus_handle_report(struct ipts_context *ipts,
 	input_report_abs(ipts->stylus, ABS_PRESSURE, report->pressure);
 	input_report_abs(ipts->stylus, ABS_MISC, report->timestamp);
 
-	input_report_abs(ipts->stylus, ABS_TILT_X, tilt_x);
-	input_report_abs(ipts->stylus, ABS_TILT_Y, tilt_y);
+	input_report_abs(ipts->stylus, ABS_TILT_X, tx);
+	input_report_abs(ipts->stylus, ABS_TILT_Y, ty);
 
 	input_sync(ipts->stylus);
 }

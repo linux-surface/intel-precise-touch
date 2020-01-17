@@ -9,9 +9,9 @@ MODULE_VERSION := "2019-12-20"
 obj-$(CONFIG_TOUCHSCREEN_IPTS) += ipts.o
 ipts-objs := control.o
 ipts-objs += devices.o
-ipts-objs += fpmath.o
 ipts-objs += hid.o
 ipts-objs += init.o
+ipts-objs += math.o
 ipts-objs += params.o
 ipts-objs += receiver.o
 ipts-objs += resources.o
@@ -26,11 +26,11 @@ sources += control.c
 sources += control.h
 sources += devices.c
 sources += devices.h
-sources += fpmath.c
-sources += fpmath.h
 sources += hid.c
 sources += hid.h
 sources += init.c
+sources += math.c
+sources += math.h
 sources += params.c
 sources += params.h
 sources += protocol/commands.h
@@ -50,8 +50,6 @@ sources += stylus.h
 KVERSION := "$(shell uname -r)"
 KDIR := /lib/modules/$(KVERSION)/build
 MDIR := /usr/src/$(MODULE_NAME)-$(MODULE_VERSION)
-
-CFLAGS_fpmath.o := -mhard-float -msse2
 
 all:
 	$(MAKE) -C $(KDIR) M=$(PWD) CONFIG_TOUCHSCREEN_IPTS=m modules

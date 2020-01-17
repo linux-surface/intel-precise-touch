@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <linux/cpufeature.h>
 #include <linux/dma-mapping.h>
 #include <linux/mei_cl_bus.h>
 #include <linux/module.h>
@@ -21,11 +20,6 @@ static int ipts_init_probe(struct mei_cl_device *cldev,
 	struct ipts_context *ipts = NULL;
 
 	dev_info(&cldev->dev, "Probing IPTS\n");
-
-	if (!boot_cpu_has(X86_FEATURE_XMM2)) {
-		dev_err(&cldev->dev, "IPTS requires SSE2 support\n");
-		return -ENODEV;
-	}
 
 	// Setup the DMA bit mask
 	if (!dma_coerce_mask_and_coherent(&cldev->dev, DMA_BIT_MASK(64))) {
