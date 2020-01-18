@@ -59,7 +59,7 @@ struct ipts_context {
 	struct task_struct *hid_loop;
 
 	struct input_dev *stylus;
-	struct input_dev *touch;
+	struct input_dev *singletouch;
 	u16 stylus_tool;
 };
 
