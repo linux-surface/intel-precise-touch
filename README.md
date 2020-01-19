@@ -36,6 +36,7 @@ removal of unused and dead code compared to the driver provided by Intel.
 * Surface Book 2
 * Surface Book 1
 * Surface Pro 4
+* Surface Pro 6
 
 If you have one of the other surface devices that use IPTS (SP4 and upwards),
 feel free to give it a shot and report back the results!
