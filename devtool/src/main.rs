@@ -115,9 +115,9 @@ fn setup_shared_state() -> (TxState, RxState) {
 
 
 fn handle_touch_frame(tx: &TxState, data: &[u8]) {
-    let height = data[16];
-    let width  = data[17];
-    let size =  u16::from_le_bytes(data[126..128].try_into().unwrap());
+    let height = data[44];
+    let width  = data[45];
+    let size =  u16::from_le_bytes(data[154..156].try_into().unwrap());
 
     if height as u16 * width as u16 != size {
         eprintln!("warning: touch data sizes do not match");
@@ -129,7 +129,7 @@ fn handle_touch_frame(tx: &TxState, data: &[u8]) {
         return;
     }
 
-    let heatmap = &data[128..(128 + size as usize)];
+    let heatmap = &data[156..(156 + size as usize)];
     tx.push_touch_update(width, height, heatmap);
 }
 
@@ -143,9 +143,11 @@ fn handle_stylus_report(tx: &TxState, stylus: &interface::StylusData) {
 }
 
 fn handle_stylus_frame(tx: &TxState, data: &[u8]) {
-    for i in 0..data[4] as usize {
+    println!("UUID: {:?}", &data[36..40]);
+
+    for i in 0..data[32] as usize {
         let len = std::mem::size_of::<interface::StylusData>();
-        let index = 12 + i * len;
+        let index = 40 + i * len;
         let report = interface::StylusData::ref_from_bytes(&data[index..index+len]).unwrap();
 
         handle_stylus_report(tx, report);
