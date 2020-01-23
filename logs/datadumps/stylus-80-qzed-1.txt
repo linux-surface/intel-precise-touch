@@ -1,0 +1,26 @@
+counter0:       u32         60 08 00 00
+num-frames:     u32         01 00 00 00
+?               u8[4]       00 00 00 00
+
+frame-num:      u16         00 00
+frame-type:     u16         06 00
+payload-len:    u32         34 00 00 00     (52_u32)
+?               u8[4]       00 00 00 00
+?               u8[4]       00 00 00 00
+
+?               u8[2]       60 04                           some sort of report frame
+reports-len:    u16         18 00           (24_u16)        length of report frame following this value
+num-reports:    u8          01
+?               u8          01
+?               u8[2]       03 00
+stylus-uuid:    u8[4]       c2 d5 10 35
+
+stylus-report1: u16[8]      3a 29 01 00 d8 1b 10 0d 00 00 00 00 00 00 00 00
+
+?               u8[4]       61 04                           some sort of report frame
+reports-len:    u16         14 00           (20_u32)        length of report frame following this value
+num-reports:    u8          01
+?               u8          03
+?               u8[2]       00 00
+
+stylus-report2: u16[8]      3a 29 01 01 04 1c ed 0c 00 00 00 00 00 00 00 00

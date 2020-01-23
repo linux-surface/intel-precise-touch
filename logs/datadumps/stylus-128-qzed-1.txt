@@ -1,0 +1,67 @@
+counter0:       u32         68 08 00 00
+num-frames:     u32         01 00 00 00
+?               u8[4]       00 00 00 00
+
+frame-num:      u16         00 00
+frame-type:     u16         06 00
+payload-len:    u32         64 00 00 00     (100_u32)
+?               u8[4]       00 00 00 00
+?               u8[4]       00 00 00 00
+
+?               u8[2]       60 04
+reports-len:    u16         48 00           (72_u16)
+num-reports:    u8          04              (4_u8)
+?               u8          01
+?               u8[2]       03 00
+stylus-uuid:    u8[4]       c2 d5 10 35
+
+r1-timestamp:   u16         23 2b
+r1-mode:        u16         01 00
+r1-x:           u16         86 1c
+r1-y:           u16         70 0c
+r1-pressure:    u16         00 00
+r1-altitude:    u16         00 00
+r1-azimuth:     u16         00 00
+r1-reserved:    u16         00 00
+
+r2-timestamp:   u16         47 2b
+r2-mode:        u16         01 00
+r2-x:           u16         86 1c
+r2-y:           u16         70 0c
+r2-pressure:    u16         00 00
+r2-altitude:    u16         00 00
+r2-azimuth:     u16         00 00
+r2-reserved:    u16         00 00
+
+r3-timestamp:   u16         6c 2b
+r3-mode:        u16         01 00
+r3-x:           u16         86 1c
+r3-y:           u16         70 0c
+r3-pressure:    u16         00 00
+r3-altitude:    u16         00 00
+r3-azimuth      u16         00 00
+r3-reserved     u16         00 00
+
+r4-timestamp:   u16         93 2b
+r4-mode:        u16         01 00
+r4-x:           u16         86 1c
+r4-y:           u16         70 0c
+r4-pressure:    u16         00 00
+r4-altitude:    u16         00 00
+r4-azimuth:     u16         00 00
+r4-reserved:    u16         00 00
+
+?               u8[2]       61 04
+reports-len:    u16         14 00           (20_u16)
+num-reports:    u8          01              (1_u8)
+?               u8          03
+?               u8[2]       00 00
+
+r5-timestamp:   u16         93 2b
+r5-mode:        u16         01 01
+r5-x:           u16         ca 1c
+r5-y:           u16         29 0c
+r5-pressure:    u16         00 00
+r5-altitude:    u16         00 00
+r5-azimuth:     u16         00 00
+r5-reserved:    u16         00 00

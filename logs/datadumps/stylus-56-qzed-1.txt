@@ -1,0 +1,25 @@
+counter0:       u32         6a 08 00 00
+num-frames:     u32         01 00 00 00
+?               u8[4]       00 00 00 00
+
+frame-num:      u16         00 00
+frame-type:     u16         06 00
+payload-len:    u32         1c 00 00 00     (28_u32)
+?               u8[4]       00 00 00 00
+?               u8[4]       00 00 00 00
+
+?               u8[2]       60 04
+reports-len:    u16         18 00           (24_u16)
+num-reports:    u8          01              (1_u8)
+?               u8          00
+?               u8[2]       03 00
+stylus-uuid:    u8[4]       c2 d5 10 35
+
+r1-timestamp:   u16         93 2b
+r1-mode:        u16         00 00
+r1-x:           u16         86 1c
+r1-y:           u16         70 0c
+r1-pressure:    u16         00 00
+r1-altitude:    u16         00 00
+r1-azimuth:     u16         00 00
+r1-reserved:    u16         00 00
