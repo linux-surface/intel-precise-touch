@@ -143,8 +143,6 @@ fn handle_stylus_report(tx: &TxState, stylus: &interface::StylusData) {
 }
 
 fn handle_stylus_frame(tx: &TxState, data: &[u8]) {
-    println!("UUID: {:?}", &data[36..40]);
-
     for i in 0..data[32] as usize {
         let len = std::mem::size_of::<interface::StylusData>();
         let index = 40 + i * len;
