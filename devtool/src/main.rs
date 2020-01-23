@@ -13,6 +13,8 @@ use gtk::ApplicationWindow;
 use gtk::DrawingArea;
 use gdk::WindowState;
 
+use serde::Serialize;
+
 mod interface;
 use interface::TouchRawDataHeader;
 use interface::TouchDataType;
@@ -21,6 +23,13 @@ use interface::mem::PackedDataStruct;
 
 mod device;
 use device::Device;
+
+
+#[derive(Serialize)]
+struct DataRecord<'a> {
+    ty: u16,
+    buf: &'a[u8],
+}
 
 
 struct StylusData {
@@ -106,21 +115,21 @@ fn setup_shared_state() -> (TxState, RxState) {
 
 
 fn handle_touch_frame(tx: &TxState, data: &[u8]) {
-    let height = data[44];
-    let width  = data[45];
-    let size =  u16::from_le_bytes(data[154..156].try_into().unwrap());
+    let height = data[16];
+    let width  = data[17];
+    let size =  u16::from_le_bytes(data[126..128].try_into().unwrap());
 
     if height as u16 * width as u16 != size {
-        println!("warning: touch data sizes do not match");
+        eprintln!("warning: touch data sizes do not match");
         return;
     }
 
     if size == 0 {
-        println!("warning: zero-sized heatmap");
+        eprintln!("warning: zero-sized heatmap");
         return;
     }
 
-    let heatmap = &data[156..(156 + size as usize)];
+    let heatmap = &data[128..(128 + size as usize)];
     tx.push_touch_update(width, height, heatmap);
 }
 
@@ -134,9 +143,9 @@ fn handle_stylus_report(tx: &TxState, stylus: &interface::StylusData) {
 }
 
 fn handle_stylus_frame(tx: &TxState, data: &[u8]) {
-    for i in 0..data[32] as usize {
+    for i in 0..data[4] as usize {
         let len = std::mem::size_of::<interface::StylusData>();
-        let index = 40 + i * len;
+        let index = 12 + i * len;
         let report = interface::StylusData::ref_from_bytes(&data[index..index+len]).unwrap();
 
         handle_stylus_report(tx, report);
@@ -144,32 +153,27 @@ fn handle_stylus_frame(tx: &TxState, data: &[u8]) {
 }
 
 fn handle_touch_data_frame(tx: &TxState, data: &[u8]) {
-    use pretty_hex::PrettyHex;
-
-    // Data:
-    // xx xx                        u16 (counter)
-    // 01 00                        u16
-    // 01 00 00 00 / 02 00 00 00    u32
-    // 00 00 00 00                  u32
-    // 00 00                        u16
-    // 06 00 / 07 00 / 08 00        u16
-
     let ty =  u16::from_le_bytes(data[14..16].try_into().unwrap());
     match TouchFrameType::try_from(ty) {
         Ok(TouchFrameType::Stylus) => handle_stylus_frame(tx, data),
         Ok(TouchFrameType::Touch)  => handle_touch_frame(tx, data),
         Err(x) => {
-            println!("warning: unimplemented data frame type: {}", x.number);
-            println!("{:?}", data.hex_dump());
+            eprintln!("warning: unimplemented data frame type: {}", x.number);
         },
     }
+
+    let df = DataRecord {
+        ty: ty,
+        buf: data,
+    };
+    println!("{},", serde_json::to_string_pretty(&df).unwrap());
 }
 
 fn handle_frame(tx: &TxState, header: &TouchRawDataHeader, data: &[u8]) {
     match TouchDataType::try_from(header.data_type) {
         Ok(TouchDataType::Frame) => handle_touch_data_frame(tx, data),
-        Ok(ty)  => println!("warning: unimplemented header type: {:?}", ty),
-        Err(ty) => println!("error: unknown header type {}", ty.number),
+        Ok(ty)  => eprintln!("warning: unimplemented header type: {:?}", ty),
+        Err(ty) => eprintln!("error: unknown header type {}", ty.number),
     }
 }
 
@@ -348,11 +352,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let device = Device::open()?;
     let devinfo = device.get_info()?;
-    println!("IPTS UAPI connected ({:04x}:{:04x})", devinfo.vendor_id, devinfo.product_id);
+    eprintln!("IPTS UAPI connected ({:04x}:{:04x})", devinfo.vendor_id, devinfo.product_id);
 
     std::thread::spawn(move || {
         if let Err(err) = read_loop(device, tx) {
-            println!("Error: {}", err);
+            eprintln!("Error: {}", err);
             std::process::exit(1);
         }
     });
