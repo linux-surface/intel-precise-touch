@@ -14,12 +14,10 @@ struct ipts_device_info {
 	u32 hw_rev;
 	u32 fw_rev;
 
-	/*
-	 * Max size of one frame returned by Touch IC in bytes. This data
-	 * will be TOUCH_RAW_DATA_HDR, followed by a payload. The payload can
-	 * be raw data or a HID structure depending on mode.
-	 */
+	/* Required size of one touch data buffer */
 	u32 frame_size;
+
+	/* Required size of one feedback buffer */
 	u32 feedback_size;
 	u8 reserved[24];
 } __packed;
