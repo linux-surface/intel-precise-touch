@@ -26,7 +26,7 @@ static enum ipts_report_type ipts_hid_parse_report_type(
 	if (data->type != IPTS_TOUCH_DATA_TYPE_FRAME)
 		return IPTS_REPORT_TYPE_MAX;
 
-	// If the number 0x460 is written at offset 16,
+	// If the number 0x6 is written at offset 14,
 	// the report describes a stylus
 	if (data->data[14] == 0x6)
 		return IPTS_REPORT_TYPE_STYLUS;
