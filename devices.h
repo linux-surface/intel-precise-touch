@@ -6,12 +6,15 @@
 #include <linux/types.h>
 
 /*
- * These names are somewhat random, but without samples from every device
- * it is hard to pinpoint some specific pattern. In fact it could be that
- * every device has it's own version of the stylus protocol, for what we know.
+ * These names describe the different iterations of the IPTS stylus protocol.
  *
- * IPTS_STYLUS_PROTOCOL_GEN1 can be found on the Surface Book 1, while
- * IPTS_STYLUS_PROTOCOL_GEN2 can be found on the Surface Book 2.
+ * IPTS_STYLUS_PROTOCOL_GEN1 can be found on devices that don't have
+ * support for tilt, and only 1024 pressure levels. (Using NTRIG digitizers)
+ *
+ * IPTS_STYLUS_PROTOCOL_GEN2 can be found on devices that support tilting
+ * the stylus, with 4096 levels of pressure. (Using MS digitizers)
+ *
+ * New generations have to be added as they are discovered.
  */
 enum ipts_stylus_protocol {
 	IPTS_STYLUS_PROTOCOL_GEN1,
