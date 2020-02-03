@@ -84,7 +84,38 @@ pub enum PayloadFrameType {
 
 #[repr(C)]
 #[derive(Debug)]
-pub struct StylusData {
+pub struct StylusFrameHeader {
+    pub ty: u16,
+    pub payload_len: u16,
+}
+
+#[repr(u16)]
+#[derive(Debug, Clone, Copy, TryFromPrimitive)]
+pub enum StylusFrameType {
+    ReportU = 0x0460,
+    ReportP = 0x0461,
+}
+
+#[repr(C)]
+#[derive(Debug)]
+pub struct StylusReportHeaderU {
+    pub num_reports: u8,
+    pub reserved0: u8,
+    pub reserved1: [u8; 2],
+    pub stylus_uuid: [u8; 4],
+}
+
+#[repr(C)]
+#[derive(Debug)]
+pub struct StylusReportHeaderP {
+    pub num_reports: u8,
+    pub reserved0: u8,
+    pub reserved1: [u8; 2],
+}
+
+#[repr(C)]
+#[derive(Debug)]
+pub struct StylusReportData {
 	pub timestamp: u16,
 	pub mode: u16,
 	pub x: u16,
@@ -102,11 +133,16 @@ pub const STYLUS_REPORT_MODE_RUBBER:    u16 = 8;
 
 
 unsafe impl mem::PackedDataStruct for DeviceInfo {}
+
 unsafe impl mem::PackedDataStruct for TouchRawDataHeader {}
 unsafe impl mem::PackedDataStruct for TouchHidPrivateData {}
 unsafe impl mem::PackedDataStruct for PayloadHeader {}
 unsafe impl mem::PackedDataStruct for PayloadFrameHeader {}
-unsafe impl mem::PackedDataStruct for StylusData {}
+
+unsafe impl mem::PackedDataStruct for StylusFrameHeader {}
+unsafe impl mem::PackedDataStruct for StylusReportHeaderU {}
+unsafe impl mem::PackedDataStruct for StylusReportHeaderP {}
+unsafe impl mem::PackedDataStruct for StylusReportData {}
 
 
 pub mod ioctl {
@@ -159,11 +195,15 @@ mod test {
     #[test]
     fn check_type_sizes() {
         assert_eq!(std::mem::size_of::<DeviceInfo>(), 44);
+
         assert_eq!(std::mem::size_of::<TouchRawDataHeader>(), 64);
         assert_eq!(std::mem::size_of::<TouchHidPrivateData>(), 32);
         assert_eq!(std::mem::size_of::<PayloadHeader>(), 12);
         assert_eq!(std::mem::size_of::<PayloadFrameHeader>(), 16);
 
-        assert_eq!(std::mem::size_of::<StylusData>(), 16);
+        assert_eq!(std::mem::size_of::<StylusFrameHeader>(), 4);
+        assert_eq!(std::mem::size_of::<StylusReportHeaderU>(), 8);
+        assert_eq!(std::mem::size_of::<StylusReportHeaderP>(), 4);
+        assert_eq!(std::mem::size_of::<StylusReportData>(), 16);
     }
 }

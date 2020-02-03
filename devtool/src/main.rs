@@ -135,7 +135,7 @@ fn handle_touch_frame(tx: &TxState, data: &[u8]) {
     tx.push_touch_update(width, height, heatmap);
 }
 
-fn handle_stylus_report(tx: &TxState, stylus: &interface::StylusData) {
+fn emit_stylus_report(tx: &TxState, stylus: &interface::StylusReportData) {
     tx.push_stylus_update(StylusData {
         x: stylus.x,
         y: stylus.y,
@@ -144,13 +144,46 @@ fn handle_stylus_report(tx: &TxState, stylus: &interface::StylusData) {
     });
 }
 
-fn handle_stylus_frame(tx: &TxState, data: &[u8]) {
-    for i in 0..data[4] as usize {
-        let len = std::mem::size_of::<interface::StylusData>();
-        let index = 12 + i * len;
-        let report = interface::StylusData::ref_from_bytes(&data[index..index+len]).unwrap();
+fn handle_stylus_report_u(tx: &TxState, data: &[u8]) {
+    use interface::{StylusReportData, StylusReportHeaderU};
 
-        handle_stylus_report(tx, report);
+    let (hdr, data) = data.split_at(std::mem::size_of::<StylusReportHeaderU>());
+    let hdr = StylusReportHeaderU::ref_from_bytes(hdr).unwrap();
+
+    let len = std::mem::size_of::<StylusReportData>();
+    for i in 0..hdr.num_reports as usize {
+        let report = StylusReportData::ref_from_bytes(&data[i*len..(i+1)*len]).unwrap();
+        emit_stylus_report(tx, report);
+    }
+}
+
+fn handle_stylus_report_p(tx: &TxState, data: &[u8]) {
+    use interface::{StylusReportData, StylusReportHeaderP};
+
+    let (hdr, data) = data.split_at(std::mem::size_of::<StylusReportHeaderP>());
+    let hdr = StylusReportHeaderP::ref_from_bytes(hdr).unwrap();
+
+    let len = std::mem::size_of::<StylusReportData>();
+    for i in 0..hdr.num_reports as usize {
+        let report = StylusReportData::ref_from_bytes(&data[i*len..(i+1)*len]).unwrap();
+        emit_stylus_report(tx, report);
+    }
+}
+
+fn handle_stylus_frame(tx: &TxState, data: &[u8]) {
+    use interface::{StylusFrameType, StylusFrameHeader};
+
+    let mut offset = 0;
+    while offset < data.len() {
+        let (frame_hdr, frame_data) = data[offset..].split_at(std::mem::size_of::<StylusFrameHeader>());
+        let frame_hdr = StylusFrameHeader::ref_from_bytes(frame_hdr).unwrap();
+        offset += std::mem::size_of::<StylusFrameHeader>() + frame_hdr.payload_len as usize;
+
+        match StylusFrameType::try_from(frame_hdr.ty) {
+            Ok(StylusFrameType::ReportU) => handle_stylus_report_u(tx, frame_data),
+            Ok(StylusFrameType::ReportP) => handle_stylus_report_p(tx, frame_data),
+            Err(ty) => eprintln!("error: unknown stylus frame type {}", ty.number),
+        }
     }
 }
 
