@@ -18,7 +18,9 @@ use serde::Serialize;
 mod interface;
 use interface::TouchRawDataHeader;
 use interface::TouchDataType;
-use interface::TouchFrameType;
+use interface::PayloadHeader;
+use interface::PayloadFrameHeader;
+use interface::PayloadFrameType;
 use interface::mem::PackedDataStruct;
 
 mod device;
@@ -115,9 +117,9 @@ fn setup_shared_state() -> (TxState, RxState) {
 
 
 fn handle_touch_frame(tx: &TxState, data: &[u8]) {
-    let height = data[44];
-    let width  = data[45];
-    let size =  u16::from_le_bytes(data[154..156].try_into().unwrap());
+    let height = data[16];
+    let width  = data[17];
+    let size =  u16::from_le_bytes(data[126..128].try_into().unwrap());
 
     if height as u16 * width as u16 != size {
         eprintln!("warning: touch data sizes do not match");
@@ -129,7 +131,7 @@ fn handle_touch_frame(tx: &TxState, data: &[u8]) {
         return;
     }
 
-    let heatmap = &data[156..(156 + size as usize)];
+    let heatmap = &data[128..(128 + size as usize)];
     tx.push_touch_update(width, height, heatmap);
 }
 
@@ -143,9 +145,9 @@ fn handle_stylus_report(tx: &TxState, stylus: &interface::StylusData) {
 }
 
 fn handle_stylus_frame(tx: &TxState, data: &[u8]) {
-    for i in 0..data[32] as usize {
+    for i in 0..data[4] as usize {
         let len = std::mem::size_of::<interface::StylusData>();
-        let index = 40 + i * len;
+        let index = 12 + i * len;
         let report = interface::StylusData::ref_from_bytes(&data[index..index+len]).unwrap();
 
         handle_stylus_report(tx, report);
@@ -153,20 +155,23 @@ fn handle_stylus_frame(tx: &TxState, data: &[u8]) {
 }
 
 fn handle_touch_data_frame(tx: &TxState, data: &[u8]) {
-    let ty =  u16::from_le_bytes(data[14..16].try_into().unwrap());
-    match TouchFrameType::try_from(ty) {
-        Ok(TouchFrameType::Stylus) => handle_stylus_frame(tx, data),
-        Ok(TouchFrameType::Touch)  => handle_touch_frame(tx, data),
-        Err(x) => {
-            eprintln!("warning: unimplemented data frame type: {}", x.number);
-        },
-    }
+    let (hdr, data) = data.split_at(std::mem::size_of::<PayloadHeader>());
+    let hdr = PayloadHeader::ref_from_bytes(hdr).unwrap();
 
-    let df = DataRecord {
-        ty: ty,
-        buf: data,
-    };
-    println!("{},", serde_json::to_string_pretty(&df).unwrap());
+    let mut offset = 0;
+    for _ in 0..hdr.num_frames {
+        let (frame_hdr, frame_data) = data[offset..].split_at(std::mem::size_of::<PayloadFrameHeader>());
+        let frame_hdr = PayloadFrameHeader::ref_from_bytes(frame_hdr).unwrap();
+        offset += std::mem::size_of::<PayloadFrameHeader>() + frame_hdr.payload_len as usize;
+
+        match PayloadFrameType::try_from(frame_hdr.ty) {
+            Ok(PayloadFrameType::Stylus) => handle_stylus_frame(tx, frame_data),
+            Ok(PayloadFrameType::Touch)  => handle_touch_frame(tx, frame_data),
+            Err(x) => {
+                eprintln!("warning: unimplemented data frame type: {}", x.number);
+            },
+        }
+    }
 }
 
 fn handle_frame(tx: &TxState, header: &TouchRawDataHeader, data: &[u8]) {

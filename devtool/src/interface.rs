@@ -56,9 +56,27 @@ pub enum TouchDataType {
     GetFeatures,
 }
 
+
+#[repr(C)]
+#[derive(Debug)]
+pub struct PayloadHeader {
+    pub counter: u32,
+    pub num_frames: u32,
+    pub reserved: [u8; 4],
+}
+
+#[repr(C)]
+#[derive(Debug)]
+pub struct PayloadFrameHeader {
+    pub num: u16,
+    pub ty: u16,
+    pub payload_len: u32,
+    pub reserved: [u8; 8],
+}
+
 #[repr(u16)]
 #[derive(Debug, Clone, Copy, TryFromPrimitive)]
-pub enum TouchFrameType {
+pub enum PayloadFrameType {
     Stylus = 6,
     Touch = 8,
 }
@@ -86,6 +104,8 @@ pub const STYLUS_REPORT_MODE_RUBBER:    u16 = 8;
 unsafe impl mem::PackedDataStruct for DeviceInfo {}
 unsafe impl mem::PackedDataStruct for TouchRawDataHeader {}
 unsafe impl mem::PackedDataStruct for TouchHidPrivateData {}
+unsafe impl mem::PackedDataStruct for PayloadHeader {}
+unsafe impl mem::PackedDataStruct for PayloadFrameHeader {}
 unsafe impl mem::PackedDataStruct for StylusData {}
 
 
@@ -138,9 +158,11 @@ mod test {
 
     #[test]
     fn check_type_sizes() {
+        assert_eq!(std::mem::size_of::<DeviceInfo>(), 44);
         assert_eq!(std::mem::size_of::<TouchRawDataHeader>(), 64);
         assert_eq!(std::mem::size_of::<TouchHidPrivateData>(), 32);
-        assert_eq!(std::mem::size_of::<DeviceInfo>(), 44);
+        assert_eq!(std::mem::size_of::<PayloadHeader>(), 12);
+        assert_eq!(std::mem::size_of::<PayloadFrameHeader>(), 16);
 
         assert_eq!(std::mem::size_of::<StylusData>(), 16);
     }
