@@ -92,8 +92,9 @@ pub struct StylusFrameHeader {
 #[repr(u16)]
 #[derive(Debug, Clone, Copy, TryFromPrimitive)]
 pub enum StylusFrameType {
-    ReportU = 0x0460,
-    ReportP = 0x0461,
+    ReportGen1  = 0x0410,
+    ReportGen2U = 0x0460,
+    ReportGen2P = 0x0461,
 }
 
 #[repr(C)]
@@ -115,7 +116,18 @@ pub struct StylusReportHeaderP {
 
 #[repr(C)]
 #[derive(Debug)]
-pub struct StylusReportData {
+pub struct StylusReportGen1Data {
+	pub mode: u8,
+	pub x: [u8; 2],
+	pub y: [u8; 2],
+	pub pressure: [u8; 2],
+	pub reserved0: u8,
+	pub reserved1: [u8; 4],
+}
+
+#[repr(C)]
+#[derive(Debug)]
+pub struct StylusReportGen2Data {
 	pub timestamp: u16,
 	pub mode: u16,
 	pub x: u16,
@@ -142,7 +154,8 @@ unsafe impl mem::PackedDataStruct for PayloadFrameHeader {}
 unsafe impl mem::PackedDataStruct for StylusFrameHeader {}
 unsafe impl mem::PackedDataStruct for StylusReportHeaderU {}
 unsafe impl mem::PackedDataStruct for StylusReportHeaderP {}
-unsafe impl mem::PackedDataStruct for StylusReportData {}
+unsafe impl mem::PackedDataStruct for StylusReportGen1Data {}
+unsafe impl mem::PackedDataStruct for StylusReportGen2Data {}
 
 
 pub mod ioctl {
@@ -204,6 +217,7 @@ mod test {
         assert_eq!(std::mem::size_of::<StylusFrameHeader>(), 4);
         assert_eq!(std::mem::size_of::<StylusReportHeaderU>(), 8);
         assert_eq!(std::mem::size_of::<StylusReportHeaderP>(), 4);
-        assert_eq!(std::mem::size_of::<StylusReportData>(), 16);
+        assert_eq!(std::mem::size_of::<StylusReportGen1Data>(), 12);
+        assert_eq!(std::mem::size_of::<StylusReportGen2Data>(), 16);
     }
 }

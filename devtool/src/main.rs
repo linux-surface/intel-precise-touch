@@ -135,7 +135,16 @@ fn handle_touch_frame(tx: &TxState, data: &[u8]) {
     tx.push_touch_update(width, height, heatmap);
 }
 
-fn emit_stylus_report(tx: &TxState, stylus: &interface::StylusReportData) {
+fn emit_stylus_report_gen1(tx: &TxState, stylus: &interface::StylusReportGen1Data) {
+    tx.push_stylus_update(StylusData {
+        x: u16::from_le_bytes(stylus.x),
+        y: u16::from_le_bytes(stylus.y),
+        pressure: u16::from_le_bytes(stylus.pressure),
+        proximity: (stylus.mode as u16 & interface::STYLUS_REPORT_MODE_PROXIMITY) != 0,
+    });
+}
+
+fn emit_stylus_report_gen2(tx: &TxState, stylus: &interface::StylusReportGen2Data) {
     tx.push_stylus_update(StylusData {
         x: stylus.x,
         y: stylus.y,
@@ -144,29 +153,43 @@ fn emit_stylus_report(tx: &TxState, stylus: &interface::StylusReportData) {
     });
 }
 
-fn handle_stylus_report_u(tx: &TxState, data: &[u8]) {
-    use interface::{StylusReportData, StylusReportHeaderU};
+fn handle_stylus_report_gen1(tx: &TxState, data: &[u8]) {
+    use interface::{StylusReportGen1Data, StylusReportHeaderU};
 
     let (hdr, data) = data.split_at(std::mem::size_of::<StylusReportHeaderU>());
     let hdr = StylusReportHeaderU::ref_from_bytes(hdr).unwrap();
 
-    let len = std::mem::size_of::<StylusReportData>();
+    let data = &data[4..];
+    let len = std::mem::size_of::<StylusReportGen1Data>();
     for i in 0..hdr.num_reports as usize {
-        let report = StylusReportData::ref_from_bytes(&data[i*len..(i+1)*len]).unwrap();
-        emit_stylus_report(tx, report);
+        let report = StylusReportGen1Data::ref_from_bytes(&data[i*len..(i+1)*len]).unwrap();
+        emit_stylus_report_gen1(tx, report);
     }
 }
 
-fn handle_stylus_report_p(tx: &TxState, data: &[u8]) {
-    use interface::{StylusReportData, StylusReportHeaderP};
+fn handle_stylus_report_gen2_u(tx: &TxState, data: &[u8]) {
+    use interface::{StylusReportGen2Data, StylusReportHeaderU};
+
+    let (hdr, data) = data.split_at(std::mem::size_of::<StylusReportHeaderU>());
+    let hdr = StylusReportHeaderU::ref_from_bytes(hdr).unwrap();
+
+    let len = std::mem::size_of::<StylusReportGen2Data>();
+    for i in 0..hdr.num_reports as usize {
+        let report = StylusReportGen2Data::ref_from_bytes(&data[i*len..(i+1)*len]).unwrap();
+        emit_stylus_report_gen2(tx, report);
+    }
+}
+
+fn handle_stylus_report_gen2_p(tx: &TxState, data: &[u8]) {
+    use interface::{StylusReportGen2Data, StylusReportHeaderP};
 
     let (hdr, data) = data.split_at(std::mem::size_of::<StylusReportHeaderP>());
     let hdr = StylusReportHeaderP::ref_from_bytes(hdr).unwrap();
 
-    let len = std::mem::size_of::<StylusReportData>();
+    let len = std::mem::size_of::<StylusReportGen2Data>();
     for i in 0..hdr.num_reports as usize {
-        let report = StylusReportData::ref_from_bytes(&data[i*len..(i+1)*len]).unwrap();
-        emit_stylus_report(tx, report);
+        let report = StylusReportGen2Data::ref_from_bytes(&data[i*len..(i+1)*len]).unwrap();
+        emit_stylus_report_gen2(tx, report);
     }
 }
 
@@ -180,8 +203,9 @@ fn handle_stylus_frame(tx: &TxState, data: &[u8]) {
         offset += std::mem::size_of::<StylusFrameHeader>() + frame_hdr.payload_len as usize;
 
         match StylusFrameType::try_from(frame_hdr.ty) {
-            Ok(StylusFrameType::ReportU) => handle_stylus_report_u(tx, frame_data),
-            Ok(StylusFrameType::ReportP) => handle_stylus_report_p(tx, frame_data),
+            Ok(StylusFrameType::ReportGen1) => handle_stylus_report_gen1(tx, frame_data),
+            Ok(StylusFrameType::ReportGen2U) => handle_stylus_report_gen2_u(tx, frame_data),
+            Ok(StylusFrameType::ReportGen2P) => handle_stylus_report_gen2_p(tx, frame_data),
             Err(ty) => eprintln!("error: unknown stylus frame type {}", ty.number),
         }
     }
