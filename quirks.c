@@ -8,11 +8,13 @@
 
 static const struct ipts_quirks_config ipts_quirks[] = {
 	{
+		// Surface Pro 4
 		.vendor_id = 0x1B96,
 		.device_id = 0x006A,
 		.quirks = IPTS_QUIRKS_NTRIG_DIGITIZER,
 	},
 	{
+		// Surface Book 1
 		.vendor_id = 0x1B96,
 		.device_id = 0x005e,
 		.quirks = IPTS_QUIRKS_NTRIG_DIGITIZER,
