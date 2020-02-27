@@ -5,10 +5,10 @@
 #include <linux/kernel.h>
 
 #include "context.h"
-#include "devices.h"
 #include "math.h"
 #include "protocol/enums.h"
 #include "protocol/touch.h"
+#include "quirks.h"
 
 static void ipts_stylus_handle_report(struct ipts_context *ipts,
 		struct ipts_stylus_report *report)
@@ -56,7 +56,7 @@ static void ipts_stylus_handle_report(struct ipts_context *ipts,
 	input_sync(ipts->stylus);
 }
 
-static void ipts_stylus_parse_report_gen1(struct ipts_context *ipts,
+static void ipts_stylus_parse_report_ntrig(struct ipts_context *ipts,
 		struct ipts_touch_data *data)
 {
 	u8 count, i;
@@ -72,7 +72,7 @@ static void ipts_stylus_parse_report_gen1(struct ipts_context *ipts,
 		report.y = reports[i].y;
 		report.pressure = reports[i].pressure;
 
-		// The gen1 protocol doesn't support tilting the stylus
+		// The NTRIG digitizers don't support tilting the stylus
 		report.altitude = 0;
 		report.azimuth = 0;
 
@@ -83,7 +83,7 @@ static void ipts_stylus_parse_report_gen1(struct ipts_context *ipts,
 	}
 }
 
-static void ipts_stylus_parse_report_gen2(struct ipts_context *ipts,
+static void ipts_stylus_parse_report_ms(struct ipts_context *ipts,
 		struct ipts_touch_data *data)
 {
 	u8 count, i;
@@ -99,14 +99,12 @@ static void ipts_stylus_parse_report_gen2(struct ipts_context *ipts,
 void ipts_stylus_parse_report(struct ipts_context *ipts,
 		struct ipts_touch_data *data)
 {
-	switch (ipts->device_cfg.stylus_protocol) {
-	case IPTS_STYLUS_PROTOCOL_GEN1:
-		ipts_stylus_parse_report_gen1(ipts, data);
-		break;
-	case IPTS_STYLUS_PROTOCOL_GEN2:
-		ipts_stylus_parse_report_gen2(ipts, data);
-		break;
+	if (ipts->quirks & IPTS_QUIRKS_NTRIG_DIGITIZER) {
+		ipts_stylus_parse_report_ntrig(ipts, data);
+		return;
 	}
+
+	ipts_stylus_parse_report_ms(ipts, data);
 }
 
 int ipts_stylus_init(struct ipts_context *ipts)
@@ -118,7 +116,9 @@ int ipts_stylus_init(struct ipts_context *ipts)
 	if (!ipts->stylus)
 		return -ENOMEM;
 
-	pressure = ipts->device_cfg.max_stylus_pressure;
+	pressure = 4096;
+	if (ipts->quirks & IPTS_QUIRKS_NTRIG_DIGITIZER)
+		pressure = 1024;
 
 	ipts->stylus_tool = BTN_TOOL_PEN;
 
