@@ -124,3 +124,9 @@ int ipts_hid_init(struct ipts_context *ipts)
 
 	return 0;
 }
+
+void ipts_hid_free(struct ipts_context *ipts)
+{
+	ipts_stylus_free(ipts);
+	ipts_singletouch_free(ipts);
+}

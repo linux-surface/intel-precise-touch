@@ -9,5 +9,6 @@
 void ipts_stylus_parse_report(struct ipts_context *ipts,
 		struct ipts_touch_data *data);
 int ipts_stylus_init(struct ipts_context *ipts);
+void ipts_stylus_free(struct ipts_context *ipts);
 
 #endif /* _IPTS_STYLUS_H_ */

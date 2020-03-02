@@ -112,7 +112,7 @@ int ipts_stylus_init(struct ipts_context *ipts)
 	int ret;
 	u16 pressure;
 
-	ipts->stylus = devm_input_allocate_device(ipts->dev);
+	ipts->stylus = input_allocate_device();
 	if (!ipts->stylus)
 		return -ENOMEM;
 
@@ -150,10 +150,19 @@ int ipts_stylus_init(struct ipts_context *ipts)
 
 	ret = input_register_device(ipts->stylus);
 	if (ret) {
-		dev_err(ipts->dev, "Failed to register stylus device: %d\n",
-				ret);
+		dev_err(ipts->dev, "Cannot register input device: %s (%d)\n",
+				ipts->stylus->name, ret);
+		input_free_device(ipts->stylus);
 		return ret;
 	}
 
 	return 0;
+}
+
+void ipts_stylus_free(struct ipts_context *ipts)
+{
+	if (!ipts->stylus)
+		return;
+
+	input_unregister_device(ipts->stylus);
 }

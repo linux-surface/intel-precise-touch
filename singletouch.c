@@ -25,7 +25,7 @@ int ipts_singletouch_init(struct ipts_context *ipts)
 {
 	int ret;
 
-	ipts->singletouch = devm_input_allocate_device(ipts->dev);
+	ipts->singletouch = input_allocate_device();
 	if (!ipts->singletouch)
 		return -ENOMEM;
 
@@ -47,10 +47,19 @@ int ipts_singletouch_init(struct ipts_context *ipts)
 
 	ret = input_register_device(ipts->singletouch);
 	if (ret) {
-		dev_err(ipts->dev, "Failed to register touch device: %d\n",
-				ret);
+		dev_err(ipts->dev, "Cannot register input device: %s (%d)\n",
+				ipts->singletouch->name, ret);
+		input_free_device(ipts->singletouch);
 		return ret;
 	}
 
 	return 0;
+}
+
+void ipts_singletouch_free(struct ipts_context *ipts)
+{
+	if (!ipts->singletouch)
+		return;
+
+	input_unregister_device(ipts->singletouch);
 }

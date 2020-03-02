@@ -4,6 +4,7 @@
 #include <linux/types.h>
 
 #include "context.h"
+#include "hid.h"
 #include "params.h"
 #include "protocol/commands.h"
 #include "protocol/enums.h"
@@ -80,6 +81,7 @@ void ipts_control_stop(struct ipts_context *ipts)
 	if (old_status < IPTS_HOST_STATUS_RESOURCE_READY)
 		return;
 
+	ipts_hid_free(ipts);
 	ipts_resources_free(ipts);
 }
 

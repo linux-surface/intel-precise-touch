@@ -11,7 +11,8 @@ enum ipts_report_type {
 	IPTS_REPORT_TYPE_MAX
 };
 
-int ipts_hid_init(struct ipts_context *ipts);
 int ipts_hid_loop(void *data);
+int ipts_hid_init(struct ipts_context *ipts);
+void ipts_hid_free(struct ipts_context *ipts);
 
 #endif /* _IPTS_HID_H_ */
