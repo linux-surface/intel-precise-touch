@@ -8,8 +8,8 @@ payload-len:    u32         64 00 00 00     (100_u32)
 ?               u8[4]       00 00 00 00
 ?               u8[4]       00 00 00 00
 
-?               u8[2]       60 04
-reports-len:    u16         48 00           (72_u16)
+p-frame-type:   u16         60 04
+p-frame-len:    u16         48 00           (72_u16)
 num-reports:    u8          04              (4_u8)
 ?               u8          01
 ?               u8[2]       03 00
@@ -51,8 +51,8 @@ r4-altitude:    u16         00 00
 r4-azimuth:     u16         00 00
 r4-reserved:    u16         00 00
 
-?               u8[2]       61 04
-reports-len:    u16         14 00           (20_u16)
+p-frame-type:   u16         61 04
+p-frame-len:    u16         14 00           (20_u16)
 num-reports:    u8          01              (1_u8)
 ?               u8          03
 ?               u8[2]       00 00

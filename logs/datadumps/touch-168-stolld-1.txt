@@ -1,50 +1,50 @@
-counter0:       u32         d4 05 00 00
+counter0:       u32         b2 0c 00 00
 num-frames:     u32         01 00 00 00
 ?               u8[4]       00 00 00 00
 
 frame-num:      u16         00 00
 frame-type:     u16         08 00               (8_u16)
-payload-len:    u32         04 0e 00 00         (3588_u32)
+payload-len:    u32         8c 00 00 00         (140_u32)
 ?               u8[4]       00 00 00 00
 ?               u8[4]       00 00 00 00
 
 p-frame-type:   u16         00 04
 p-frame-len:    u16         08 00               (8_u16)
 ?               u8[2]       08 01
-counter1:       u16         b7 21
-?               u8[4]       85 95 3d 01
+counter1:       u16         c3 83
+?               u8[4]       69 cf 07 01
 
-
-
-
-
+p-frame-type:   u16         02 04
+p-frame-len:    u16         08 00               (8_u16)
+?               u8[4]       05 00 00 00
+?               u8[4]       5e 1a 00 00
 
 p-frame-type:   u16         03 04
 p-frame-len:    u16         08 00               (8_u16)
-heatmap-height: u8          30                  (48_u8)
-heatmap-width:  u8          48                  (72_u8)
+heatmap-height: u8          30
+heatmap-width:  u8          48
 ?               u8[2]       00 2f
 ?               u8[4]       00 47 00 ff
 
 p-frame-type:   u16         04 04
 p-frame-len:    u16         24 00               (36_u16)
-?               u8[4]       08 0a 00 00
+?               u8[4]       08 00 00 00
+?               u8[2]       09 00
+?               u8[2]       00 00
+?               u8[2]       06 00
+?               u8[2]       01 00
+?               u8[2]       05 00
+?               u8[2]       02 00
+?               u8[2]       08 00
+?               u8[2]       03 00
+?               u8[2]       08 00
+?               u8[2]       04 00
 ?               u8[2]       07 00
-?               u8[2]       50 00               (80_u16)
-?               u8[2]       0a 00               (10_u16)
-?               u8[2]       51 00               (81_u16)
-?               u8[2]       0b 00               (11_u16)
-?               u8[2]       52 00               (82_u16)
-?               u8[2]       06 00               (6_u16)
-?               u8[2]       53 00               (83_u16)
-?               u8[2]       06 00               (6_u16)
-?               u8[2]       54 00               (84_u16)
-?               u8[2]       07 00               (7_u16)
-?               u8[2]       55 00               (85_u16)
-?               u8[2]       07 00               (7_u16)
-?               u8[2]       56 00               (86_u16)
-?               u8[2]       08 00               (8_u16)
-?               u8[2]       57 00               (87_u16)
+?               u8[2]       05 00
+?               u8[2]       06 00
+?               u8[2]       06 00
+?               u8[2]       0a 00
+?               u8[2]       07 00
 
 p-frame-type:   u16         06 04
 p-frame-len:    u16         04 00               (4_u16)
@@ -56,8 +56,8 @@ p-frame-len:    u16         04 00               (4_u16)
 
 p-frame-type:   u16         32 04
 p-frame-len:    u16         08 00               (8_u16)
-?               u8[4]       e0 2e 00 00
-?               u8[4]       02 2a 1e 5e
+?               u8[4]       00 00 00 00
+?               u8[4]       00 5e 5e 5e
 
 
 p-frame-type:   u16         33 00
@@ -69,11 +69,11 @@ p-frame-len:    u16         18 00               (24_u16)
 ?               u8[4]       00 00 00 00
 ?               u8[4]       00 00 00 00
 
-p-frame-type:   u16         25 04               (heatmap)
-p-frame-len:    u16         80 0d               (3456_u16)
-heatmap-data:   u8[h-len]   b4 b4 ... b4
+
+
+
 
 p-frame-type:   u16         ff 04
 p-frame-len:    u16         04 00               (4_u16)
-counter1:       u16         b7 21
+counter1:       u16         c3 83
 ?               u8[2]       09 00

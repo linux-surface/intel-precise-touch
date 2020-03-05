@@ -8,8 +8,8 @@ payload-len:    u32         4c 00 00 00     (76_u32)
 ?               u8[4]       00 00 00 00
 ?               u8[4]       00 00 00 00
 
-?               u8[2]       60 04
-reports-len:    u16         48 00           (72_u32)
+p-frame-type:   u16         60 04
+p-frame-len:    u16         48 00           (72_u32)
 num-reports:    u8          04
 ?               u8          01
 ?               u8[2]       03 00
