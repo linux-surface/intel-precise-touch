@@ -61,10 +61,10 @@ static void ipts_stylus_parse_report_ntrig(struct ipts_context *ipts,
 {
 	u8 count, i;
 	struct ipts_stylus_report report;
-	struct ipts_stylus_report_gen1 *reports;
+	struct ipts_stylus_report_ntrig *reports;
 
 	count = data->data[32];
-	reports = (struct ipts_stylus_report_gen1 *)&data->data[44];
+	reports = (struct ipts_stylus_report_ntrig *)&data->data[44];
 
 	for (i = 0; i < count; i++) {
 		report.mode = reports[i].mode;
@@ -83,28 +83,22 @@ static void ipts_stylus_parse_report_ntrig(struct ipts_context *ipts,
 	}
 }
 
-static void ipts_stylus_parse_report_ms(struct ipts_context *ipts,
+void ipts_stylus_parse_report(struct ipts_context *ipts,
 		struct ipts_touch_data *data)
 {
 	u8 count, i;
 	struct ipts_stylus_report *reports;
+
+	if (ipts->quirks & IPTS_QUIRKS_NTRIG_DIGITIZER) {
+		ipts_stylus_parse_report_ntrig(ipts, data);
+		return;
+	}
 
 	count = data->data[32];
 	reports = (struct ipts_stylus_report *)&data->data[40];
 
 	for (i = 0; i < count; i++)
 		ipts_stylus_handle_report(ipts, &reports[i]);
-}
-
-void ipts_stylus_parse_report(struct ipts_context *ipts,
-		struct ipts_touch_data *data)
-{
-	if (ipts->quirks & IPTS_QUIRKS_NTRIG_DIGITIZER) {
-		ipts_stylus_parse_report_ntrig(ipts, data);
-		return;
-	}
-
-	ipts_stylus_parse_report_ms(ipts, data);
 }
 
 int ipts_stylus_init(struct ipts_context *ipts)
