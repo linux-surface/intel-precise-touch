@@ -29,27 +29,27 @@ pub struct DeviceInfo {
 
 #[repr(C)]
 #[derive(Debug)]
-pub struct TouchRawDataHeader {
+pub struct RawDataHeader {
 	pub data_type: u32,
 	pub data_size: u32,
     pub buffer_id: u32,
     pub protocol_ver: u32,
     pub kernel_compat_id: u8,
     pub reserved: [u8; 15],
-    pub hid_private_data: TouchHidPrivateData,
+    pub hid_private_data: HidPrivateData,
 }
 
 #[repr(C)]
 #[derive(Debug)]
-pub struct TouchHidPrivateData {
+pub struct HidPrivateData {
     pub transaction_id: u32,
     pub reserved: [u8; 28],
 }
 
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, TryFromPrimitive)]
-pub enum TouchDataType {
-    Frame = 0,
+pub enum RawDataType {
+    Payload = 0,
     Error,
     VendorData,
     HidReport,
@@ -84,18 +84,19 @@ pub enum PayloadFrameType {
 
 #[repr(C)]
 #[derive(Debug)]
-pub struct StylusFrameHeader {
+pub struct ChunkHeader {
     pub ty: u16,
     pub payload_len: u16,
 }
 
 #[repr(u16)]
 #[derive(Debug, Clone, Copy, TryFromPrimitive)]
-pub enum StylusFrameType {
-    ReportGen1  = 0x0410,
-    ReportGen2U = 0x0460,
-    ReportGen2P = 0x0461,
+pub enum ChunkType {
+    StylusReportGen1  = 0x0410,
+    StylusReportGen2U = 0x0460,
+    StylusReportGen2P = 0x0461,
 }
+
 
 #[repr(C)]
 #[derive(Debug)]
@@ -116,7 +117,7 @@ pub struct StylusReportHeaderP {
 
 #[repr(C)]
 #[derive(Debug)]
-pub struct StylusReportGen1Data {
+pub struct StylusStylusReportGen1Data {
 	pub mode: u8,
 	pub x: [u8; 2],
 	pub y: [u8; 2],
@@ -127,7 +128,7 @@ pub struct StylusReportGen1Data {
 
 #[repr(C)]
 #[derive(Debug)]
-pub struct StylusReportGen2Data {
+pub struct StylusStylusReportGen2Data {
 	pub timestamp: u16,
 	pub mode: u16,
 	pub x: u16,
@@ -146,16 +147,16 @@ pub const STYLUS_REPORT_MODE_RUBBER:    u16 = 8;
 
 unsafe impl mem::PackedDataStruct for DeviceInfo {}
 
-unsafe impl mem::PackedDataStruct for TouchRawDataHeader {}
-unsafe impl mem::PackedDataStruct for TouchHidPrivateData {}
+unsafe impl mem::PackedDataStruct for RawDataHeader {}
+unsafe impl mem::PackedDataStruct for HidPrivateData {}
 unsafe impl mem::PackedDataStruct for PayloadHeader {}
 unsafe impl mem::PackedDataStruct for PayloadFrameHeader {}
 
-unsafe impl mem::PackedDataStruct for StylusFrameHeader {}
+unsafe impl mem::PackedDataStruct for ChunkHeader {}
 unsafe impl mem::PackedDataStruct for StylusReportHeaderU {}
 unsafe impl mem::PackedDataStruct for StylusReportHeaderP {}
-unsafe impl mem::PackedDataStruct for StylusReportGen1Data {}
-unsafe impl mem::PackedDataStruct for StylusReportGen2Data {}
+unsafe impl mem::PackedDataStruct for StylusStylusReportGen1Data {}
+unsafe impl mem::PackedDataStruct for StylusStylusReportGen2Data {}
 
 
 pub mod ioctl {
@@ -209,15 +210,15 @@ mod test {
     fn check_type_sizes() {
         assert_eq!(std::mem::size_of::<DeviceInfo>(), 44);
 
-        assert_eq!(std::mem::size_of::<TouchRawDataHeader>(), 64);
-        assert_eq!(std::mem::size_of::<TouchHidPrivateData>(), 32);
+        assert_eq!(std::mem::size_of::<RawDataHeader>(), 64);
+        assert_eq!(std::mem::size_of::<HidPrivateData>(), 32);
         assert_eq!(std::mem::size_of::<PayloadHeader>(), 12);
         assert_eq!(std::mem::size_of::<PayloadFrameHeader>(), 16);
 
-        assert_eq!(std::mem::size_of::<StylusFrameHeader>(), 4);
+        assert_eq!(std::mem::size_of::<ChunkHeader>(), 4);
         assert_eq!(std::mem::size_of::<StylusReportHeaderU>(), 8);
         assert_eq!(std::mem::size_of::<StylusReportHeaderP>(), 4);
-        assert_eq!(std::mem::size_of::<StylusReportGen1Data>(), 12);
-        assert_eq!(std::mem::size_of::<StylusReportGen2Data>(), 16);
+        assert_eq!(std::mem::size_of::<StylusStylusReportGen1Data>(), 12);
+        assert_eq!(std::mem::size_of::<StylusStylusReportGen2Data>(), 16);
     }
 }

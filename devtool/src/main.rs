@@ -16,8 +16,8 @@ use gdk::WindowState;
 use serde::Serialize;
 
 mod interface;
-use interface::TouchRawDataHeader;
-use interface::TouchDataType;
+use interface::RawDataHeader;
+use interface::RawDataType;
 use interface::PayloadHeader;
 use interface::PayloadFrameHeader;
 use interface::PayloadFrameType;
@@ -116,7 +116,7 @@ fn setup_shared_state() -> (TxState, RxState) {
 }
 
 
-fn handle_touch_frame(tx: &TxState, data: &[u8]) {
+fn handle_touch_payload(tx: &TxState, data: &[u8]) {
     let height = data[16];
     let width  = data[17];
     let size =  u16::from_le_bytes(data[126..128].try_into().unwrap());
@@ -135,7 +135,7 @@ fn handle_touch_frame(tx: &TxState, data: &[u8]) {
     tx.push_touch_update(width, height, heatmap);
 }
 
-fn emit_stylus_report_gen1(tx: &TxState, stylus: &interface::StylusReportGen1Data) {
+fn emit_stylus_report_gen1(tx: &TxState, stylus: &interface::StylusStylusReportGen1Data) {
     tx.push_stylus_update(StylusData {
         x: u16::from_le_bytes(stylus.x),
         y: u16::from_le_bytes(stylus.y),
@@ -144,7 +144,7 @@ fn emit_stylus_report_gen1(tx: &TxState, stylus: &interface::StylusReportGen1Dat
     });
 }
 
-fn emit_stylus_report_gen2(tx: &TxState, stylus: &interface::StylusReportGen2Data) {
+fn emit_stylus_report_gen2(tx: &TxState, stylus: &interface::StylusStylusReportGen2Data) {
     tx.push_stylus_update(StylusData {
         x: stylus.x,
         y: stylus.y,
@@ -154,64 +154,64 @@ fn emit_stylus_report_gen2(tx: &TxState, stylus: &interface::StylusReportGen2Dat
 }
 
 fn handle_stylus_report_gen1(tx: &TxState, data: &[u8]) {
-    use interface::{StylusReportGen1Data, StylusReportHeaderU};
+    use interface::{StylusStylusReportGen1Data, StylusReportHeaderU};
 
     let (hdr, data) = data.split_at(std::mem::size_of::<StylusReportHeaderU>());
     let hdr = StylusReportHeaderU::ref_from_bytes(hdr).unwrap();
 
     let data = &data[4..];
-    let len = std::mem::size_of::<StylusReportGen1Data>();
+    let len = std::mem::size_of::<StylusStylusReportGen1Data>();
     for i in 0..hdr.num_reports as usize {
-        let report = StylusReportGen1Data::ref_from_bytes(&data[i*len..(i+1)*len]).unwrap();
+        let report = StylusStylusReportGen1Data::ref_from_bytes(&data[i*len..(i+1)*len]).unwrap();
         emit_stylus_report_gen1(tx, report);
     }
 }
 
 fn handle_stylus_report_gen2_u(tx: &TxState, data: &[u8]) {
-    use interface::{StylusReportGen2Data, StylusReportHeaderU};
+    use interface::{StylusStylusReportGen2Data, StylusReportHeaderU};
 
     let (hdr, data) = data.split_at(std::mem::size_of::<StylusReportHeaderU>());
     let hdr = StylusReportHeaderU::ref_from_bytes(hdr).unwrap();
 
-    let len = std::mem::size_of::<StylusReportGen2Data>();
+    let len = std::mem::size_of::<StylusStylusReportGen2Data>();
     for i in 0..hdr.num_reports as usize {
-        let report = StylusReportGen2Data::ref_from_bytes(&data[i*len..(i+1)*len]).unwrap();
+        let report = StylusStylusReportGen2Data::ref_from_bytes(&data[i*len..(i+1)*len]).unwrap();
         emit_stylus_report_gen2(tx, report);
     }
 }
 
 fn handle_stylus_report_gen2_p(tx: &TxState, data: &[u8]) {
-    use interface::{StylusReportGen2Data, StylusReportHeaderP};
+    use interface::{StylusStylusReportGen2Data, StylusReportHeaderP};
 
     let (hdr, data) = data.split_at(std::mem::size_of::<StylusReportHeaderP>());
     let hdr = StylusReportHeaderP::ref_from_bytes(hdr).unwrap();
 
-    let len = std::mem::size_of::<StylusReportGen2Data>();
+    let len = std::mem::size_of::<StylusStylusReportGen2Data>();
     for i in 0..hdr.num_reports as usize {
-        let report = StylusReportGen2Data::ref_from_bytes(&data[i*len..(i+1)*len]).unwrap();
+        let report = StylusStylusReportGen2Data::ref_from_bytes(&data[i*len..(i+1)*len]).unwrap();
         emit_stylus_report_gen2(tx, report);
     }
 }
 
-fn handle_stylus_frame(tx: &TxState, data: &[u8]) {
-    use interface::{StylusFrameType, StylusFrameHeader};
+fn handle_stylus_payload(tx: &TxState, data: &[u8]) {
+    use interface::{ChunkType, ChunkHeader};
 
     let mut offset = 0;
     while offset < data.len() {
-        let (frame_hdr, frame_data) = data[offset..].split_at(std::mem::size_of::<StylusFrameHeader>());
-        let frame_hdr = StylusFrameHeader::ref_from_bytes(frame_hdr).unwrap();
-        offset += std::mem::size_of::<StylusFrameHeader>() + frame_hdr.payload_len as usize;
+        let (frame_hdr, frame_data) = data[offset..].split_at(std::mem::size_of::<ChunkHeader>());
+        let frame_hdr = ChunkHeader::ref_from_bytes(frame_hdr).unwrap();
+        offset += std::mem::size_of::<ChunkHeader>() + frame_hdr.payload_len as usize;
 
-        match StylusFrameType::try_from(frame_hdr.ty) {
-            Ok(StylusFrameType::ReportGen1) => handle_stylus_report_gen1(tx, frame_data),
-            Ok(StylusFrameType::ReportGen2U) => handle_stylus_report_gen2_u(tx, frame_data),
-            Ok(StylusFrameType::ReportGen2P) => handle_stylus_report_gen2_p(tx, frame_data),
-            Err(ty) => eprintln!("error: unknown stylus frame type {}", ty.number),
+        match ChunkType::try_from(frame_hdr.ty) {
+            Ok(ChunkType::StylusReportGen1) => handle_stylus_report_gen1(tx, frame_data),
+            Ok(ChunkType::StylusReportGen2U) => handle_stylus_report_gen2_u(tx, frame_data),
+            Ok(ChunkType::StylusReportGen2P) => handle_stylus_report_gen2_p(tx, frame_data),
+            Err(ty) => eprintln!("error: unknown stylus chunk type {}", ty.number),
         }
     }
 }
 
-fn handle_touch_data_frame(tx: &TxState, data: &[u8]) {
+fn handle_payload_frame(tx: &TxState, data: &[u8]) {
     let (hdr, data) = data.split_at(std::mem::size_of::<PayloadHeader>());
     let hdr = PayloadHeader::ref_from_bytes(hdr).unwrap();
 
@@ -222,8 +222,8 @@ fn handle_touch_data_frame(tx: &TxState, data: &[u8]) {
         offset += std::mem::size_of::<PayloadFrameHeader>() + frame_hdr.payload_len as usize;
 
         match PayloadFrameType::try_from(frame_hdr.ty) {
-            Ok(PayloadFrameType::Stylus) => handle_stylus_frame(tx, frame_data),
-            Ok(PayloadFrameType::Touch)  => handle_touch_frame(tx, frame_data),
+            Ok(PayloadFrameType::Stylus) => handle_stylus_payload(tx, frame_data),
+            Ok(PayloadFrameType::Touch)  => handle_touch_payload(tx, frame_data),
             Err(x) => {
                 eprintln!("warning: unimplemented data frame type: {}", x.number);
             },
@@ -231,9 +231,9 @@ fn handle_touch_data_frame(tx: &TxState, data: &[u8]) {
     }
 }
 
-fn handle_frame(tx: &TxState, header: &TouchRawDataHeader, data: &[u8]) {
-    match TouchDataType::try_from(header.data_type) {
-        Ok(TouchDataType::Frame) => handle_touch_data_frame(tx, data),
+fn handle_frame(tx: &TxState, header: &RawDataHeader, data: &[u8]) {
+    match RawDataType::try_from(header.data_type) {
+        Ok(RawDataType::Payload) => handle_payload_frame(tx, data),
         Ok(ty)  => eprintln!("warning: unimplemented header type: {:?}", ty),
         Err(ty) => eprintln!("error: unknown header type {}", ty.number),
     }
@@ -242,7 +242,7 @@ fn handle_frame(tx: &TxState, header: &TouchRawDataHeader, data: &[u8]) {
 fn read_loop(mut device: Device, tx: TxState) -> Result<(), Box<dyn std::error::Error>> {
     device.start()?;
 
-    let hdr_len = std::mem::size_of::<TouchRawDataHeader>();
+    let hdr_len = std::mem::size_of::<RawDataHeader>();
     let buf_len = 4096;
 
     let mut buf = vec![0; buf_len];
@@ -252,7 +252,7 @@ fn read_loop(mut device: Device, tx: TxState) -> Result<(), Box<dyn std::error::
 
         while tail - head > hdr_len {
             let (buf_hdr, buf_data) = buf.split_at_mut(head + hdr_len);
-            let hdr = TouchRawDataHeader::ref_from_bytes(&buf_hdr[head..]).unwrap();
+            let hdr = RawDataHeader::ref_from_bytes(&buf_hdr[head..]).unwrap();
 
             // not enough space at all: bail
             if buf_len < hdr_len + hdr.data_size as usize {
