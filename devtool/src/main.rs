@@ -1,7 +1,7 @@
 use std::io::Read;
 use std::sync::Arc;
 use std::sync::Mutex;
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 
 use gtk::prelude::*;
 use gdk::prelude::*;
@@ -117,22 +117,42 @@ fn setup_shared_state() -> (TxState, RxState) {
 
 
 fn handle_touch_payload(tx: &TxState, data: &[u8]) {
-    let height = data[16];
-    let width  = data[17];
-    let size =  u16::from_le_bytes(data[126..128].try_into().unwrap());
+    // Note: This could be merged with handle_stylus_payload, only supported ChunkTypes differ.
+    use interface::{ChunkType, ChunkHeader, TouchHeatmapDim};
 
-    if height as u16 * width as u16 != size {
-        eprintln!("warning: touch data sizes do not match");
-        return;
+    let mut width = 0;
+    let mut height = 0;
+    let mut heatmap = None;
+
+    let mut offset = 0;
+    while offset < data.len() {
+        let (frame_hdr, frame_data) = data[offset..].split_at(std::mem::size_of::<ChunkHeader>());
+        let frame_hdr = ChunkHeader::ref_from_bytes(frame_hdr).unwrap();
+        let frame_data = &frame_data[..frame_hdr.payload_len as usize];
+        offset += std::mem::size_of::<ChunkHeader>() + frame_hdr.payload_len as usize;
+
+        match ChunkType::try_from(frame_hdr.ty) {
+            Ok(ChunkType::TouchHeatmapDim) => {
+                let dim = TouchHeatmapDim::ref_from_bytes(frame_data).unwrap();
+                height = dim.height;
+                width = dim.width;
+            },
+            Ok(ChunkType::TouchHeatmap) => {
+                heatmap = Some(frame_data);
+            },
+            Ok(ty) => eprintln!("warning: unsupported touch chunk type {:?}", ty),
+            Err(ty) => eprintln!("warning: unknown touch chunk type {}", ty.number),
+        }
     }
 
-    if size == 0 {
-        eprintln!("warning: zero-sized heatmap");
-        return;
-    }
+    if let Some(heatmap) = heatmap {
+        if height as usize * width as usize != heatmap.len() {
+            eprintln!("error: touch data sizes do not match");
+            return;
+        }
 
-    let heatmap = &data[128..(128 + size as usize)];
-    tx.push_touch_update(width, height, heatmap);
+        tx.push_touch_update(width, height, heatmap);
+    }
 }
 
 fn emit_stylus_report_gen1(tx: &TxState, stylus: &interface::StylusStylusReportGen1Data) {
@@ -194,6 +214,7 @@ fn handle_stylus_report_gen2_p(tx: &TxState, data: &[u8]) {
 }
 
 fn handle_stylus_payload(tx: &TxState, data: &[u8]) {
+    // Note: This could be merged with handle_touch_payload, only supported ChunkTypes differ.
     use interface::{ChunkType, ChunkHeader};
 
     let mut offset = 0;
