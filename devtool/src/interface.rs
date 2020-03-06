@@ -92,6 +92,8 @@ pub struct ChunkHeader {
 #[repr(u16)]
 #[derive(Debug, Clone, Copy, TryFromPrimitive)]
 pub enum ChunkType {
+    TouchHeatmapDim   = 0x0403,
+    TouchHeatmap      = 0x0425,
     StylusReportGen1  = 0x0410,
     StylusReportGen2U = 0x0460,
     StylusReportGen2P = 0x0461,

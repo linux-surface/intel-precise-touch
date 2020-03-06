@@ -206,6 +206,7 @@ fn handle_stylus_payload(tx: &TxState, data: &[u8]) {
             Ok(ChunkType::StylusReportGen1) => handle_stylus_report_gen1(tx, frame_data),
             Ok(ChunkType::StylusReportGen2U) => handle_stylus_report_gen2_u(tx, frame_data),
             Ok(ChunkType::StylusReportGen2P) => handle_stylus_report_gen2_p(tx, frame_data),
+            Ok(ty) => eprintln!("warning: unsupported stylus chunk type {:?}", ty),
             Err(ty) => eprintln!("error: unknown stylus chunk type {}", ty.number),
         }
     }
