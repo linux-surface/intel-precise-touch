@@ -102,6 +102,15 @@ pub enum ChunkType {
 
 #[repr(C)]
 #[derive(Debug)]
+pub struct TouchHeatmapDim {
+    pub height: u8,
+    pub width: u8,
+    pub reserved: [u8; 6],
+}
+
+
+#[repr(C)]
+#[derive(Debug)]
 pub struct StylusReportHeaderU {
     pub num_reports: u8,
     pub reserved0: u8,
@@ -155,6 +164,7 @@ unsafe impl mem::PackedDataStruct for PayloadHeader {}
 unsafe impl mem::PackedDataStruct for PayloadFrameHeader {}
 
 unsafe impl mem::PackedDataStruct for ChunkHeader {}
+unsafe impl mem::PackedDataStruct for TouchHeatmapDim {}
 unsafe impl mem::PackedDataStruct for StylusReportHeaderU {}
 unsafe impl mem::PackedDataStruct for StylusReportHeaderP {}
 unsafe impl mem::PackedDataStruct for StylusStylusReportGen1Data {}
@@ -218,6 +228,7 @@ mod test {
         assert_eq!(std::mem::size_of::<PayloadFrameHeader>(), 16);
 
         assert_eq!(std::mem::size_of::<ChunkHeader>(), 4);
+        assert_eq!(std::mem::size_of::<TouchHeatmapDim>(), 8);
         assert_eq!(std::mem::size_of::<StylusReportHeaderU>(), 8);
         assert_eq!(std::mem::size_of::<StylusReportHeaderP>(), 4);
         assert_eq!(std::mem::size_of::<StylusStylusReportGen1Data>(), 12);
