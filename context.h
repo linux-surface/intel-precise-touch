@@ -35,7 +35,6 @@ struct ipts_context {
 	struct mei_cl_device *client_dev;
 	struct device *dev;
 	struct ipts_device_info device_info;
-	u32 quirks;
 
 	enum ipts_host_status status;
 	enum ipts_sensor_mode mode;

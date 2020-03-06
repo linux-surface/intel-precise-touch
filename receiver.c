@@ -8,7 +8,6 @@
 #include "protocol/commands.h"
 #include "protocol/events.h"
 #include "protocol/responses.h"
-#include "quirks.h"
 #include "resources.h"
 
 static void ipts_receiver_handle_notify_dev_ready(struct ipts_context *ipts,
@@ -41,8 +40,6 @@ static void ipts_receiver_handle_get_device_info(struct ipts_context *ipts,
 	dev_info(ipts->dev, "Device %04hX:%04hX found\n",
 			ipts->device_info.vendor_id,
 			ipts->device_info.device_id);
-
-	ipts->quirks = ipts_quirks_query(ipts);
 
 	if (ipts_data_init(ipts))
 		return;
