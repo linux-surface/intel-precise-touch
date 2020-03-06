@@ -4,9 +4,8 @@
 
 #include "context.h"
 #include "control.h"
-#include "hid.h"
+#include "data.h"
 #include "protocol/commands.h"
-#include "protocol/enums.h"
 #include "protocol/events.h"
 #include "protocol/responses.h"
 #include "quirks.h"
@@ -45,7 +44,7 @@ static void ipts_receiver_handle_get_device_info(struct ipts_context *ipts,
 
 	ipts->quirks = ipts_quirks_query(ipts);
 
-	if (ipts_hid_init(ipts))
+	if (ipts_data_init(ipts))
 		return;
 
 	*cmd_status = ipts_control_send(ipts,
@@ -94,11 +93,11 @@ static void ipts_receiver_handle_set_mode(struct ipts_context *ipts,
 	memset(&cmd, 0, sizeof(struct ipts_set_mem_window_cmd));
 
 	for (i = 0; i < 16; i++) {
-		cmd.touch_data_buffer_addr_lower[i] =
-			lower_32_bits(ipts->touch_data[i].dma_address);
+		cmd.data_buffer_addr_lower[i] =
+			lower_32_bits(ipts->data[i].dma_address);
 
-		cmd.touch_data_buffer_addr_upper[i] =
-			upper_32_bits(ipts->touch_data[i].dma_address);
+		cmd.data_buffer_addr_upper[i] =
+			upper_32_bits(ipts->data[i].dma_address);
 
 		cmd.feedback_buffer_addr_lower[i] =
 			lower_32_bits(ipts->feedback[i].dma_address);
@@ -115,7 +114,7 @@ static void ipts_receiver_handle_set_mode(struct ipts_context *ipts,
 
 	cmd.host2me_addr_lower = lower_32_bits(ipts->host2me.dma_address);
 	cmd.host2me_addr_upper = upper_32_bits(ipts->host2me.dma_address);
-	cmd.host2me_size = ipts->device_info.frame_size;
+	cmd.host2me_size = ipts->device_info.data_size;
 
 	cmd.workqueue_size = 8192;
 	cmd.workqueue_item_size = 16;

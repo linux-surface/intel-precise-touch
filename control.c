@@ -4,12 +4,11 @@
 #include <linux/types.h>
 
 #include "context.h"
-#include "hid.h"
+#include "data.h"
 #include "params.h"
 #include "protocol/commands.h"
-#include "protocol/enums.h"
 #include "protocol/events.h"
-#include "protocol/touch.h"
+#include "protocol/feedback.h"
 #include "resources.h"
 
 int ipts_control_send(struct ipts_context *ipts,
@@ -81,7 +80,7 @@ void ipts_control_stop(struct ipts_context *ipts)
 	if (old_status < IPTS_HOST_STATUS_RESOURCE_READY)
 		return;
 
-	ipts_hid_free(ipts);
+	ipts_data_free(ipts);
 	ipts_resources_free(ipts);
 }
 

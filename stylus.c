@@ -1,32 +1,30 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <asm/fpu/api.h>
 #include <linux/input.h>
 #include <linux/kernel.h>
 
 #include "context.h"
 #include "math.h"
-#include "protocol/enums.h"
-#include "protocol/touch.h"
-#include "quirks.h"
+#include "protocol/payload.h"
+#include "protocol/stylus.h"
 
-static void ipts_stylus_handle_report(struct ipts_context *ipts,
-		struct ipts_stylus_report *report)
+static void ipts_stylus_handle_stylus_data(struct ipts_context *ipts,
+		struct ipts_stylus_report_data *data)
 {
 	u16 tool;
-	u8 prox = report->mode & IPTS_STYLUS_REPORT_MODE_PROXIMITY;
-	u8 touch = report->mode & IPTS_STYLUS_REPORT_MODE_TOUCH;
-	u8 button = report->mode & IPTS_STYLUS_REPORT_MODE_BUTTON;
-	u8 rubber = report->mode & IPTS_STYLUS_REPORT_MODE_RUBBER;
+	u8 prox = data->mode & IPTS_STYLUS_REPORT_MODE_PROX;
+	u8 touch = data->mode & IPTS_STYLUS_REPORT_MODE_TOUCH;
+	u8 button = data->mode & IPTS_STYLUS_REPORT_MODE_BUTTON;
+	u8 rubber = data->mode & IPTS_STYLUS_REPORT_MODE_ERASER;
 
 	s32 tx = 0;
 	s32 ty = 0;
 
 	// avoid unnecessary computations
 	// altitude is zero if stylus does not touch the screen
-	if (report->altitude) {
-		ipts_math_altitude_azimuth_to_tilt(report->altitude,
-				report->azimuth, &tx, &ty);
+	if (data->altitude) {
+		ipts_math_altitude_azimuth_to_tilt(data->altitude,
+				data->azimuth, &tx, &ty);
 	}
 
 	if (prox && rubber)
@@ -45,10 +43,10 @@ static void ipts_stylus_handle_report(struct ipts_context *ipts,
 	input_report_key(ipts->stylus, ipts->stylus_tool, prox);
 	input_report_key(ipts->stylus, BTN_STYLUS, button);
 
-	input_report_abs(ipts->stylus, ABS_X, report->x);
-	input_report_abs(ipts->stylus, ABS_Y, report->y);
-	input_report_abs(ipts->stylus, ABS_PRESSURE, report->pressure);
-	input_report_abs(ipts->stylus, ABS_MISC, report->timestamp);
+	input_report_abs(ipts->stylus, ABS_X, data->x);
+	input_report_abs(ipts->stylus, ABS_Y, data->y);
+	input_report_abs(ipts->stylus, ABS_PRESSURE, data->pressure);
+	input_report_abs(ipts->stylus, ABS_MISC, data->timestamp);
 
 	input_report_abs(ipts->stylus, ABS_TILT_X, tx);
 	input_report_abs(ipts->stylus, ABS_TILT_Y, ty);
@@ -56,65 +54,96 @@ static void ipts_stylus_handle_report(struct ipts_context *ipts,
 	input_sync(ipts->stylus);
 }
 
-static void ipts_stylus_parse_report_ntrig(struct ipts_context *ipts,
-		struct ipts_touch_data *data)
+static void ipts_stylus_handle_report_tilt_serial(struct ipts_context *ipts,
+		struct ipts_report *report)
 {
-	u8 count, i;
-	struct ipts_stylus_report report;
-	struct ipts_stylus_report_ntrig *reports;
+	int i;
+	struct ipts_stylus_report_serial *stylus_report;
+	struct ipts_stylus_report_data *data;
 
-	count = data->data[32];
-	reports = (struct ipts_stylus_report_ntrig *)&data->data[44];
+	stylus_report = (struct ipts_stylus_report_serial *)report->data;
+	data = (struct ipts_stylus_report_data *)stylus_report->data;
 
-	for (i = 0; i < count; i++) {
-		report.mode = reports[i].mode;
-		report.x = reports[i].x;
-		report.y = reports[i].y;
-		report.pressure = reports[i].pressure;
+	// TODO: Track serial number and support multiple styli
 
-		// The NTRIG digitizers don't support tilting the stylus
-		report.altitude = 0;
-		report.azimuth = 0;
+	for (i = 0; i < stylus_report->reports; i++)
+		ipts_stylus_handle_stylus_data(ipts, &data[i]);
+}
 
-		// Use the buffer ID to emulate a timestamp
-		report.timestamp = data->buffer;
+static void ipts_stylus_handle_report_tilt(struct ipts_context *ipts,
+		struct ipts_report *report)
+{
+	int i;
+	struct ipts_stylus_report *stylus_report;
+	struct ipts_stylus_report_data *data;
 
-		ipts_stylus_handle_report(ipts, &report);
+	stylus_report = (struct ipts_stylus_report *)report->data;
+	data = (struct ipts_stylus_report_data *)stylus_report->data;
+
+	for (i = 0; i < stylus_report->reports; i++)
+		ipts_stylus_handle_stylus_data(ipts, &data[i]);
+}
+
+static void ipts_stylus_handle_report_no_tilt(struct ipts_context *ipts,
+		struct ipts_report *report)
+{
+	int i;
+	struct ipts_stylus_report_serial *stylus_report;
+	struct ipts_stylus_report_data_no_tilt *data;
+	struct ipts_stylus_report_data new_data;
+
+	stylus_report = (struct ipts_stylus_report_serial *)report->data;
+	data = (struct ipts_stylus_report_data_no_tilt *)stylus_report->data;
+
+	for (i = 0; i < stylus_report->reports; i++) {
+		new_data.mode = data[i].mode;
+		new_data.x = data[i].x;
+		new_data.y = data[i].y;
+		new_data.pressure = data[i].pressure * 4;
+		new_data.altitude = 0;
+		new_data.azimuth = 0;
+		new_data.timestamp = 0;
+
+		ipts_stylus_handle_stylus_data(ipts, &new_data);
 	}
 }
 
-void ipts_stylus_parse_report(struct ipts_context *ipts,
-		struct ipts_touch_data *data)
+void ipts_stylus_handle_input(struct ipts_context *ipts,
+		struct ipts_payload_frame *frame)
 {
-	u8 count, i;
-	struct ipts_stylus_report *reports;
+	int size;
+	struct ipts_report *report;
 
-	if (ipts->quirks & IPTS_QUIRKS_NTRIG_DIGITIZER) {
-		ipts_stylus_parse_report_ntrig(ipts, data);
-		return;
+	size = 0;
+
+	while (size < frame->size) {
+		report = (struct ipts_report *)&frame->data[size];
+		size += sizeof(struct ipts_report) + report->size;
+
+		switch (report->type) {
+		case IPTS_REPORT_TYPE_STYLUS_NO_TILT:
+			ipts_stylus_handle_report_no_tilt(ipts, report);
+			break;
+		case IPTS_REPORT_TYPE_STYLUS_TILT:
+			ipts_stylus_handle_report_tilt(ipts, report);
+			break;
+		case IPTS_REPORT_TYPE_STYLUS_TILT_SERIAL:
+			ipts_stylus_handle_report_tilt_serial(ipts, report);
+			break;
+		default:
+			// ignored
+			break;
+		}
 	}
-
-	count = data->data[32];
-	reports = (struct ipts_stylus_report *)&data->data[40];
-
-	for (i = 0; i < count; i++)
-		ipts_stylus_handle_report(ipts, &reports[i]);
 }
 
 int ipts_stylus_init(struct ipts_context *ipts)
 {
 	int ret;
-	u16 pressure;
 
 	ipts->stylus = input_allocate_device();
 	if (!ipts->stylus)
 		return -ENOMEM;
-
-	pressure = 4096;
-	if (ipts->quirks & IPTS_QUIRKS_NTRIG_DIGITIZER)
-		pressure = 1024;
-
-	ipts->stylus_tool = BTN_TOOL_PEN;
 
 	__set_bit(INPUT_PROP_DIRECT, ipts->stylus->propbit);
 	__set_bit(INPUT_PROP_POINTER, ipts->stylus->propbit);
@@ -123,7 +152,7 @@ int ipts_stylus_init(struct ipts_context *ipts)
 	input_abs_set_res(ipts->stylus, ABS_X, 34);
 	input_set_abs_params(ipts->stylus, ABS_Y, 0, 7200, 0, 0);
 	input_abs_set_res(ipts->stylus, ABS_Y, 38);
-	input_set_abs_params(ipts->stylus, ABS_PRESSURE, 0, pressure, 0, 0);
+	input_set_abs_params(ipts->stylus, ABS_PRESSURE, 0, 4096, 0, 0);
 	input_set_abs_params(ipts->stylus, ABS_TILT_X, -9000, 9000, 0, 0);
 	input_abs_set_res(ipts->stylus, ABS_TILT_X, 5730);
 	input_set_abs_params(ipts->stylus, ABS_TILT_Y, -9000, 9000, 0, 0);
@@ -140,7 +169,7 @@ int ipts_stylus_init(struct ipts_context *ipts)
 	ipts->stylus->id.version = ipts->device_info.fw_rev;
 
 	ipts->stylus->phys = "heci3";
-	ipts->stylus->name = "Intel Precise Stylus";
+	ipts->stylus->name = "IPTS Stylus";
 
 	ret = input_register_device(ipts->stylus);
 	if (ret) {
