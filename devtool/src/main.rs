@@ -141,7 +141,7 @@ fn handle_touch_payload(tx: &TxState, data: &[u8]) {
                 heatmap = Some(frame_data);
             },
             Ok(ty) => eprintln!("warning: unsupported touch chunk type {:?}", ty),
-            Err(ty) => eprintln!("warning: unknown touch chunk type {}", ty.number),
+            Err(ty) => eprintln!("warning: unknown touch chunk type 0x{:04x}", ty.number),
         }
     }
 
@@ -229,7 +229,7 @@ fn handle_stylus_payload(tx: &TxState, data: &[u8]) {
             Ok(ChunkType::StylusReportGen2U) => handle_stylus_report_gen2_u(tx, frame_data),
             Ok(ChunkType::StylusReportGen2P) => handle_stylus_report_gen2_p(tx, frame_data),
             Ok(ty) => eprintln!("warning: unsupported stylus chunk type {:?}", ty),
-            Err(ty) => eprintln!("error: unknown stylus chunk type {}", ty.number),
+            Err(ty) => eprintln!("error: unknown stylus chunk type 0x{:04x}", ty.number),
         }
     }
 }
