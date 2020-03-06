@@ -30,8 +30,8 @@ pub struct DeviceInfo {
 #[repr(C)]
 #[derive(Debug)]
 pub struct RawDataHeader {
-	pub data_type: u32,
-	pub data_size: u32,
+    pub data_type: u32,
+    pub data_size: u32,
     pub buffer_id: u32,
     pub protocol_ver: u32,
     pub kernel_compat_id: u8,
@@ -129,25 +129,25 @@ pub struct StylusReportHeaderP {
 #[repr(C)]
 #[derive(Debug)]
 pub struct StylusStylusReportGen1Data {
-	pub mode: u8,
-	pub x: [u8; 2],
-	pub y: [u8; 2],
-	pub pressure: [u8; 2],
-	pub reserved0: u8,
-	pub reserved1: [u8; 4],
+    pub mode: u8,
+    pub x: [u8; 2],
+    pub y: [u8; 2],
+    pub pressure: [u8; 2],
+    pub reserved0: u8,
+    pub reserved1: [u8; 4],
 }
 
 #[repr(C)]
 #[derive(Debug)]
 pub struct StylusStylusReportGen2Data {
-	pub timestamp: u16,
-	pub mode: u16,
-	pub x: u16,
-	pub y: u16,
-	pub pressure: u16,
-	pub altitude: u16,
-	pub azimuth: u16,
-	pub reserved: u16,
+    pub timestamp: u16,
+    pub mode: u16,
+    pub x: u16,
+    pub y: u16,
+    pub pressure: u16,
+    pub altitude: u16,
+    pub azimuth: u16,
+    pub reserved: u16,
 }
 
 pub const STYLUS_REPORT_MODE_PROXIMITY: u16 = 1;
