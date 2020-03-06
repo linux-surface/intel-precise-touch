@@ -22,6 +22,7 @@ use interface::PayloadHeader;
 use interface::PayloadFrameHeader;
 use interface::PayloadFrameType;
 use interface::mem::PackedDataStruct;
+use interface::mem::FrameHeader;
 
 mod device;
 use device::Device;
@@ -126,10 +127,8 @@ fn handle_touch_payload(tx: &TxState, data: &[u8]) {
 
     let mut offset = 0;
     while offset < data.len() {
-        let (frame_hdr, frame_data) = data[offset..].split_at(std::mem::size_of::<ChunkHeader>());
-        let frame_hdr = ChunkHeader::ref_from_bytes(frame_hdr).unwrap();
-        let frame_data = &frame_data[..frame_hdr.payload_len as usize];
-        offset += std::mem::size_of::<ChunkHeader>() + frame_hdr.payload_len as usize;
+        let (frame_hdr, frame_data, frame_len) = ChunkHeader::parse(&data[offset..]);
+        offset += frame_len;
 
         match ChunkType::try_from(frame_hdr.ty) {
             Ok(ChunkType::TouchHeatmapDim) => {
@@ -219,10 +218,8 @@ fn handle_stylus_payload(tx: &TxState, data: &[u8]) {
 
     let mut offset = 0;
     while offset < data.len() {
-        let (frame_hdr, frame_data) = data[offset..].split_at(std::mem::size_of::<ChunkHeader>());
-        let frame_hdr = ChunkHeader::ref_from_bytes(frame_hdr).unwrap();
-        let frame_data = &frame_data[..frame_hdr.payload_len as usize];
-        offset += std::mem::size_of::<ChunkHeader>() + frame_hdr.payload_len as usize;
+        let (frame_hdr, frame_data, frame_len) = ChunkHeader::parse(&data[offset..]);
+        offset += frame_len;
 
         match ChunkType::try_from(frame_hdr.ty) {
             Ok(ChunkType::StylusReportGen1) => handle_stylus_report_gen1(tx, frame_data),
@@ -240,10 +237,8 @@ fn handle_payload_frame(tx: &TxState, data: &[u8]) {
 
     let mut offset = 0;
     for _ in 0..hdr.num_frames {
-        let (frame_hdr, frame_data) = data[offset..].split_at(std::mem::size_of::<PayloadFrameHeader>());
-        let frame_hdr = PayloadFrameHeader::ref_from_bytes(frame_hdr).unwrap();
-        let frame_data = &frame_data[..frame_hdr.payload_len as usize];
-        offset += std::mem::size_of::<PayloadFrameHeader>() + frame_hdr.payload_len as usize;
+        let (frame_hdr, frame_data, frame_len) = PayloadFrameHeader::parse(&data[offset..]);
+        offset += frame_len;
 
         match PayloadFrameType::try_from(frame_hdr.ty) {
             Ok(PayloadFrameType::Stylus) => handle_stylus_payload(tx, frame_data),

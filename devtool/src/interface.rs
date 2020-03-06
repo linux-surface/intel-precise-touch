@@ -156,21 +156,6 @@ pub const STYLUS_REPORT_MODE_BUTTON:    u16 = 4;
 pub const STYLUS_REPORT_MODE_RUBBER:    u16 = 8;
 
 
-unsafe impl mem::PackedDataStruct for DeviceInfo {}
-
-unsafe impl mem::PackedDataStruct for RawDataHeader {}
-unsafe impl mem::PackedDataStruct for HidPrivateData {}
-unsafe impl mem::PackedDataStruct for PayloadHeader {}
-unsafe impl mem::PackedDataStruct for PayloadFrameHeader {}
-
-unsafe impl mem::PackedDataStruct for ChunkHeader {}
-unsafe impl mem::PackedDataStruct for TouchHeatmapDim {}
-unsafe impl mem::PackedDataStruct for StylusReportHeaderU {}
-unsafe impl mem::PackedDataStruct for StylusReportHeaderP {}
-unsafe impl mem::PackedDataStruct for StylusStylusReportGen1Data {}
-unsafe impl mem::PackedDataStruct for StylusStylusReportGen2Data {}
-
-
 pub mod ioctl {
     use nix::{ioctl_none, ioctl_read};
     use super::DeviceInfo;
@@ -210,6 +195,45 @@ pub mod mem {
     pub unsafe trait PackedDataStruct: Sized {
         fn ref_from_bytes<'a>(buf: &'a [u8]) -> Result<&'a Self, TransmuteError> {
             unsafe { transmute_ref_from_bytes(buf) }
+        }
+    }
+
+    unsafe impl PackedDataStruct for super::DeviceInfo {}
+
+    unsafe impl PackedDataStruct for super::RawDataHeader {}
+    unsafe impl PackedDataStruct for super::HidPrivateData {}
+    unsafe impl PackedDataStruct for super::PayloadHeader {}
+    unsafe impl PackedDataStruct for super::PayloadFrameHeader {}
+
+    unsafe impl PackedDataStruct for super::ChunkHeader {}
+    unsafe impl PackedDataStruct for super::TouchHeatmapDim {}
+    unsafe impl PackedDataStruct for super::StylusReportHeaderU {}
+    unsafe impl PackedDataStruct for super::StylusReportHeaderP {}
+    unsafe impl PackedDataStruct for super::StylusStylusReportGen1Data {}
+    unsafe impl PackedDataStruct for super::StylusStylusReportGen2Data {}
+
+
+    pub trait FrameHeader: PackedDataStruct {
+        fn payload_len(&self) -> usize;
+
+        fn parse<'a>(data: &'a[u8]) -> (&'a Self, &'a [u8], usize) {
+            let (frame_hdr, frame_data) = data.split_at(std::mem::size_of::<Self>());
+            let frame_hdr = Self::ref_from_bytes(frame_hdr).unwrap();
+            let frame_data = &frame_data[..frame_hdr.payload_len()];
+
+            (frame_hdr, frame_data, std::mem::size_of::<Self>() + frame_data.len())
+        }
+    }
+
+    impl FrameHeader for super::ChunkHeader {
+        fn payload_len(&self) -> usize {
+            self.payload_len as usize
+        }
+    }
+
+    impl FrameHeader for super::PayloadFrameHeader {
+        fn payload_len(&self) -> usize {
+            self.payload_len as usize
         }
     }
 }
