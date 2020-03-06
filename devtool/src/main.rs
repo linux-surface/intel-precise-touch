@@ -224,9 +224,7 @@ fn handle_payload_frame(tx: &TxState, data: &[u8]) {
         match PayloadFrameType::try_from(frame_hdr.ty) {
             Ok(PayloadFrameType::Stylus) => handle_stylus_payload(tx, frame_data),
             Ok(PayloadFrameType::Touch)  => handle_touch_payload(tx, frame_data),
-            Err(x) => {
-                eprintln!("warning: unimplemented data frame type: {}", x.number);
-            },
+            Err(x) => eprintln!("warning: unimplemented data frame type: {}", x.number),
         }
     }
 }
