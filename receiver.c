@@ -223,6 +223,9 @@ static int ipts_receiver_handle_response(struct ipts_context *ipts,
 		break;
 	}
 
+	if (ipts->status == IPTS_HOST_STATUS_STOPPING)
+		return 0;
+
 	if (msg->status == IPTS_ME_STATUS_SENSOR_UNEXPECTED_RESET ||
 			msg->status == IPTS_ME_STATUS_SENSOR_EXPECTED_RESET) {
 		dev_info(ipts->dev, "Sensor has been reset: %d\n", msg->status);
