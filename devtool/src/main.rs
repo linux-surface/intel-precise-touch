@@ -327,11 +327,57 @@ fn get_dominant_touch_point(heatmap: &[u8], width: u8, height: u8) -> (bool, f64
             (min_idx, min, max)
         });
 
-    let x = min_idx % width as usize;
-    let y = min_idx / width as usize;
+    let cx1 = min_idx % width as usize;
+    let cx2 = min_idx / width as usize;
 
-    let x = (x as f64 + 0.5) / width as f64;
-    let y = 1.0 - (y as f64 + 0.5) / height as f64;
+    // extract kernel around maximum
+    const N: i32 = 4;       // kernel size 2n + 1
+    let mut kernel = [0.0; ((2 * N + 1) * (2 * N + 1)) as usize];
+    for dx1 in -N..=N {
+        for dx2 in -N..=N {
+            let x1 = cx1 as i32 + dx1;
+            let x2 = cx2 as i32 + dx2;
+
+            if x1 < 0 || x2 < 0 || x1 >= width as i32 || x2 >= height as i32 {
+                // TODO: boundary handling
+                kernel[((dx2 + N) * (2 * N + 1) + (dx1 + N)) as usize] = 0.0;
+            } else {
+                let y = heatmap[x2 as usize * width as usize + x1 as usize];
+                kernel[((dx2 + N) * (2 * N + 1) + (dx1 + N)) as usize] = (255 - y) as f64;
+            }
+        }
+    }
+
+    // remove noise floor and get values in range [0..max]
+    const FTH: f64 = 1.0;   // flooring threshold: 0.0 -> floor is min, 1.0 -> floor is avg
+    let kmin: f64 = kernel.iter().fold(255.0, |m, v| if m < *v { m } else { *v });
+    let ksum: f64 = kernel.iter().sum();
+    let kavg = ksum / kernel.len() as f64;
+    let kfloor = kmin + FTH * (kavg - kmin);
+
+    for dx1 in -N..=N {
+        for dx2 in -N..=N {
+            let v = kernel[((dx2 + N) * (2 * N + 1) + (dx1 + N)) as usize];
+            let v = f64::max(v - kfloor, 0.0);
+            kernel[((dx2 + N) * (2 * N + 1) + (dx1 + N)) as usize] = v;
+        }
+    }
+
+    // compute weighted average over coordinates
+    let sum: f64 = kernel.iter().sum();
+    let mut fx1 = 0.0;
+    let mut fx2 = 0.0;
+
+    for dx1 in -N..=N {
+        for dx2 in -N..=N {
+            let y = kernel[((dx2 + N) * (2 * N + 1) + (dx1 + N)) as usize] / sum;
+            fx1 += (cx1 as f64 + dx1 as f64) * y;
+            fx2 += (cx2 as f64 + dx2 as f64) * y;
+        }
+    }
+
+    let x = (fx1 + 0.5) / width as f64;
+    let y = 1.0 - (fx2 + 0.5) / height as f64;
 
     (max - min > 10, x, y)
 }
