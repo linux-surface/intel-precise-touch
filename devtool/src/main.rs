@@ -309,8 +309,35 @@ fn read_loop(mut device: Device, tx: TxState) -> Result<(), Box<dyn std::error::
 }
 
 
+fn get_dominant_touch_point(heatmap: &[u8], width: u8, height: u8) -> (bool, f64, f64) {
+    let (min_idx, min, max) = heatmap.iter()
+        .enumerate()
+        .fold((0, 255, 0), |(min_idx, min, max), (idx, val)| {
+            let mut min_idx = min_idx;
+            let mut min = min;
+            let mut max = max;
+
+            if *val < min {
+                min_idx = idx;
+                min = *val;
+            } else if *val > max {
+                max = *val;
+            }
+
+            (min_idx, min, max)
+        });
+
+    let x = min_idx % width as usize;
+    let y = min_idx / width as usize;
+
+    let x = (x as f64 + 0.5) / width as f64;
+    let y = 1.0 - (y as f64 + 0.5) / height as f64;
+
+    (max - min > 10, x, y)
+}
+
 fn draw(area: &DrawingArea, cr: &cairo::Context, state: &CommonState) {
-    let (surface, touch_w, touch_h) = {
+    let (surface, touch_w, touch_h, finger, tx, ty) = {
         let touch = state.touch.lock().unwrap();
 
         let mut data = Vec::with_capacity(touch.width as usize * touch.height as usize * 3);
@@ -329,7 +356,9 @@ fn draw(area: &DrawingArea, cr: &cairo::Context, state: &CommonState) {
             touch.width as i32 * 4
         ).unwrap();
 
-        (surface, touch.width, touch.height)
+        let (finger, cx, cy) = get_dominant_touch_point(&touch.heatmap, touch.width, touch.height);
+
+        (surface, touch.width, touch.height, finger, cx, cy)
     };
 
     let (x, y, prox, pressure) = {
@@ -353,6 +382,19 @@ fn draw(area: &DrawingArea, cr: &cairo::Context, state: &CommonState) {
     cr.get_source().set_filter(cairo::Filter::Nearest);
     cr.paint();
     cr.set_matrix(m);
+
+    if finger {
+        cr.set_source_rgb(0.0, 1.0, 0.0);
+        cr.set_line_width(1.0);
+
+        cr.move_to(tx * w, 0.0);
+        cr.line_to(tx * w, h);
+        cr.stroke();
+
+        cr.move_to(0.0, ty * h);
+        cr.line_to(w, ty * h);
+        cr.stroke();
+    }
 
     if prox {
         cr.set_source_rgb(1.0, 0.0, 0.0);
