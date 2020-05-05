@@ -4,8 +4,6 @@
 #include <linux/types.h>
 
 #include "context.h"
-#include "data.h"
-#include "params.h"
 #include "protocol/commands.h"
 #include "protocol/events.h"
 #include "protocol/feedback.h"
@@ -24,14 +22,13 @@ int ipts_control_send(struct ipts_context *ipts,
 	if (data && size > 0)
 		memcpy(&msg.data, data, size);
 
-	ret = mei_cldev_send(ipts->client_dev, (u8 *)&msg,
-			sizeof(msg.code) + size);
-	if (ret < 0) {
-		dev_err(ipts->dev, "%s: error 0x%X:%d\n", __func__, cmd, ret);
-		return ret;
-	}
+	ret = mei_cldev_send(ipts->cldev, (u8 *)&msg, sizeof(msg.code) + size);
+	if (ret >= 0)
+		return 0;
 
-	return 0;
+	dev_err(ipts->dev, "MEI error while sending: 0x%X:%d\n", cmd, ret);
+
+	return ret;
 }
 
 int ipts_control_send_feedback(struct ipts_context *ipts,
@@ -59,36 +56,28 @@ int ipts_control_send_feedback(struct ipts_context *ipts,
 
 int ipts_control_start(struct ipts_context *ipts)
 {
-	ipts->status = IPTS_HOST_STATUS_INIT;
-
-	if (ipts_params.singletouch)
-		ipts->mode = IPTS_SENSOR_MODE_SINGLETOUCH;
-	else
-		ipts->mode = IPTS_SENSOR_MODE_MULTITOUCH;
+	ipts->status = IPTS_HOST_STATUS_STARTING;
 
 	return ipts_control_send(ipts, IPTS_CMD(NOTIFY_DEV_READY), NULL, 0);
 }
 
 void ipts_control_stop(struct ipts_context *ipts)
 {
-	enum ipts_host_status old_status = ipts->status;
+	ipts->status = IPTS_HOST_STATUS_STOPPED;
 
-	ipts->status = IPTS_HOST_STATUS_STOPPING;
 	ipts_control_send(ipts, IPTS_CMD(QUIESCE_IO), NULL, 0);
 	ipts_control_send(ipts, IPTS_CMD(CLEAR_MEM_WINDOW), NULL, 0);
 
-	if (old_status < IPTS_HOST_STATUS_RESOURCE_READY)
-		return;
-
-	ipts_data_free(ipts);
 	ipts_resources_free(ipts);
 }
 
 int ipts_control_restart(struct ipts_context *ipts)
 {
-	dev_info(ipts->dev, "Restarting IPTS\n");
-	ipts_control_stop(ipts);
+	if (ipts->status == IPTS_HOST_STATUS_RESTARTING)
+		return 0;
 
+	dev_info(ipts->dev, "Restarting IPTS\n");
 	ipts->status = IPTS_HOST_STATUS_RESTARTING;
+
 	return ipts_control_send(ipts, IPTS_CMD(QUIESCE_IO), NULL, 0);
 }
