@@ -86,4 +86,5 @@ module_mei_cl_driver(ipts_driver);
 
 MODULE_DESCRIPTION("IPTS touchscreen driver");
 MODULE_AUTHOR("Dorian Stoll <dorian.stoll@tmsp.io>");
+MODULE_AUTHOR("Maximilian Luz <luzmaximilian@gmail.com>");
 MODULE_LICENSE("GPL");
