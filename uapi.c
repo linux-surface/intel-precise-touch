@@ -101,21 +101,6 @@ static ssize_t ipts_uapi_read(struct file *file, char __user *buffer,
 	return to_read;
 }
 
-static __poll_t ipts_uapi_poll(struct file *file, struct poll_table_struct *pt)
-{
-	struct ipts_uapi_client *client = file->private_data;
-	struct ipts_context *ipts = client->ipts;
-	u32 *doorbell = (u32 *)ipts->doorbell.address;
-
-	if (ipts->status != IPTS_HOST_STATUS_STARTED)
-		return EPOLLHUP | EPOLLERR;
-
-	if (ipts->uapi.doorbell != *doorbell)
-		return EPOLLIN | EPOLLRDNORM;
-
-	return 0;
-}
-
 static long ipts_uapi_ioctl_info(struct ipts_uapi_client *client,
 		unsigned long arg)
 {
@@ -179,7 +164,6 @@ static const struct file_operations ipts_uapi_fops = {
 	.open = ipts_uapi_open,
 	.release = ipts_uapi_close,
 	.read = ipts_uapi_read,
-	.poll = ipts_uapi_poll,
 	.unlocked_ioctl = ipts_uapi_ioctl,
 	.llseek = no_llseek,
 };
