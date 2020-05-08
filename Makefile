@@ -3,15 +3,15 @@
 # Makefile for the IPTS touchscreen driver
 #
 
-MODULE_NAME    := "ipts"
-MODULE_VERSION := "2019-12-20"
-
-obj-$(CONFIG_TOUCHSCREEN_IPTS) += ipts.o
+obj-$(CONFIG_MISC_IPTS) += ipts.o
 ipts-objs := control.o
 ipts-objs += init.o
 ipts-objs += receiver.o
 ipts-objs += resources.o
 ipts-objs += uapi.o
+
+MODULE_NAME    := ipts
+MODULE_VERSION := $(shell date '+%s')
 
 sources := Makefile
 sources += Kconfig
@@ -31,15 +31,15 @@ sources += resources.h
 sources += uapi.c
 sources += uapi.h
 
-KVERSION := "$(shell uname -r)"
+KVERSION := $(shell uname -r)
 KDIR := /lib/modules/$(KVERSION)/build
 MDIR := /usr/src/$(MODULE_NAME)-$(MODULE_VERSION)
 
 all:
-	$(MAKE) -C $(KDIR) M=$(PWD) CONFIG_TOUCHSCREEN_IPTS=m modules
+	$(MAKE) -C $(KDIR) M=$(PWD) CONFIG_MISC_IPTS=m modules
 
 clean:
-	$(MAKE) -C $(KDIR) M=$(PWD) CONFIG_TOUCHSCREEN_IPTS=m clean
+	$(MAKE) -C $(KDIR) M=$(PWD) CONFIG_MISC_IPTS=m clean
 
 check:
 	$(KDIR)/scripts/checkpatch.pl -f -q --no-tree $(sources)
