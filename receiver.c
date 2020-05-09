@@ -91,7 +91,6 @@ static int ipts_receiver_handle_set_mem_window(struct ipts_context *ipts,
 	ipts->status = IPTS_HOST_STATUS_STARTED;
 	dev_info(ipts->dev, "IPTS enabled\n");
 
-	ipts_uapi_init(ipts);
 	return ipts_control_send(ipts, IPTS_CMD(READY_FOR_DATA), NULL, 0);
 }
 
