@@ -3,6 +3,7 @@
 #ifndef _IPTS_CONTEXT_H_
 #define _IPTS_CONTEXT_H_
 
+#include <linux/kthread.h>
 #include <linux/mei_cl_bus.h>
 #include <linux/miscdevice.h>
 #include <linux/types.h>
@@ -24,6 +25,8 @@ struct ipts_buffer_info {
 
 struct ipts_uapi {
 	struct miscdevice device;
+	struct task_struct *db_thread;
+
 	u32 doorbell;
 	bool active;
 };

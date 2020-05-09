@@ -8,6 +8,7 @@
 #include "protocol/events.h"
 #include "protocol/feedback.h"
 #include "resources.h"
+#include "uapi.h"
 
 int ipts_control_send(struct ipts_context *ipts,
 		u32 cmd, void *data, u32 size)
@@ -71,6 +72,7 @@ void ipts_control_stop(struct ipts_context *ipts)
 	ipts_control_send(ipts, IPTS_CMD(QUIESCE_IO), NULL, 0);
 	ipts_control_send(ipts, IPTS_CMD(CLEAR_MEM_WINDOW), NULL, 0);
 
+	ipts_uapi_free(ipts);
 	ipts_resources_free(ipts);
 }
 

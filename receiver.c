@@ -9,6 +9,7 @@
 #include "protocol/events.h"
 #include "protocol/responses.h"
 #include "resources.h"
+#include "uapi.h"
 
 static int ipts_receiver_handle_notify_dev_ready(struct ipts_context *ipts,
 		struct ipts_response *msg)
@@ -90,6 +91,7 @@ static int ipts_receiver_handle_set_mem_window(struct ipts_context *ipts,
 	ipts->status = IPTS_HOST_STATUS_STARTED;
 	dev_info(ipts->dev, "IPTS enabled\n");
 
+	ipts_uapi_init(ipts);
 	return ipts_control_send(ipts, IPTS_CMD(READY_FOR_DATA), NULL, 0);
 }
 
@@ -118,6 +120,10 @@ static bool ipts_receiver_handle_error(struct ipts_context *ipts,
 		break;
 	case IPTS_ME_STATUS_INVALID_PARAMS:
 		error = msg->code != IPTS_RSP(FEEDBACK);
+		restart = false;
+		break;
+	case IPTS_ME_STATUS_SENSOR_DISABLED:
+		error = msg->code != IPTS_RSP(READY_FOR_DATA);
 		restart = false;
 		break;
 	case IPTS_ME_STATUS_SENSOR_EXPECTED_RESET:
@@ -187,13 +193,13 @@ void ipts_receiver_callback(struct mei_cl_device *cldev)
 	struct ipts_response msg;
 	struct ipts_context *ipts = mei_cldev_get_drvdata(cldev);
 
-	if (ipts->status == IPTS_HOST_STATUS_STOPPED)
-		return;
-
 	if (mei_cldev_recv(ipts->cldev, (u8 *)&msg, sizeof(msg)) <= 0) {
 		dev_err(ipts->dev, "Error while reading MEI message\n");
 		return;
 	}
+
+	if (ipts->status == IPTS_HOST_STATUS_STOPPED)
+		return;
 
 	ipts_receiver_handle_response(ipts, &msg);
 }
