@@ -76,7 +76,7 @@ static ssize_t ipts_uapi_read(struct file *file, char __user *buffer,
 	u32 *doorbell = (u32 *)ipts->doorbell.address;
 
 	if (ipts->status != IPTS_HOST_STATUS_STARTED)
-		return -ENODEV;
+		return 0;
 
 	if (!client->active)
 		return 0;
