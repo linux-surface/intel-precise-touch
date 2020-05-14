@@ -125,6 +125,10 @@ static bool ipts_receiver_handle_error(struct ipts_context *ipts,
 		error = msg->code != IPTS_RSP(READY_FOR_DATA);
 		restart = false;
 		break;
+	case IPTS_ME_STATUS_TIMEOUT:
+		error = msg->code != IPTS_RSP(CLEAR_MEM_WINDOW);
+		restart = false;
+		break;
 	case IPTS_ME_STATUS_SENSOR_EXPECTED_RESET:
 	case IPTS_ME_STATUS_SENSOR_UNEXPECTED_RESET:
 		error = true;
