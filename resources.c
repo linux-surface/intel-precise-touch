@@ -15,7 +15,7 @@ void ipts_resources_free(struct ipts_context *ipts)
 	feedback_buffer_size = ipts->device_info.feedback_size;
 
 	buffers = ipts->data;
-	for (i = 0; i < 16; i++) {
+	for (i = 0; i < IPTS_BUFFERS; i++) {
 		if (!buffers[i].address)
 			continue;
 
@@ -27,7 +27,7 @@ void ipts_resources_free(struct ipts_context *ipts)
 	}
 
 	buffers = ipts->feedback;
-	for (i = 0; i < 16; i++) {
+	for (i = 0; i < IPTS_BUFFERS; i++) {
 		if (!buffers[i].address)
 			continue;
 
@@ -77,7 +77,7 @@ int ipts_resources_init(struct ipts_context *ipts)
 	feedback_buffer_size = ipts->device_info.feedback_size;
 
 	buffers = ipts->data;
-	for (i = 0; i < 16; i++) {
+	for (i = 0; i < IPTS_BUFFERS; i++) {
 		buffers[i].address = dmam_alloc_coherent(ipts->dev,
 				touch_buffer_size,
 				&buffers[i].dma_address,
@@ -88,7 +88,7 @@ int ipts_resources_init(struct ipts_context *ipts)
 	}
 
 	buffers = ipts->feedback;
-	for (i = 0; i < 16; i++) {
+	for (i = 0; i < IPTS_BUFFERS; i++) {
 		buffers[i].address = dmam_alloc_coherent(ipts->dev,
 				feedback_buffer_size,
 				&buffers[i].dma_address,

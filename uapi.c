@@ -87,7 +87,7 @@ static ssize_t ipts_uapi_read(struct file *file, char __user *buffer,
 	if (ipts->uapi.doorbell == *doorbell)
 		return 0;
 
-	buffer_id = ipts->uapi.doorbell % 16;
+	buffer_id = ipts->uapi.doorbell % IPTS_BUFFERS;
 	data = ipts->data[buffer_id].address;
 
 	if (copy_to_user(buffer, data + client->offset, to_read))

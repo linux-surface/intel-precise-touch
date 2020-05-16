@@ -8,7 +8,7 @@
 #include <linux/miscdevice.h>
 #include <linux/types.h>
 
-#include "protocol/responses.h"
+#include "protocol.h"
 
 /* IPTS driver states */
 enum ipts_host_status {
@@ -38,14 +38,14 @@ struct ipts_context {
 
 	enum ipts_host_status status;
 
-	struct ipts_buffer_info data[16];
-	struct ipts_buffer_info feedback[16];
+	struct ipts_buffer_info data[IPTS_BUFFERS];
 	struct ipts_buffer_info doorbell;
 
 	/*
-	 * These buffers are not actually used by anything, but they need
+	 * These buffers are not actually used for anything, but they need
 	 * to be allocated and passed to the ME to get proper functionality.
 	 */
+	struct ipts_buffer_info feedback[IPTS_BUFFERS];
 	struct ipts_buffer_info workqueue;
 	struct ipts_buffer_info host2me;
 

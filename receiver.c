@@ -5,9 +5,7 @@
 
 #include "context.h"
 #include "control.h"
-#include "protocol/commands.h"
-#include "protocol/events.h"
-#include "protocol/responses.h"
+#include "protocol.h"
 #include "resources.h"
 #include "uapi.h"
 
@@ -51,7 +49,7 @@ static int ipts_receiver_handle_set_mode(struct ipts_context *ipts)
 
 	memset(&cmd, 0, sizeof(struct ipts_set_mem_window_cmd));
 
-	for (i = 0; i < 16; i++) {
+	for (i = 0; i < IPTS_BUFFERS; i++) {
 		cmd.data_buffer_addr_lower[i] =
 			lower_32_bits(ipts->data[i].dma_address);
 
@@ -75,8 +73,8 @@ static int ipts_receiver_handle_set_mode(struct ipts_context *ipts)
 	cmd.host2me_addr_upper = upper_32_bits(ipts->host2me.dma_address);
 	cmd.host2me_size = ipts->device_info.data_size;
 
-	cmd.workqueue_size = 8192;
-	cmd.workqueue_item_size = 16;
+	cmd.workqueue_size = IPTS_WORKQUEUE_SIZE;
+	cmd.workqueue_item_size = IPTS_WORKQUEUE_ITEM_SIZE;
 
 	return ipts_control_send(ipts, IPTS_CMD(SET_MEM_WINDOW),
 			&cmd, sizeof(struct ipts_set_mem_window_cmd));

@@ -4,9 +4,7 @@
 #include <linux/types.h>
 
 #include "context.h"
-#include "protocol/commands.h"
-#include "protocol/events.h"
-#include "protocol/feedback.h"
+#include "protocol.h"
 #include "resources.h"
 #include "uapi.h"
 
@@ -16,7 +14,6 @@ int ipts_control_send(struct ipts_context *ipts,
 	int ret;
 	struct ipts_command msg;
 
-	memset(&msg, 0, sizeof(struct ipts_command));
 	msg.code = cmd;
 
 	// Copy message payload
@@ -38,18 +35,7 @@ int ipts_control_send(struct ipts_context *ipts,
 int ipts_control_send_feedback(struct ipts_context *ipts,
 		u32 buffer, u32 transaction)
 {
-	struct ipts_buffer_info feedback_buffer;
-	struct ipts_feedback *feedback;
 	struct ipts_feedback_cmd cmd;
-
-	feedback_buffer = ipts->feedback[buffer];
-	feedback = (struct ipts_feedback *)feedback_buffer.address;
-
-	memset(feedback, 0, sizeof(struct ipts_feedback));
-	memset(&cmd, 0, sizeof(struct ipts_feedback_cmd));
-
-	feedback->type = IPTS_FEEDBACK_TYPE_NONE;
-	feedback->transaction = transaction;
 
 	cmd.buffer = buffer;
 	cmd.transaction = transaction;
