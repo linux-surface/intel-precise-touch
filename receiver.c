@@ -11,8 +11,7 @@
 #include "resources.h"
 #include "uapi.h"
 
-static int ipts_receiver_handle_notify_dev_ready(struct ipts_context *ipts,
-		struct ipts_response *msg)
+static int ipts_receiver_handle_notify_dev_ready(struct ipts_context *ipts)
 {
 	return ipts_control_send(ipts, IPTS_CMD(GET_DEVICE_INFO), NULL, 0);
 }
@@ -30,8 +29,7 @@ static int ipts_receiver_handle_get_device_info(struct ipts_context *ipts,
 	return ipts_control_send(ipts, IPTS_CMD(CLEAR_MEM_WINDOW), NULL, 0);
 }
 
-static int ipts_receiver_handle_clear_mem_window(struct ipts_context *ipts,
-		struct ipts_response *msg)
+static int ipts_receiver_handle_clear_mem_window(struct ipts_context *ipts)
 {
 	struct ipts_set_mode_cmd sensor_mode_cmd;
 
@@ -42,8 +40,7 @@ static int ipts_receiver_handle_clear_mem_window(struct ipts_context *ipts,
 			&sensor_mode_cmd, sizeof(struct ipts_set_mode_cmd));
 }
 
-static int ipts_receiver_handle_set_mode(struct ipts_context *ipts,
-		struct ipts_response *msg)
+static int ipts_receiver_handle_set_mode(struct ipts_context *ipts)
 {
 	int i, ret;
 	struct ipts_set_mem_window_cmd cmd;
@@ -85,8 +82,7 @@ static int ipts_receiver_handle_set_mode(struct ipts_context *ipts,
 			&cmd, sizeof(struct ipts_set_mem_window_cmd));
 }
 
-static int ipts_receiver_handle_set_mem_window(struct ipts_context *ipts,
-		struct ipts_response *msg)
+static int ipts_receiver_handle_set_mem_window(struct ipts_context *ipts)
 {
 	ipts->status = IPTS_HOST_STATUS_STARTED;
 	dev_info(ipts->dev, "IPTS enabled\n");
@@ -94,12 +90,12 @@ static int ipts_receiver_handle_set_mem_window(struct ipts_context *ipts,
 	return ipts_control_send(ipts, IPTS_CMD(READY_FOR_DATA), NULL, 0);
 }
 
-static int ipts_receiver_handle_quiesce_io(struct ipts_context *ipts,
-		struct ipts_response *msg)
+static int ipts_receiver_handle_quiesce_io(struct ipts_context *ipts)
 {
 	if (ipts->status != IPTS_HOST_STATUS_RESTARTING)
 		return 0;
 
+	ipts_uapi_free(ipts);
 	ipts_resources_free(ipts);
 
 	return ipts_control_start(ipts);
@@ -163,22 +159,22 @@ static void ipts_receiver_handle_response(struct ipts_context *ipts,
 
 	switch (msg->code) {
 	case IPTS_RSP(NOTIFY_DEV_READY):
-		ret = ipts_receiver_handle_notify_dev_ready(ipts, msg);
+		ret = ipts_receiver_handle_notify_dev_ready(ipts);
 		break;
 	case IPTS_RSP(GET_DEVICE_INFO):
 		ret = ipts_receiver_handle_get_device_info(ipts, msg);
 		break;
 	case IPTS_RSP(CLEAR_MEM_WINDOW):
-		ret = ipts_receiver_handle_clear_mem_window(ipts, msg);
+		ret = ipts_receiver_handle_clear_mem_window(ipts);
 		break;
 	case IPTS_RSP(SET_MODE):
-		ret = ipts_receiver_handle_set_mode(ipts, msg);
+		ret = ipts_receiver_handle_set_mode(ipts);
 		break;
 	case IPTS_RSP(SET_MEM_WINDOW):
-		ret = ipts_receiver_handle_set_mem_window(ipts, msg);
+		ret = ipts_receiver_handle_set_mem_window(ipts);
 		break;
 	case IPTS_RSP(QUIESCE_IO):
-		ret = ipts_receiver_handle_quiesce_io(ipts, msg);
+		ret = ipts_receiver_handle_quiesce_io(ipts);
 		break;
 	}
 
