@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <linux/dma-mapping.h>
 #include <linux/mei_cl_bus.h>
 #include <linux/module.h>
 #include <linux/mod_devicetable.h>
@@ -18,6 +19,17 @@ static int ipts_init_probe(struct mei_cl_device *cldev,
 	struct ipts_context *ipts = NULL;
 
 	dev_info(&cldev->dev, "Probing IPTS\n");
+
+	// Setup the DMA bit mask
+	if (!dma_coerce_mask_and_coherent(&cldev->dev, DMA_BIT_MASK(64))) {
+		dev_info(&cldev->dev, "IPTS using DMA_BIT_MASK(64)\n");
+	} else if (!dma_coerce_mask_and_coherent(&cldev->dev,
+			DMA_BIT_MASK(32))) {
+		dev_info(&cldev->dev, "IPTS using DMA_BIT_MASK(32)");
+	} else {
+		dev_err(&cldev->dev, "No suitable DMA for IPTS available\n");
+		return -EFAULT;
+	}
 
 	ret = mei_cldev_enable(cldev);
 	if (ret) {
