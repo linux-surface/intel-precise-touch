@@ -36,10 +36,21 @@ struct ipts_info {
 #define IPTS_UAPI_START _IO(0x86, 0x02)
 #define IPTS_UAPI_STOP  _IO(0x86, 0x03)
 
+/*
+ * struct ipts_uapi_client - A userspace client that has opened the device.
+ *
+ * @ipts: The IPTS driver context, to access the doorbell and data buffers.
+ * @offset: How much of the current data buffer has been read by the client.
+ * @active: Whether this client is the active one. Because the data from the
+ *          hardware is not buffered, and sending feedback is linked to
+ *          reading it from userspace, there can only be one active client.
+ *          All other clients can access the device info, but will only
+ *          read 0 from the device.
+ */
 struct ipts_uapi_client {
 	struct ipts_context *ipts;
-	bool active;
 	u32 offset;
+	bool active;
 };
 
 DECLARE_WAIT_QUEUE_HEAD(ipts_uapi_wq);
