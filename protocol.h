@@ -24,7 +24,12 @@
 #define IPTS_RSP(COMMAND) (IPTS_CMD(COMMAND) + 0x80000000)
 
 /*
- * Events that can be sent and received from the ME
+ * enum ipts_evt_code - Events that can be sent and received from the ME
+ *
+ * Events can describe either a command (sent from host to ME) or a
+ * response (sent from ME to host). These values should not be used
+ * directly, instead they should be wrapped with the appropreate
+ * IPTS_CMD / IPTS_RSP macro, to clearly document the wanted event type.
  */
 enum ipts_evt_code {
 	IPTS_EVT_GET_DEVICE_INFO = 1,
@@ -38,12 +43,13 @@ enum ipts_evt_code {
 };
 
 /*
- * Status codes that are returned from the ME to indicate
- * whether a command was executed successfully.
+ * enum ipts_me_status - Status codes returned in response to a command.
  *
- * Some of theese errors are less serious than others, and need
- * to be ignored to ensure proper operation. See also the error
- * handling in receiver.c
+ * These codes are returned by the ME to indicate whether a command was
+ * executed successfully.
+ *
+ * Some of these errors are less serious than others, and some need to be
+ * ignored to ensure proper operation. See also ipts_receiver_handle_error.
  */
 enum ipts_me_status {
 	IPTS_ME_STATUS_SUCCESS = 0,
@@ -70,9 +76,20 @@ enum ipts_me_status {
 };
 
 /*
- * The mode that IPTS will use. Singletouch mode will disable the stylus
- * and only return basic HID data. Multitouch mode will return stylus, as
- * well as heatmap data for touch input.
+ * enum ipts_sensor_mode - The sensor mode for IPTS to use
+ *
+ * IPTS_SENSOR_MODE_SINGLETOUCH:
+ *
+ *   Singletouch mode is a fallback mode that does not support the stylus
+ *   or more than one touch input. The data is received as a HID report with
+ *   report ID 64.
+ *
+ * IPTS_SENSOR_MODE_MULTITOUCH:
+ *
+ *   Multitouch mode is the proper operation mode for IPTS. It will return
+ *   stylus data, as well as touch data as a raw heatmap directly from
+ *   the sensor. This data needs to be processed before it can be used
+ *   for input devices.
  *
  * This driver only supports multitouch mode.
  */
@@ -82,13 +99,13 @@ enum ipts_sensor_mode {
 };
 
 /*
- * The parameters for the SET_MODE command.
+ * struct ipts_set_mode_cmd - Parameters for the SET_MODE command.
  *
- * sensor_mode needs to be either IPTS_SENSOR_MODE_MULTITOUCH or
- * IPTS_SENSOR_MODE_SINGLETOUCH.
+ * @sensor_mode: The mode which the touch sensor should operate in
+ *               (from enum ipts_sensor_mode).
  *
- * On newer generations of IPTS (surface gen7), this command will fail
- * if anything other than IPTS_SENSOR_MODE_MULTITOUCH is sent.
+ * On newer generations of IPTS (surface gen7) this command will only accept
+ * IPTS_SENSOR_MODE_MULTITOUCH, and fail if anything else is sent.
  */
 struct ipts_set_mode_cmd {
 	u32 sensor_mode;
@@ -98,17 +115,17 @@ struct ipts_set_mode_cmd {
 static_assert(sizeof(struct ipts_set_mode_cmd) == 16);
 
 /*
- * The parameters for the SET_MEM_WINDOW command.
+ * struct ipts_set_mem_window_cmd - Parameters for the SET_MEM_WINDOW command.
  *
- * This passes the (physical) addresses of buffers to the ME,
- * which will then fill up those buffers with touch data. It also
- * sets up the doorbell, an unsigned integer that will correspond to
- * the next touch buffer to be filled.
+ * This passes the physical addresses of buffers to the ME, which are
+ * the used to exchange data between host and ME.
  *
- * Even though they are not used by the driver and stay empty, the feedback
- * buffers need to be allocated and passed too, otherwise the ME will refuse
- * to continue normally. Same applies for the host2me buffer, and the two
- * workqueue values.
+ * Some of these buffers are not used by the host. They are a leftover from
+ * when IPTS used binary firmware with GuC submission. They need to be
+ * allocated and passed, otherwise the command will not return successfully.
+ *
+ * For a description of the various buffers, please check out the ipts_context
+ * struct and it's documentation.
  */
 struct ipts_set_mem_window_cmd {
 	u32 data_buffer_addr_lower[IPTS_BUFFERS];
@@ -131,12 +148,13 @@ struct ipts_set_mem_window_cmd {
 static_assert(sizeof(struct ipts_set_mem_window_cmd) == 320);
 
 /*
- * The parameters for the FEEDBACK command.
+ * struct ipts_feedback_cmd - Parameters for the FEEDBACK command.
  *
  * This command is sent to indicate that the data in a buffer has been
- * consumed by the host, and that the ME can overwrite the data. This
- * requires the transaction ID, which can be fetched from the touch data
- * buffer.
+ * processed by the host, and that the ME can safely overwrite the data.
+ *
+ * @buffer: The buffer to be refilled
+ * @transaction: The transaction that was read from that buffer.
  */
 struct ipts_feedback_cmd {
 	u32 buffer;
@@ -147,13 +165,18 @@ struct ipts_feedback_cmd {
 static_assert(sizeof(struct ipts_feedback_cmd) == 16);
 
 /*
- * Commands are sent from the host to the ME. They consist of a
- * command code, and optionally a set of parameters. If no parameters
- * are neccessary, those bytes should be 0.
+ * struct ipts_command - Describes a command sent from the host to the ME.
  *
- * The ME will react to a command by sending a response, either returning
- * data that was queried, or simply indicating whether the command was
- * successfull.
+ * @code: The command code. (IPTS_CMD(EVENT))
+ * @set_mode: The parameters for the SET_MODE command
+ * @set_mem_window: The parameters for the SET_MEM_WINDOW command
+ * @feedback: The parameters for the FEEDBACK command.
+ *
+ * This struct should always be initialized with 0, to prevent the ME
+ * from interpreting random bytes as a parameter.
+ *
+ * The ME will react to a command by sending a response, indicating if
+ * the command was successfully, and returning queried data.
  */
 struct ipts_command {
 	u32 code;
@@ -167,11 +190,15 @@ struct ipts_command {
 static_assert(sizeof(struct ipts_command) == 324);
 
 /*
- * The data that is returned in response to the GET_DEVICE_INFO command.
+ * struct ipts_device_info - Returned by the GET_DEVICE_INFO command.
  *
- * The first four parameters identify the device we're talking to.
- * data_size and feedback_size are the required sizes for the data and
- * feedback buffers.
+ * @vendor_id: Vendor ID of the touch sensor
+ * @device_id: Device ID of the touch sensor
+ * @hw_rev: Hardware revision of the touch sensor
+ * @fw_rev: Firmware revision of the touch sensor
+ * @data_size: Required size of one data buffer
+ * @feedback_size: Required size of one feedback buffer
+ * @max_touch_points: The amount of concurrent touches supported by the sensor
  */
 struct ipts_device_info {
 	u16 vendor_id;
@@ -188,10 +215,14 @@ struct ipts_device_info {
 static_assert(sizeof(struct ipts_device_info) == 44);
 
 /*
- * Responses are sent from the ME to the host in reaction to a command.
- * They consist of the response code (command code + 0x80000000), the
- * status (IPTS_ME_STATUS_*), and optionally, the data that was queried
- * by the host.
+ * struct ipts_response - Describes the response from the ME to a command.
+ *
+ * @code: The response code. (0x80000000 + command code that was sent)
+ * @status: The return value of the command. (from enum ipts_me_status)
+ * @device_info: The data that was queried by the GET_DEVICE_INFO command.
+ *
+ * Theoretically all commands could return data but only the data from
+ * GET_DEVICE_INFO is relevant for the host.
  */
 struct ipts_response {
 	u32 code;
