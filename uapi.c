@@ -17,9 +17,10 @@ struct ipts_info {
 	__u16 product;
 	__u32 version;
 	__u32 buffer_size;
+	__u8 max_touch_points;
 
 	/* For future expansion */
-	__u8 reserved[20];
+	__u8 reserved[19];
 };
 
 #define IPTS_UAPI_INFO  _IOR(0x86, 0x01, struct ipts_info)
@@ -146,6 +147,7 @@ static long ipts_uapi_ioctl_info(struct ipts_uapi_client *client,
 	info.product = ipts->device_info.device_id;
 	info.version = ipts->device_info.fw_rev;
 	info.buffer_size = ipts->device_info.data_size;
+	info.max_touch_points = ipts->device_info.max_touch_points;
 
 	ret = copy_to_user(buffer, &info, sizeof(info));
 	if (ret)

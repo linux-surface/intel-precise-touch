@@ -180,7 +180,9 @@ struct ipts_device_info {
 	u32 fw_rev;
 	u32 data_size;
 	u32 feedback_size;
-	u8 reserved[24];
+	u8 reserved1[4];
+	u8 max_touch_points;
+	u8 reserved[19];
 } __packed;
 
 static_assert(sizeof(struct ipts_device_info) == 44);
