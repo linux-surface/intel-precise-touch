@@ -12,7 +12,17 @@
 #include "context.h"
 #include "control.h"
 
-#define IPTS_UAPI_INFO  _IOR(0x86, 0x01, struct ipts_device_info)
+struct ipts_info {
+	__u16 vendor;
+	__u16 product;
+	__u32 version;
+	__u32 buffer_size;
+
+	/* For future expansion */
+	__u8 reserved[20];
+};
+
+#define IPTS_UAPI_INFO  _IOR(0x86, 0x01, struct ipts_info)
 #define IPTS_UAPI_START _IO(0x86, 0x02)
 #define IPTS_UAPI_STOP  _IO(0x86, 0x03)
 
@@ -127,11 +137,17 @@ static long ipts_uapi_ioctl_info(struct ipts_uapi_client *client,
 		unsigned long arg)
 {
 	int ret;
+	struct ipts_info info;
+
 	void __user *buffer = (void __user *)arg;
 	struct ipts_context *ipts = client->ipts;
 
-	ret = copy_to_user(buffer, &ipts->device_info,
-			sizeof(struct ipts_device_info));
+	info.vendor = ipts->device_info.vendor_id;
+	info.product = ipts->device_info.device_id;
+	info.version = ipts->device_info.fw_rev;
+	info.buffer_size = ipts->device_info.data_size;
+
+	ret = copy_to_user(buffer, &info, sizeof(info));
 	if (ret)
 		return -EFAULT;
 
