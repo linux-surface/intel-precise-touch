@@ -12,6 +12,15 @@
 #include "context.h"
 #include "control.h"
 
+/*
+ * struct ipts_info - Information about an IPTS device
+ *
+ * @vendor: Vendor ID of the touch sensor
+ * @product: Device ID of the touch sensor
+ * @version: Revision of the touch sensor firmware
+ * @buffer_size: The maximum size of one touch data payload
+ * @max_touch_points: The amount of concurrent touches supported by the sensor
+ */
 struct ipts_info {
 	__u16 vendor;
 	__u16 product;
@@ -216,10 +225,12 @@ int ipts_uapi_doorbell_loop(void *data)
 
 		seconds = ktime_get_seconds();
 
-		// IPTS will increment the doorbell after if filled up one of
-		// the data buffers. If the doorbell didn't change, there is
-		// no work for us to do. Otherwise, the value of the doorbell
-		// will stand for the *next* buffer thats going to be filled.
+		/*
+		 * IPTS will increment the doorbell after if filled up one of
+		 * the data buffers. If the doorbell didn't change, there is
+		 * no work for us to do. Otherwise, the value of the doorbell
+		 * will stand for the *next* buffer thats going to be filled.
+		 */
 		doorbell = *(u32 *)ipts->doorbell.address;
 		if (doorbell != ipts->uapi.doorbell) {
 			wake_up_interruptible(&ipts_uapi_wq);
@@ -263,5 +274,4 @@ void ipts_uapi_free(struct ipts_context *ipts)
 	misc_deregister(&ipts->uapi.device);
 	kthread_stop(ipts->uapi.db_thread);
 }
-
 
