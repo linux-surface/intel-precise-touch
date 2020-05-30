@@ -1,10 +1,22 @@
 # Intel Precise Touch & Stylus
 
-Linux kernel driver for Intels IPTS touchscreen technology. With IPTS, the
-Intel Management Engine acts as an interface for a touch controller, that
-returns either raw capacitive touch data (for multitouch mode), or HID report
-data (for singletouch mode). This data is processed outside of the ME 
-and then relayed into the HID subsystem of the operating system.
+This is the kernelspace part of IPTS (Intel Precise Touch & Stylus) for Linux.
+
+With IPTS the Intel Management Engine acts as an interface for a touch
+controller, returning raw capacitive touch data. This data is processed
+outside of the ME and then relayed into the HID / input subsystem of the OS.
+
+This driver relies on a userspace daemon that can be found here:
+https://github.com/linux-surface/iptsd
+
+The driver will establish and manage the connection to the IPTS hardware. It
+will also set up an API that can be used by userspace to read the touch data
+from IPTS.
+
+The daemon will connect to the IPTS UAPI and start reading data. It will
+parse the data, and generate input events using uinput devices. The reason for
+doing this in userspace is that parsing the data requires floating points,
+which are not allowed in the kernel.
 
 ### Original IPTS driver
 The original driver for IPTS was released by Intel in late 2016
@@ -12,33 +24,13 @@ The original driver for IPTS was released by Intel in late 2016
 to process raw touch input data on the GPU, using OpenCL firmware extracted
 from Windows.
 
-An updated version of the driver can be found here:
+With linux 5.3 the ability to use GuC submission was removed from the i915
+graphics driver, rendering the old driver unuseable. This lead to this
+new driver being written, without using GuC submission. It is loosely based
+on the original driver, but has undergone significant refactoring and cleanup.
+
+An updated version of the driver can be found here for reference purposes:
 https://github.com/linux-surface/kernel/tree/v4.19-surface-devel/drivers/misc/ipts
-
-### This driver
-This driver is loosely based on the original implementation. The main difference
-is, that due to changes in the i915 graphics driver we cannot easily use GuC
-submission anymore on kernel 5.4+.
-
-This driver is not using GuC submission, instead it forwards the raw touch
-data to userspace where it gets parsed. The reason for moving the parsing
-to userspace is that it heavily relies on floating point mathematic, which
-is not available in the kernel directly.
-
-Other changes are a significant removal of unused and dead code compared to
-the driver provided by Intel.
-
-### Userspace daemon
-The userspace daemon that parses the data and handles input devices can be
-found here: https://github.com/linux-surface/iptsd
-
-### Working
-* Stylus input (gen4-6)
-* Singletouch finger input (gen7)
-
-### Not working
-* Multitouch finger input
-* Stylus input on gen7
 
 ### Building (in-tree)
 * Apply the patches from `patches/` to your kernel
