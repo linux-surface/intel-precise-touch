@@ -11,6 +11,7 @@
 
 #include "context.h"
 #include "control.h"
+#include "protocol.h"
 
 /*
  * struct ipts_info - Information about an IPTS device
@@ -102,6 +103,9 @@ static ssize_t ipts_uapi_read(struct file *file, char __user *buffer,
 	char *data;
 	u8 buffer_id;
 
+	int ret;
+	struct ipts_feedback_cmd cmd;
+
 	struct ipts_uapi_client *client = file->private_data;
 	struct ipts_context *ipts = client->ipts;
 	u32 *doorbell = (u32 *)ipts->doorbell.address;
@@ -131,7 +135,13 @@ static ssize_t ipts_uapi_read(struct file *file, char __user *buffer,
 	client->offset = 0;
 	ipts->uapi.doorbell++;
 
-	if (ipts_control_send_feedback(ipts, buffer_id))
+	memset(&cmd, 0, sizeof(struct ipts_feedback_cmd));
+	cmd.buffer = buffer_id;
+
+	ret = ipts_control_send(ipts, IPTS_CMD(FEEDBACK),
+			&cmd, sizeof(struct ipts_feedback_cmd));
+
+	if (ret)
 		return -EFAULT;
 
 	return to_read;

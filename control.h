@@ -9,7 +9,6 @@
 
 int ipts_control_send(struct ipts_context *ipts,
 		u32 cmd, void *data, u32 size);
-int ipts_control_send_feedback(struct ipts_context *ipts, u32 buffer);
 
 int ipts_control_start(struct ipts_context *ipts);
 void ipts_control_stop(struct ipts_context *ipts);
