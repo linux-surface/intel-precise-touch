@@ -32,13 +32,12 @@ int ipts_control_send(struct ipts_context *ipts,
 	return ret;
 }
 
-int ipts_control_send_feedback(struct ipts_context *ipts,
-		u32 buffer, u32 transaction)
+int ipts_control_send_feedback(struct ipts_context *ipts, u32 buffer)
 {
 	struct ipts_feedback_cmd cmd;
 
+	memset(&cmd, 0, sizeof(struct ipts_feedback_cmd));
 	cmd.buffer = buffer;
-	cmd.transaction = transaction;
 
 	return ipts_control_send(ipts, IPTS_CMD(FEEDBACK),
 			&cmd, sizeof(struct ipts_feedback_cmd));

@@ -154,12 +154,10 @@ static_assert(sizeof(struct ipts_set_mem_window_cmd) == 320);
  * processed by the host, and that the ME can safely overwrite the data.
  *
  * @buffer: The buffer to be refilled
- * @transaction: The transaction that was read from that buffer.
  */
 struct ipts_feedback_cmd {
 	u32 buffer;
-	u32 transaction;
-	u8 reserved[8];
+	u8 reserved[12];
 } __packed;
 
 static_assert(sizeof(struct ipts_feedback_cmd) == 16);

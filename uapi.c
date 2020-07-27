@@ -131,7 +131,7 @@ static ssize_t ipts_uapi_read(struct file *file, char __user *buffer,
 	client->offset = 0;
 	ipts->uapi.doorbell++;
 
-	if (ipts_control_send_feedback(ipts, buffer_id, data[64]))
+	if (ipts_control_send_feedback(ipts, buffer_id))
 		return -EFAULT;
 
 	return to_read;
