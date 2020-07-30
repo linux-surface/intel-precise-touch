@@ -3,6 +3,8 @@
 #ifndef _IPTS_RECEIVER_H_
 #define _IPTS_RECEIVER_H_
 
-int ipts_receiver_loop(void *data);
+#include <linux/mei_cl_bus.h>
+
+void ipts_receiver_callback(struct mei_cl_device *cldev);
 
 #endif /* _IPTS_RECEIVER_H_ */

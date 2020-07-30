@@ -7,7 +7,6 @@
 
 #include "context.h"
 #include "control.h"
-#include "data.h"
 #include "receiver.h"
 
 #define IPTS_MEI_UUID UUID_LE(0x3e8d0870, 0x271a, 0x4208, \
@@ -45,15 +44,11 @@ static int ipts_init_probe(struct mei_cl_device *cldev,
 		return -ENOMEM;
 	}
 
-	ipts->client_dev = cldev;
+	ipts->cldev = cldev;
 	ipts->dev = &cldev->dev;
 
 	mei_cldev_set_drvdata(cldev, ipts);
-
-	ipts->receiver_loop = kthread_run(ipts_receiver_loop, (void *)ipts,
-			"ipts_receiver_loop");
-	ipts->data_loop = kthread_run(ipts_data_loop, (void *)ipts,
-			"ipts_data_loop");
+	mei_cldev_register_rx_cb(cldev, ipts_receiver_callback);
 
 	ipts_control_start(ipts);
 
@@ -68,8 +63,6 @@ static int ipts_init_remove(struct mei_cl_device *cldev)
 
 	ipts_control_stop(ipts);
 	mei_cldev_disable(cldev);
-	kthread_stop(ipts->receiver_loop);
-	kthread_stop(ipts->data_loop);
 
 	return 0;
 }
@@ -90,4 +83,5 @@ module_mei_cl_driver(ipts_driver);
 
 MODULE_DESCRIPTION("IPTS touchscreen driver");
 MODULE_AUTHOR("Dorian Stoll <dorian.stoll@tmsp.io>");
+MODULE_AUTHOR("Maximilian Luz <luzmaximilian@gmail.com>");
 MODULE_LICENSE("GPL");
