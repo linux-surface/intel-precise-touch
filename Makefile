@@ -11,7 +11,7 @@ ipts-objs += resources.o
 ipts-objs += uapi.o
 
 MODULE_NAME    := ipts
-MODULE_VERSION := $(shell date '+%s')
+MODULE_VERSION := 2020-07-30
 
 sources := Makefile
 sources += Kconfig
