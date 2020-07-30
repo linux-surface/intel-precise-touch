@@ -3,8 +3,8 @@
 # Makefile for the IPTS touchscreen driver
 #
 
-MODULE_NAME    := "ipts"
-MODULE_VERSION := "2019-12-20"
+MODULE_NAME    := ipts
+MODULE_VERSION := 2020-07-30
 
 obj-$(CONFIG_TOUCHSCREEN_IPTS) += ipts.o
 ipts-objs := control.o
@@ -36,14 +36,7 @@ sources += params.c
 sources += params.h
 sources += payload.c
 sources += payload.h
-sources += protocol/commands.h
-sources += protocol/data.h
-sources += protocol/events.h
-sources += protocol/feedback.h
-sources += protocol/payload.h
-sources += protocol/responses.h
-sources += protocol/singletouch.h
-sources += protocol/stylus.h
+sources += protocol/
 sources += receiver.c
 sources += receiver.h
 sources += resources.c
@@ -53,7 +46,7 @@ sources += singletouch.h
 sources += stylus.c
 sources += stylus.h
 
-KVERSION := "$(shell uname -r)"
+KVERSION := $(shell uname -r)
 KDIR := /lib/modules/$(KVERSION)/build
 MDIR := /usr/src/$(MODULE_NAME)-$(MODULE_VERSION)
 
@@ -63,12 +56,9 @@ all:
 clean:
 	$(MAKE) -C $(KDIR) M=$(PWD) CONFIG_TOUCHSCREEN_IPTS=m clean
 
-check:
-	$(KDIR)/scripts/checkpatch.pl -f -q --no-tree $(sources)
-
 dkms-install: $(sources)
 	mkdir -p $(MDIR)
-	cp -t $(MDIR) $(sources)
+	cp -rt $(MDIR) $(sources)
 	dkms add $(MODULE_NAME)/$(MODULE_VERSION)
 	dkms build $(MODULE_NAME)/$(MODULE_VERSION)
 	dkms install $(MODULE_NAME)/$(MODULE_VERSION)
