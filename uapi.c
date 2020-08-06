@@ -295,4 +295,3 @@ void ipts_uapi_free(struct ipts_context *ipts)
 	misc_deregister(&ipts->uapi.device);
 	kthread_stop(ipts->uapi.db_thread);
 }
-
