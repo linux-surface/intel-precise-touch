@@ -77,6 +77,7 @@ static int ipts_receiver_handle_set_mem_window(struct ipts_context *ipts)
 	dev_info(ipts->dev, "Device %04hX:%04hX ready\n",
 			ipts->device_info.vendor_id,
 			ipts->device_info.device_id);
+	ipts->ready = 1;
 
 	return ipts_control_send(ipts, IPTS_CMD_READY_FOR_DATA, NULL, 0);
 }

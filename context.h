@@ -33,6 +33,8 @@ struct ipts_context {
 	struct ipts_buffer_info feedback[IPTS_BUFFERS];
 	struct ipts_buffer_info workqueue;
 	struct ipts_buffer_info host2me;
+
+	u8 ready;
 };
 
 #endif /* _IPTS_CONTEXT_H_ */

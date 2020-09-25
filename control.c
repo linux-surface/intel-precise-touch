@@ -37,6 +37,7 @@ int ipts_control_send(struct ipts_context *ipts,
 int ipts_control_start(struct ipts_context *ipts)
 {
 	dev_info(ipts->dev, "Starting IPTS\n");
+	ipts->ready = 0;
 
 	ipts_uapi_link(ipts);
 	return ipts_control_send(ipts, IPTS_CMD_GET_DEVICE_INFO, NULL, 0);
@@ -45,6 +46,7 @@ int ipts_control_start(struct ipts_context *ipts)
 void ipts_control_restart(struct ipts_context *ipts)
 {
 	dev_info(ipts->dev, "Stopping IPTS\n");
+	ipts->ready = 0;
 
 	ipts_uapi_unlink();
 	ipts_resources_free(ipts);
