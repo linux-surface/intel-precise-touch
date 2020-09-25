@@ -11,8 +11,34 @@
 
 #include "context.h"
 
-int ipts_uapi_init(struct ipts_context *ipts);
-void ipts_uapi_free(struct ipts_context *ipts);
+struct ipts_uapi {
+	dev_t dev;
+	struct class *class;
+	struct cdev cdev;
+
+	struct ipts_context *ipts;
+};
+
+struct ipts_device_info {
+	__u16 vendor;
+	__u16 product;
+	__u32 version;
+	__u32 buffer_size;
+	__u8 max_contacts;
+
+	/* For future expansion */
+	__u8 reserved[19];
+};
+
+#define IPTS_IOCTL_GET_DEVICE_INFO  _IOR(0x86, 0x01, struct ipts_device_info)
+#define IPTS_IOCTL_GET_DOORBELL     _IOR(0x86, 0x02, __u32)
+#define IPTS_IOCTL_SEND_FEEDBACK    _IO(0x86, 0x03)
+
+void ipts_uapi_link(struct ipts_context *ipts);
+void ipts_uapi_unlink(void);
+
+int ipts_uapi_init(void);
+void ipts_uapi_free(void);
 
 #endif /* _IPTS_UAPI_H_ */
 

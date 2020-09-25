@@ -21,23 +21,10 @@ struct ipts_buffer_info {
 	dma_addr_t dma_address;
 };
 
-struct ipts_chardev {
-	struct cdev chardev;
-	void *ipts;
-};
-
-struct ipts_uapi {
-	dev_t device;
-	struct class *class;
-
-	struct ipts_chardev cdevs[IPTS_BUFFERS];
-};
-
 struct ipts_context {
 	struct mei_cl_device *cldev;
 	struct device *dev;
 
-	struct ipts_uapi uapi;
 	struct ipts_get_device_info_rsp device_info;
 
 	struct ipts_buffer_info data[IPTS_BUFFERS];

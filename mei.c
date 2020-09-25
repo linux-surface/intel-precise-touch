@@ -16,6 +16,7 @@
 #include "control.h"
 #include "protocol.h"
 #include "receiver.h"
+#include "uapi.h"
 
 static int ipts_mei_set_dma_mask(struct mei_cl_device *cldev)
 {
@@ -45,9 +46,7 @@ static int ipts_mei_probe(struct mei_cl_device *cldev,
 		return ret;
 	}
 
-	ipts = devm_kzalloc(&cldev->dev,
-			sizeof(struct ipts_context), GFP_KERNEL);
-
+	ipts = kzalloc(sizeof(struct ipts_context), GFP_KERNEL);
 	if (!ipts) {
 		mei_cldev_disable(cldev);
 		return -ENOMEM;
@@ -67,6 +66,7 @@ static int ipts_mei_remove(struct mei_cl_device *cldev)
 	struct ipts_context *ipts = mei_cldev_get_drvdata(cldev);
 
 	ipts_control_stop(ipts);
+	kfree(ipts);
 
 	return 0;
 }
@@ -83,9 +83,34 @@ static struct mei_cl_driver ipts_mei_driver = {
 	.probe = ipts_mei_probe,
 	.remove = ipts_mei_remove,
 };
-module_mei_cl_driver(ipts_mei_driver);
+
+static int __init ipts_mei_init(void)
+{
+	int ret;
+
+	ret = ipts_uapi_init();
+	if (ret)
+		return ret;
+
+	ret = mei_cldev_driver_register(&ipts_mei_driver);
+	if (ret) {
+		ipts_uapi_free();
+		return ret;
+	}
+
+	return 0;
+}
+
+static void __exit ipts_mei_exit(void)
+{
+	mei_cldev_driver_unregister(&ipts_mei_driver);
+	ipts_uapi_free();
+}
 
 MODULE_DESCRIPTION("IPTS touchscreen driver");
 MODULE_AUTHOR("Dorian Stoll <dorian.stoll@tmsp.io>");
 MODULE_LICENSE("GPL");
+
+module_init(ipts_mei_init);
+module_exit(ipts_mei_exit);
 
