@@ -1,7 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
+/*
+ * Copyright (c) 2016 Intel Corporation
+ * Copyright (c) 2020 Dorian Stoll
+ *
+ * Linux driver for Intel Precise Touch & Stylus
+ */
 
 #include <linux/mei_cl_bus.h>
-#include <linux/types.h>
+#include <linux/mutex.h>
 
 #include "context.h"
 #include "protocol.h"
@@ -9,55 +15,45 @@
 #include "uapi.h"
 
 int ipts_control_send(struct ipts_context *ipts,
-		u32 cmd, void *data, u32 size)
+		u32 code, void *payload, size_t size)
 {
 	int ret;
-	struct ipts_command msg;
+	struct ipts_command cmd;
 
-	msg.code = cmd;
+	memset(&cmd, 0, sizeof(struct ipts_command));
+	cmd.code = code;
 
-	// Copy message payload
-	if (data && size > 0)
-		memcpy(&msg.data, data, size);
+	if (payload && size > 0)
+		memcpy(&cmd.payload, payload, size);
 
-	ret = mei_cldev_send(ipts->cldev, (u8 *)&msg, sizeof(msg.code) + size);
-	if (ret >= 0)
+	ret = mei_cldev_send(ipts->cldev, (u8 *)&cmd, sizeof(cmd.code) + size);
+	if (ret >= 0 || ret == -EINTR)
 		return 0;
 
-	if (cmd == IPTS_CMD(FEEDBACK) && ret == -IPTS_ME_STATUS_NOT_READY)
-		return 0;
-
-	dev_err(ipts->dev, "MEI error while sending: 0x%X:%d\n", cmd, ret);
-
+	dev_err(ipts->dev, "Error while sending: 0x%X:%d\n", code, ret);
 	return ret;
 }
 
 int ipts_control_start(struct ipts_context *ipts)
 {
-	ipts->status = IPTS_HOST_STATUS_STARTING;
-	ipts_uapi_init(ipts);
+	dev_info(ipts->dev, "Starting IPTS\n");
 
-	return ipts_control_send(ipts, IPTS_CMD(NOTIFY_DEV_READY), NULL, 0);
+	ipts_uapi_init(ipts);
+	return ipts_control_send(ipts, IPTS_CMD_GET_DEVICE_INFO, NULL, 0);
+}
+
+void ipts_control_restart(struct ipts_context *ipts)
+{
+	dev_info(ipts->dev, "Stopping IPTS\n");
+
+	ipts_uapi_free(ipts);
+	ipts_resources_free(ipts);
+	ipts_control_send(ipts, IPTS_CMD_CLEAR_MEM_WINDOW, NULL, 0);
 }
 
 void ipts_control_stop(struct ipts_context *ipts)
 {
-	ipts->status = IPTS_HOST_STATUS_STOPPED;
-
-	ipts_control_send(ipts, IPTS_CMD(QUIESCE_IO), NULL, 0);
-	ipts_control_send(ipts, IPTS_CMD(CLEAR_MEM_WINDOW), NULL, 0);
-
-	ipts_uapi_free(ipts);
-	ipts_resources_free(ipts);
+	ipts_control_restart(ipts);
+	mei_cldev_disable(ipts->cldev);
 }
 
-int ipts_control_restart(struct ipts_context *ipts)
-{
-	if (ipts->status == IPTS_HOST_STATUS_RESTARTING)
-		return 0;
-
-	dev_info(ipts->dev, "Restarting IPTS\n");
-	ipts->status = IPTS_HOST_STATUS_RESTARTING;
-
-	return ipts_control_send(ipts, IPTS_CMD(QUIESCE_IO), NULL, 0);
-}
