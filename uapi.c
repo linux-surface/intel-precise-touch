@@ -29,7 +29,7 @@ static ssize_t ipts_uapi_read(struct file *file, char __user *buf,
 
 	buffer = MINOR(file->f_path.dentry->d_inode->i_rdev);
 
-	if (!ipts || !ipts->ready)
+	if (!ipts || ipts->status != IPTS_HOST_STATUS_STARTED)
 		return -ENODEV;
 
 	maxbytes = ipts->device_info.data_size - *offset;
@@ -46,8 +46,9 @@ static long ipts_uapi_ioctl_get_device_ready(struct ipts_context *ipts,
 		unsigned long arg)
 {
 	void __user *buffer = (void __user *)arg;
+	u8 ready = ipts->status == IPTS_HOST_STATUS_STARTED;
 
-	if (copy_to_user(buffer, &ipts->ready, sizeof(u8)))
+	if (copy_to_user(buffer, &ready, sizeof(u8)))
 		return -EFAULT;
 
 	return 0;
@@ -59,7 +60,7 @@ static long ipts_uapi_ioctl_get_device_info(struct ipts_context *ipts,
 	struct ipts_device_info info;
 	void __user *buffer = (void __user *)arg;
 
-	if (!ipts->ready)
+	if (ipts->status != IPTS_HOST_STATUS_STARTED)
 		return -ENODEV;
 
 	info.vendor = ipts->device_info.vendor_id;
@@ -79,7 +80,7 @@ static long ipts_uapi_ioctl_get_doorbell(struct ipts_context *ipts,
 {
 	void __user *buffer = (void __user *)arg;
 
-	if (!ipts->ready)
+	if (ipts->status != IPTS_HOST_STATUS_STARTED)
 		return -ENODEV;
 
 	if (copy_to_user(buffer, ipts->doorbell.address, sizeof(u32)))
@@ -94,7 +95,7 @@ static long ipts_uapi_ioctl_send_feedback(struct ipts_context *ipts,
 	int ret;
 	struct ipts_feedback_cmd cmd;
 
-	if (!ipts->ready)
+	if (ipts->status != IPTS_HOST_STATUS_STARTED)
 		return -ENODEV;
 
 	memset(&cmd, 0, sizeof(struct ipts_feedback_cmd));

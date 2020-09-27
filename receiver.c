@@ -77,14 +77,18 @@ static int ipts_receiver_handle_set_mem_window(struct ipts_context *ipts)
 	dev_info(ipts->dev, "Device %04hX:%04hX ready\n",
 			ipts->device_info.vendor_id,
 			ipts->device_info.device_id);
-	ipts->ready = 1;
+	ipts->status = IPTS_HOST_STATUS_STARTED;
 
 	return ipts_control_send(ipts, IPTS_CMD_READY_FOR_DATA, NULL, 0);
 }
 
 static int ipts_receiver_handle_clear_mem_window(struct ipts_context *ipts)
 {
-	return ipts_control_start(ipts);
+	if (ipts->restart)
+		return ipts_control_start(ipts);
+
+	ipts->status = IPTS_HOST_STATUS_STOPPED;
+	return 0;
 }
 
 static bool ipts_receiver_handle_error(struct ipts_context *ipts,
@@ -99,6 +103,9 @@ static bool ipts_receiver_handle_error(struct ipts_context *ipts,
 		break;
 	case IPTS_STATUS_INVALID_PARAMS:
 		error = rsp->code != IPTS_RSP_FEEDBACK;
+		break;
+	case IPTS_STATUS_SENSOR_DISABLED:
+		error = ipts->status != IPTS_HOST_STATUS_STOPPING;
 		break;
 	default:
 		error = true;

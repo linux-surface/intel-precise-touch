@@ -6,6 +6,7 @@
  * Linux driver for Intel Precise Touch & Stylus
  */
 
+#include <linux/delay.h>
 #include <linux/mei_cl_bus.h>
 #include <linux/mutex.h>
 
@@ -37,25 +38,35 @@ int ipts_control_send(struct ipts_context *ipts,
 int ipts_control_start(struct ipts_context *ipts)
 {
 	dev_info(ipts->dev, "Starting IPTS\n");
-	ipts->ready = 0;
+	ipts->status = IPTS_HOST_STATUS_STARTING;
+	ipts->restart = false;
 
 	ipts_uapi_link(ipts);
 	return ipts_control_send(ipts, IPTS_CMD_GET_DEVICE_INFO, NULL, 0);
 }
 
-void ipts_control_restart(struct ipts_context *ipts)
+void ipts_control_stop(struct ipts_context *ipts)
 {
+	int i;
+
 	dev_info(ipts->dev, "Stopping IPTS\n");
-	ipts->ready = 0;
+	ipts->status = IPTS_HOST_STATUS_STOPPING;
 
 	ipts_uapi_unlink();
 	ipts_resources_free(ipts);
 	ipts_control_send(ipts, IPTS_CMD_CLEAR_MEM_WINDOW, NULL, 0);
+
+	for (i = 0; i < 20; i++) {
+		if (ipts->status != IPTS_HOST_STATUS_STOPPING)
+			break;
+
+		msleep(25);
+	}
 }
 
-void ipts_control_stop(struct ipts_context *ipts)
+void ipts_control_restart(struct ipts_context *ipts)
 {
-	ipts_control_restart(ipts);
-	mei_cldev_disable(ipts->cldev);
+	ipts->restart = true;
+	ipts_control_stop(ipts);
 }
 

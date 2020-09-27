@@ -16,6 +16,13 @@
 
 #include "protocol.h"
 
+enum ipts_host_status {
+	IPTS_HOST_STATUS_STARTING,
+	IPTS_HOST_STATUS_STARTED,
+	IPTS_HOST_STATUS_STOPPING,
+	IPTS_HOST_STATUS_STOPPED,
+};
+
 struct ipts_buffer_info {
 	u8 *address;
 	dma_addr_t dma_address;
@@ -25,6 +32,8 @@ struct ipts_context {
 	struct mei_cl_device *cldev;
 	struct device *dev;
 
+	bool restart;
+	enum ipts_host_status status;
 	struct ipts_get_device_info_rsp device_info;
 
 	struct ipts_buffer_info data[IPTS_BUFFERS];
@@ -33,8 +42,6 @@ struct ipts_context {
 	struct ipts_buffer_info feedback[IPTS_BUFFERS];
 	struct ipts_buffer_info workqueue;
 	struct ipts_buffer_info host2me;
-
-	u8 ready;
 };
 
 #endif /* _IPTS_CONTEXT_H_ */

@@ -66,6 +66,8 @@ static int ipts_mei_remove(struct mei_cl_device *cldev)
 	struct ipts_context *ipts = mei_cldev_get_drvdata(cldev);
 
 	ipts_control_stop(ipts);
+	mei_cldev_disable(cldev);
+
 	kfree(ipts);
 
 	return 0;
