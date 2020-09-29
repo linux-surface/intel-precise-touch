@@ -115,11 +115,14 @@ static bool ipts_receiver_handle_error(struct ipts_context *ipts,
 	if (!error)
 		return false;
 
-	dev_err(ipts->dev, "0x%08x failed: %d\n", rsp->code, rsp->status);
+	dev_err(ipts->dev, "Command 0x%08x failed: %d\n",
+			rsp->code, rsp->status);
 
 	if (rsp->code == IPTS_STATUS_SENSOR_UNEXPECTED_RESET) {
 		dev_err(ipts->dev, "Sensor was reset\n");
-		ipts_control_restart(ipts);
+
+		if (ipts_control_restart(ipts))
+			dev_err(ipts->dev, "Failed to restart IPTS\n");
 	}
 
 	return true;
@@ -154,7 +157,11 @@ static void ipts_receiver_handle_response(struct ipts_context *ipts,
 	if (!ret)
 		return;
 
-	ipts_control_stop(ipts);
+	dev_err(ipts->dev, "Error while handling response 0x%08x: %d\n",
+			rsp->code, ret);
+
+	if (ipts_control_stop(ipts))
+		dev_err(ipts->dev, "Failed to stop IPTS\n");
 }
 
 void ipts_receiver_callback(struct mei_cl_device *cldev)

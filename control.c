@@ -35,6 +35,9 @@ int ipts_control_send(struct ipts_context *ipts,
 
 int ipts_control_start(struct ipts_context *ipts)
 {
+	if (ipts->status != IPTS_HOST_STATUS_STOPPED)
+		return -EBUSY;
+
 	dev_info(ipts->dev, "Starting IPTS\n");
 	ipts->status = IPTS_HOST_STATUS_STARTING;
 	ipts->restart = false;
@@ -43,19 +46,28 @@ int ipts_control_start(struct ipts_context *ipts)
 	return ipts_control_send(ipts, IPTS_CMD_GET_DEVICE_INFO, NULL, 0);
 }
 
-void ipts_control_stop(struct ipts_context *ipts)
+int ipts_control_stop(struct ipts_context *ipts)
 {
+	if (ipts->status == IPTS_HOST_STATUS_STOPPING)
+		return -EBUSY;
+
+	if (ipts->status == IPTS_HOST_STATUS_STOPPED)
+		return -EBUSY;
+
 	dev_info(ipts->dev, "Stopping IPTS\n");
 	ipts->status = IPTS_HOST_STATUS_STOPPING;
 
 	ipts_uapi_unlink();
 	ipts_resources_free(ipts);
-	ipts_control_send(ipts, IPTS_CMD_CLEAR_MEM_WINDOW, NULL, 0);
+	return ipts_control_send(ipts, IPTS_CMD_CLEAR_MEM_WINDOW, NULL, 0);
 }
 
-void ipts_control_restart(struct ipts_context *ipts)
+int ipts_control_restart(struct ipts_context *ipts)
 {
+	if (ipts->restart)
+		return -EBUSY;
+
 	ipts->restart = true;
-	ipts_control_stop(ipts);
+	return ipts_control_stop(ipts);
 }
 

@@ -55,6 +55,7 @@ static int ipts_mei_probe(struct mei_cl_device *cldev,
 
 	ipts->cldev = cldev;
 	ipts->dev = &cldev->dev;
+	ipts->status = IPTS_HOST_STATUS_STOPPED;
 
 	mei_cldev_set_drvdata(cldev, ipts);
 	mei_cldev_register_rx_cb(cldev, ipts_receiver_callback);
