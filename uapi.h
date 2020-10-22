@@ -9,6 +9,8 @@
 #ifndef _IPTS_UAPI_H_
 #define _IPTS_UAPI_H_
 
+#include <linux/types.h>
+
 #include "context.h"
 
 struct ipts_uapi {
