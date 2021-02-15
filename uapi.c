@@ -7,11 +7,11 @@
  */
 
 #include <linux/cdev.h>
+#include <linux/delay.h>
 #include <linux/device.h>
 #include <linux/fs.h>
-#include <linux/delay.h>
-#include <linux/uaccess.h>
 #include <linux/types.h>
+#include <linux/uaccess.h>
 
 #include "context.h"
 #include "control.h"
