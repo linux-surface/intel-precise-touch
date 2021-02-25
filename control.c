@@ -65,6 +65,8 @@ int ipts_control_start(struct ipts_context *ipts)
 
 int ipts_control_stop(struct ipts_context *ipts)
 {
+	int ret;
+
 	if (ipts->status == IPTS_HOST_STATUS_STOPPING)
 		return -EBUSY;
 
@@ -77,7 +79,11 @@ int ipts_control_stop(struct ipts_context *ipts)
 	ipts_uapi_unlink();
 	ipts_resources_free(ipts);
 
-	return ipts_control_send_feedback(ipts, 0);
+	ret = ipts_control_send_feedback(ipts, 0);
+	if (ret == -ENODEV)
+		ipts->status = IPTS_HOST_STATUS_STOPPED;
+
+	return ret;
 }
 
 int ipts_control_restart(struct ipts_context *ipts)
