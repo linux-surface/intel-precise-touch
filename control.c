@@ -29,7 +29,13 @@ int ipts_control_send(struct ipts_context *ipts, u32 code, void *payload,
 	if (ret >= 0)
 		return 0;
 
-	dev_err(ipts->dev, "Error while sending: 0x%X:%d\n", code, ret);
+	/*
+	 * During shutdown the device might get pulled away from below our feet.
+	 * Dont log an error in this case, because it will confuse people.
+	 */
+	if (ret != -ENODEV || ipts->status != IPTS_HOST_STATUS_STOPPING)
+		dev_err(ipts->dev, "Error while sending: 0x%X:%d\n", code, ret);
+
 	return ret;
 }
 
