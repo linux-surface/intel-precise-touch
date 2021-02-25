@@ -39,10 +39,10 @@ clean:
 	$(MAKE) -C $(KDIR) M=$(PWD) CONFIG_MISC_IPTS=m clean
 
 check:
-	$(KDIR)/scripts/checkpatch.pl -f -q --no-tree $(sources)
+	$(KDIR)/scripts/checkpatch.pl -f -q --no-tree --ignore EMBEDDED_FILENAME $(sources)
 
 check_strict:
-	$(KDIR)/scripts/checkpatch.pl -f -q --no-tree --strict $(sources)
+	$(KDIR)/scripts/checkpatch.pl -f -q --no-tree --strict --ignore EMBEDDED_FILENAME $(sources)
 
 dkms-install: $(sources)
 	mkdir -p $(MDIR)
