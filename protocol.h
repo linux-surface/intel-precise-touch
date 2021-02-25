@@ -270,6 +270,14 @@ struct ipts_get_device_info_rsp {
 } __packed;
 
 /**
+ * struct ipts_feedback_rsp - Payload for the FEEDBACK response.
+ * @buffer: The buffer that has received feedback.
+ */
+struct ipts_feedback_rsp {
+	u32 buffer;
+} __packed;
+
+/**
  * struct ipts_response - A message sent from the ME to the host.
  * @code:    The message code describing the response. (see IPTS_RSP_*)
  * @status:  The status code returned by the command.
