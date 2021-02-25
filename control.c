@@ -26,7 +26,7 @@ int ipts_control_send(struct ipts_context *ipts, u32 code, void *payload,
 		memcpy(&cmd.payload, payload, size);
 
 	ret = mei_cldev_send(ipts->cldev, (u8 *)&cmd, sizeof(cmd.code) + size);
-	if (ret >= 0 || ret == -EINTR)
+	if (ret >= 0)
 		return 0;
 
 	dev_err(ipts->dev, "Error while sending: 0x%X:%d\n", code, ret);
