@@ -33,6 +33,17 @@ int ipts_control_send(struct ipts_context *ipts, u32 code, void *payload,
 	return ret;
 }
 
+int ipts_control_send_feedback(struct ipts_context *ipts, u32 buffer)
+{
+	struct ipts_feedback_cmd cmd;
+
+	memset(&cmd, 0, sizeof(struct ipts_feedback_cmd));
+	cmd.buffer = buffer;
+
+	return ipts_control_send(ipts, IPTS_CMD_FEEDBACK, &cmd,
+				 sizeof(struct ipts_feedback_cmd));
+}
+
 int ipts_control_start(struct ipts_context *ipts)
 {
 	if (ipts->status != IPTS_HOST_STATUS_STOPPED)
