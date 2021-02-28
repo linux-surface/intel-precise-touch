@@ -50,6 +50,23 @@ int ipts_control_send_feedback(struct ipts_context *ipts, u32 buffer)
 				 sizeof(struct ipts_feedback_cmd));
 }
 
+int ipts_control_set_feature(struct ipts_context *ipts, u8 report, u8 value)
+{
+	struct ipts_feedback_buffer *feedback;
+
+	memset(ipts->host2me.address, 0, ipts->device_info.feedback_size);
+	feedback = (struct ipts_feedback_buffer *)ipts->host2me.address;
+
+	feedback->cmd_type = IPTS_FEEDBACK_CMD_TYPE_NONE;
+	feedback->data_type = IPTS_FEEDBACK_DATA_TYPE_SET_FEATURES;
+	feedback->buffer = IPTS_HOST2ME_BUFFER;
+	feedback->size = 2;
+	feedback->payload[0] = report;
+	feedback->payload[1] = value;
+
+	return ipts_control_send_feedback(ipts, IPTS_HOST2ME_BUFFER);
+}
+
 int ipts_control_start(struct ipts_context *ipts)
 {
 	if (ipts->status != IPTS_HOST_STATUS_STOPPED)
