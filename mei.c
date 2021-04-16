@@ -70,6 +70,11 @@ static void ipts_mei_remove(struct mei_cl_device *cldev)
 
 	ipts_control_stop(ipts);
 
+	/*
+	 * We need to flush all buffers and clear their addresses to prevent
+	 * issues during or after suspend. Delay the removal until all of that
+	 * is done, but not for more than 500ms.
+	 */
 	for (i = 0; i < 20; i++) {
 		if (ipts->status == IPTS_HOST_STATUS_STOPPED)
 			break;
