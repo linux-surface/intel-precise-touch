@@ -29,13 +29,7 @@ int ipts_control_send(struct ipts_context *ipts, u32 code, void *payload,
 	if (ret >= 0)
 		return 0;
 
-	/*
-	 * During shutdown the device might get pulled away from below our feet.
-	 * Dont log an error in this case, because it will confuse people.
-	 */
-	if (ret != -ENODEV || ipts->status != IPTS_HOST_STATUS_STOPPING)
-		dev_err(ipts->dev, "Error while sending: 0x%X:%d\n", code, ret);
-
+	dev_err(ipts->dev, "Error while sending: 0x%X:%d\n", code, ret);
 	return ret;
 }
 
@@ -81,8 +75,6 @@ int ipts_control_start(struct ipts_context *ipts)
 
 int ipts_control_stop(struct ipts_context *ipts)
 {
-	int ret;
-
 	if (ipts->status == IPTS_HOST_STATUS_STOPPING)
 		return -EBUSY;
 
@@ -95,11 +87,7 @@ int ipts_control_stop(struct ipts_context *ipts)
 	ipts_uapi_unlink();
 	ipts_resources_free(ipts);
 
-	ret = ipts_control_send_feedback(ipts, 0);
-	if (ret == -ENODEV)
-		ipts->status = IPTS_HOST_STATUS_STOPPED;
-
-	return ret;
+	return ipts_control_send_feedback(ipts, 0);
 }
 
 int ipts_control_restart(struct ipts_context *ipts)
