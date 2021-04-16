@@ -27,14 +27,12 @@ static int ipts_receiver_handle_get_device_info(struct ipts_context *ipts,
 {
 	struct ipts_set_mode_cmd cmd;
 
-	memcpy(&ipts->device_info, rsp->payload,
-	       sizeof(struct ipts_get_device_info_rsp));
+	memcpy(&ipts->device_info, rsp->payload, sizeof(ipts->device_info));
 
-	memset(&cmd, 0, sizeof(struct ipts_set_mode_cmd));
+	memset(&cmd, 0, sizeof(cmd));
 	cmd.mode = IPTS_MODE_MULTITOUCH;
 
-	return ipts_control_send(ipts, IPTS_CMD_SET_MODE, &cmd,
-				 sizeof(struct ipts_set_mode_cmd));
+	return ipts_control_send(ipts, IPTS_CMD_SET_MODE, &cmd, sizeof(cmd));
 }
 
 static int ipts_receiver_handle_set_mode(struct ipts_context *ipts)
@@ -48,7 +46,7 @@ static int ipts_receiver_handle_set_mode(struct ipts_context *ipts)
 		return ret;
 	}
 
-	memset(&cmd, 0, sizeof(struct ipts_set_mem_window_cmd));
+	memset(&cmd, 0, sizeof(cmd));
 
 	for (i = 0; i < IPTS_BUFFERS; i++) {
 		cmd.data_buffer_addr_lower[i] =
@@ -77,7 +75,7 @@ static int ipts_receiver_handle_set_mode(struct ipts_context *ipts)
 	cmd.workqueue_item_size = IPTS_WORKQUEUE_ITEM_SIZE;
 
 	return ipts_control_send(ipts, IPTS_CMD_SET_MEM_WINDOW, &cmd,
-				 sizeof(struct ipts_set_mem_window_cmd));
+				 sizeof(cmd));
 }
 
 static int ipts_receiver_handle_set_mem_window(struct ipts_context *ipts)
@@ -214,7 +212,7 @@ void ipts_receiver_callback(struct mei_cl_device *cldev)
 
 	ipts = mei_cldev_get_drvdata(cldev);
 
-	ret = mei_cldev_recv(cldev, (u8 *)&rsp, sizeof(struct ipts_response));
+	ret = mei_cldev_recv(cldev, (u8 *)&rsp, sizeof(rsp));
 	if (ret <= 0) {
 		dev_err(ipts->dev, "Error while reading response: %d\n", ret);
 		return;

@@ -51,7 +51,7 @@ static long ipts_uapi_ioctl_get_device_ready(struct ipts_context *ipts,
 	if (ipts)
 		ready = ipts->status == IPTS_HOST_STATUS_STARTED;
 
-	if (copy_to_user(buffer, &ready, sizeof(u8)))
+	if (copy_to_user(buffer, &ready, sizeof(ready)))
 		return -EFAULT;
 
 	return 0;
@@ -72,7 +72,7 @@ static long ipts_uapi_ioctl_get_device_info(struct ipts_context *ipts,
 	info.buffer_size = ipts->device_info.data_size;
 	info.max_contacts = ipts->device_info.max_contacts;
 
-	if (copy_to_user(buffer, &info, sizeof(struct ipts_device_info)))
+	if (copy_to_user(buffer, &info, sizeof(info)))
 		return -EFAULT;
 
 	return 0;
@@ -118,12 +118,10 @@ static long ipts_uapi_ioctl_send_reset(struct ipts_context *ipts)
 	if (!ipts || ipts->status != IPTS_HOST_STATUS_STARTED)
 		return -ENODEV;
 
-	memset(&cmd, 0, sizeof(struct ipts_reset_sensor_cmd));
+	memset(&cmd, 0, sizeof(cmd));
 	cmd.type = IPTS_RESET_TYPE_SOFT;
 
-	ret = ipts_control_send(ipts, IPTS_CMD_RESET_SENSOR, &cmd,
-				sizeof(struct ipts_reset_sensor_cmd));
-
+	ret = ipts_control_send(ipts, IPTS_CMD_RESET_SENSOR, &cmd, sizeof(cmd));
 	if (ret)
 		return -EFAULT;
 

@@ -19,7 +19,7 @@ int ipts_control_send(struct ipts_context *ipts, u32 code, void *payload,
 	int ret;
 	struct ipts_command cmd;
 
-	memset(&cmd, 0, sizeof(struct ipts_command));
+	memset(&cmd, 0, sizeof(cmd));
 	cmd.code = code;
 
 	if (payload && size > 0)
@@ -46,8 +46,7 @@ int ipts_control_send_feedback(struct ipts_context *ipts, u32 buffer)
 	memset(&cmd, 0, sizeof(struct ipts_feedback_cmd));
 	cmd.buffer = buffer;
 
-	return ipts_control_send(ipts, IPTS_CMD_FEEDBACK, &cmd,
-				 sizeof(struct ipts_feedback_cmd));
+	return ipts_control_send(ipts, IPTS_CMD_FEEDBACK, &cmd, sizeof(cmd));
 }
 
 int ipts_control_set_feature(struct ipts_context *ipts, u8 report, u8 value)
