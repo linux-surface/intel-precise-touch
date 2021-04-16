@@ -15,6 +15,7 @@
 
 #include "context.h"
 #include "control.h"
+#include "linux/device.h"
 #include "protocol.h"
 #include "receiver.h"
 #include "uapi.h"
@@ -47,7 +48,7 @@ static int ipts_mei_probe(struct mei_cl_device *cldev,
 		return ret;
 	}
 
-	ipts = kzalloc(sizeof(*ipts), GFP_KERNEL);
+	ipts = devm_kzalloc(&cldev->dev, sizeof(*ipts), GFP_KERNEL);
 	if (!ipts) {
 		mei_cldev_disable(cldev);
 		return -ENOMEM;
@@ -83,7 +84,6 @@ static void ipts_mei_remove(struct mei_cl_device *cldev)
 	}
 
 	mei_cldev_disable(cldev);
-	kfree(ipts);
 }
 
 static struct mei_cl_device_id ipts_mei_device_id_table[] = {
