@@ -18,7 +18,8 @@ int ipts_control_start(struct ipts_context *ipts);
 int ipts_control_restart(struct ipts_context *ipts);
 int ipts_control_stop(struct ipts_context *ipts);
 int ipts_control_change_mode(struct ipts_context *ipts, enum ipts_mode mode);
-int ipts_control_set_feature(struct ipts_context *ipts, u8 *report,
-			     size_t size);
+int ipts_control_host2me_feedback(struct ipts_context *ipts,
+				  enum ipts_feedback_data_type type, u8 *report,
+				  size_t size);
 
 #endif /* _IPTS_CONTROL_H_ */

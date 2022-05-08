@@ -61,7 +61,9 @@ int ipts_control_change_mode(struct ipts_context *ipts, enum ipts_mode mode)
 	return ipts_control_restart(ipts);
 }
 
-int ipts_control_set_feature(struct ipts_context *ipts, u8 *report, size_t size)
+int ipts_control_host2me_feedback(struct ipts_context *ipts,
+				  enum ipts_feedback_data_type type, u8 *report,
+				  size_t size)
 {
 	struct ipts_feedback_buffer *feedback;
 
@@ -71,8 +73,8 @@ int ipts_control_set_feature(struct ipts_context *ipts, u8 *report, size_t size)
 
 	// Configure the buffer as a SET_FEATURES command
 	feedback->cmd_type = IPTS_FEEDBACK_CMD_TYPE_NONE;
-	feedback->data_type = IPTS_FEEDBACK_DATA_TYPE_SET_FEATURES;
 	feedback->buffer = IPTS_HOST2ME_BUFFER;
+	feedback->data_type = type;
 	feedback->size = size;
 
 	// Check if the passed report fits into the buffer

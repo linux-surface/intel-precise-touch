@@ -13,6 +13,7 @@
 #include <linux/device.h>
 #include <linux/mei_cl_bus.h>
 #include <linux/types.h>
+#include <linux/hid.h>
 
 #include "protocol.h"
 
@@ -34,6 +35,9 @@ struct ipts_context {
 
 	bool restart;
 	enum ipts_mode mode;
+
+	struct hid_device *hid;
+	u8 *feature_report;
 
 	enum ipts_host_status status;
 	struct ipts_get_device_info_rsp device_info;

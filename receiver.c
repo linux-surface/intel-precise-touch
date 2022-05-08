@@ -13,6 +13,7 @@
 #include "cmd.h"
 #include "context.h"
 #include "control.h"
+#include "hid.h"
 #include "protocol.h"
 #include "resources.h"
 
@@ -44,17 +45,32 @@ static int ipts_receiver_handle_set_mem_window(struct ipts_context *ipts)
 	// Update host status
 	ipts->status = IPTS_HOST_STATUS_STARTED;
 
+	ipts_hid_init(ipts);
+
 	// Host and Hardware are now ready to receive data
 	return ipts_cmd_ready_for_data(ipts);
 }
 
 static int ipts_receiver_handle_ready_for_data(struct ipts_context *ipts)
 {
+	int ret;
+	u32 buffer;
+	u32 *doorbell = (u32 *)ipts->doorbell.address;
+
 	if (ipts->mode != IPTS_MODE_SINGLETOUCH)
 		return 0;
 
 	// TODO: Handle incoming data
-	return 0;
+	buffer = *doorbell % IPTS_BUFFERS;
+	*doorbell = *doorbell + 1;
+
+	ret = ipts_hid_input_data(ipts, buffer);
+	if (ret) {
+		dev_err(ipts->dev, "Failed to send HID report: %d\n", ret);
+		return ret;
+	}
+
+	return ipts_cmd_feedback(ipts, buffer);
 }
 
 static int ipts_receiver_handle_feedback(struct ipts_context *ipts,
@@ -88,6 +104,7 @@ static int ipts_receiver_handle_clear_mem_window(struct ipts_context *ipts)
 
 	// Clear out the resources
 	ipts_resources_free(ipts);
+	ipts_hid_free(ipts);
 
 	// If requested, immideately restart the host
 	if (ipts->restart)
