@@ -147,7 +147,7 @@ static const u8 ipts_descriptor[] = {
 	0xC0,		  //  End Collection,
 };
 
-int ipts_desc_get_size(u8 report);
-u8 ipts_desc_get_report(int size);
+u32 ipts_desc_get_size(u8 report);
+u8 ipts_desc_get_report(u32 size);
 
 #endif /* _IPTS_DESC_H_ */

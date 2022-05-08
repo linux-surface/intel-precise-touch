@@ -4,9 +4,9 @@
 
 #include "desc.h"
 
-int ipts_desc_get_size(u8 report)
+u32 ipts_desc_get_size(u8 report)
 {
-	int ret;
+	u32 ret;
 
 	switch (report) {
 	case 7:
@@ -34,14 +34,14 @@ int ipts_desc_get_size(u8 report)
 		ret = IPTS_HID_REPORT_SIZE_26;
 		break;
 	default:
-		ret = -1;
+		ret = 0;
 		break;
 	}
 
 	return ret;
 }
 
-u8 ipts_desc_get_report(int size)
+u8 ipts_desc_get_report(u32 size)
 {
 	// Add HID Header (one byte for report ID, two bytes for timestamp)
 	size = size + 3;
@@ -65,7 +65,7 @@ u8 ipts_desc_get_report(int size)
 		return 11;
 
 	if (size < ipts_desc_get_size(12))
-		return 7;
+		return 12;
 
 	if (size < ipts_desc_get_size(26))
 		return 26;
