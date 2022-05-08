@@ -25,7 +25,7 @@ static const u8 ipts_descriptor[] = {
 	// Descriptor for singletouch HID data
 	0x05, 0x0D,	  //  Usage Page (Digitizer),
 	0x09, 0x04,	  //  Usage (Touchscreen),
-	0xA1, 0x02,	  //  Collection (Logical),
+	0xA1, 0x01,	  //  Collection (Application),
 	0x85, 0x40,	  //      Report ID (64),
 	0x09, 0x42,	  //      Usage (Tip Switch),
 	0x15, 0x00,	  //      Logical Minimum (0),
