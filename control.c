@@ -58,7 +58,7 @@ int ipts_control_change_mode(struct ipts_context *ipts, enum ipts_mode mode)
 		return 0;
 
 	ipts->mode = mode;
-	return ipts_control_restart(ipts);
+	return ipts_cmd_set_mode(ipts, mode);
 }
 
 int ipts_control_host2me_feedback(struct ipts_context *ipts,

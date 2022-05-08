@@ -27,13 +27,16 @@ static int ipts_receiver_handle_get_device_info(struct ipts_context *ipts,
 
 static int ipts_receiver_handle_set_mode(struct ipts_context *ipts)
 {
-	int ret;
 
 	// Allocate buffers ...
-	ret = ipts_resources_alloc(ipts);
-	if (ret) {
-		dev_err(ipts->dev, "Failed to allocate resources\n");
-		return ret;
+	if (ipts->status != IPTS_HOST_STATUS_STARTED) {
+		int ret;
+
+		ret = ipts_resources_alloc(ipts);
+		if (ret) {
+			dev_err(ipts->dev, "Failed to allocate resources\n");
+			return ret;
+		}
 	}
 
 	// ... and send them to the hardware.
@@ -42,10 +45,13 @@ static int ipts_receiver_handle_set_mode(struct ipts_context *ipts)
 
 static int ipts_receiver_handle_set_mem_window(struct ipts_context *ipts)
 {
-	// Update host status
-	ipts->status = IPTS_HOST_STATUS_STARTED;
+	if (ipts->status != IPTS_HOST_STATUS_STARTED) {
+		// Update host status
+		ipts->status = IPTS_HOST_STATUS_STARTED;
 
-	ipts_hid_init(ipts);
+		// Initialize HID device
+		ipts_hid_init(ipts);
+	}
 
 	// Host and Hardware are now ready to receive data
 	return ipts_cmd_ready_for_data(ipts);

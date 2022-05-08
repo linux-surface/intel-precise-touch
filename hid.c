@@ -3,6 +3,7 @@
 #include <linux/hid.h>
 #include <linux/kernel.h>
 
+#include "cmd.h"
 #include "context.h"
 #include "control.h"
 #include "desc.h"
@@ -62,6 +63,19 @@ static int ipts_hid_raw_request(struct hid_device *hid, unsigned char reportnum,
 	else
 		return -EIO;
 
+	// Translate the HID command for changing touch modes to the old API
+	// that was used before gen7. On gen7, this will only change how the
+	// data is received (incremented doorbell or READY_FOR_DATA event).
+	if (type == IPTS_FEEDBACK_DATA_TYPE_SET_FEATURES && reportnum == 0x5) {
+		int ret;
+
+		ret = ipts_control_change_mode(ipts, buf[1]);
+		if (ret) {
+			dev_err(ipts->dev, "Failed to switch modes: %d\n", ret);
+			return ret;
+		}
+	}
+
 	ipts->feature_report = NULL;
 
 	// Send Host2ME feedback, containing the report
@@ -108,6 +122,9 @@ int ipts_hid_input_data(struct ipts_context *ipts, int buffer)
 		wake_up(&wq);
 		return 0;
 	}
+
+	if (data->type != IPTS_DATA_TYPE_PAYLOAD)
+		return 0;
 
 	// Get the smallest report ID that could fit the data
 	report = ipts_desc_get_report(data->size);
