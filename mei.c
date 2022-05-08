@@ -8,6 +8,7 @@
 
 #include <linux/delay.h>
 #include <linux/dma-mapping.h>
+#include <linux/kthread.h>
 #include <linux/mei_cl_bus.h>
 #include <linux/mod_devicetable.h>
 #include <linux/module.h>
@@ -15,6 +16,7 @@
 
 #include "context.h"
 #include "control.h"
+#include "doorbell.h"
 #include "protocol.h"
 #include "receiver.h"
 
@@ -62,6 +64,9 @@ static int ipts_mei_probe(struct mei_cl_device *cldev,
 	mei_cldev_set_drvdata(cldev, ipts);
 	mei_cldev_register_rx_cb(cldev, ipts_receiver_callback);
 
+	ipts->doorbell_loop =
+		kthread_run(ipts_doorbell_loop, ipts, "ipts_db_loop");
+
 	return ipts_control_start(ipts);
 }
 
@@ -83,6 +88,7 @@ static void ipts_mei_remove(struct mei_cl_device *cldev)
 		msleep(25);
 	}
 
+	kthread_stop(ipts->doorbell_loop);
 	mei_cldev_disable(cldev);
 }
 

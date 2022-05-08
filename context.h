@@ -11,9 +11,9 @@
 
 #include <linux/cdev.h>
 #include <linux/device.h>
+#include <linux/hid.h>
 #include <linux/mei_cl_bus.h>
 #include <linux/types.h>
-#include <linux/hid.h>
 
 #include "protocol.h"
 
@@ -48,6 +48,8 @@ struct ipts_context {
 	struct ipts_buffer_info feedback[IPTS_BUFFERS];
 	struct ipts_buffer_info workqueue;
 	struct ipts_buffer_info host2me;
+
+	struct task_struct *doorbell_loop;
 };
 
 #endif /* _IPTS_CONTEXT_H_ */

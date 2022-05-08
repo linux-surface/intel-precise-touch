@@ -53,24 +53,14 @@ static int ipts_receiver_handle_set_mem_window(struct ipts_context *ipts)
 
 static int ipts_receiver_handle_ready_for_data(struct ipts_context *ipts)
 {
-	int ret;
-	u32 buffer;
 	u32 *doorbell = (u32 *)ipts->doorbell.address;
 
 	if (ipts->mode != IPTS_MODE_SINGLETOUCH)
 		return 0;
 
-	// TODO: Handle incoming data
-	buffer = *doorbell % IPTS_BUFFERS;
+	// Trigger a doorbell update
 	*doorbell = *doorbell + 1;
-
-	ret = ipts_hid_input_data(ipts, buffer);
-	if (ret) {
-		dev_err(ipts->dev, "Failed to send HID report: %d\n", ret);
-		return ret;
-	}
-
-	return ipts_cmd_feedback(ipts, buffer);
+	return 0;
 }
 
 static int ipts_receiver_handle_feedback(struct ipts_context *ipts,
