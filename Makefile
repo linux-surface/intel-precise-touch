@@ -4,18 +4,20 @@
 #
 
 obj-$(CONFIG_MISC_IPTS) += ipts.o
-ipts-objs := control.o
+ipts-objs := cmd.o
+ipts-objs += control.o
 ipts-objs += mei.o
 ipts-objs += receiver.o
 ipts-objs += resources.o
-ipts-objs += uapi.o
 
 MODULE_NAME    := ipts
-MODULE_VERSION := 2020-09-25
+MODULE_VERSION := 2022-05-08
 
 sources := Makefile
 sources += Kconfig
 sources += dkms.conf
+sources += cmd.c
+sources += cmd.h
 sources += context.h
 sources += control.c
 sources += control.h
@@ -25,8 +27,6 @@ sources += receiver.c
 sources += receiver.h
 sources += resources.c
 sources += resources.h
-sources += uapi.c
-sources += uapi.h
 
 KVERSION := $(shell uname -r)
 KDIR := /lib/modules/$(KVERSION)/build

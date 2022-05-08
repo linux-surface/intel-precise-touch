@@ -15,10 +15,8 @@
 
 #include "context.h"
 #include "control.h"
-#include "linux/device.h"
 #include "protocol.h"
 #include "receiver.h"
-#include "uapi.h"
 
 static int ipts_mei_set_dma_mask(struct mei_cl_device *cldev)
 {
@@ -56,6 +54,9 @@ static int ipts_mei_probe(struct mei_cl_device *cldev,
 
 	ipts->cldev = cldev;
 	ipts->dev = &cldev->dev;
+
+	// Init with default params
+	ipts->mode = IPTS_MODE_SINGLETOUCH;
 	ipts->status = IPTS_HOST_STATUS_STOPPED;
 
 	mei_cldev_set_drvdata(cldev, ipts);
@@ -69,13 +70,12 @@ static void ipts_mei_remove(struct mei_cl_device *cldev)
 	int i;
 	struct ipts_context *ipts = mei_cldev_get_drvdata(cldev);
 
+	// Start the shutdown procedure
 	ipts_control_stop(ipts);
 
-	/*
-	 * We need to flush all buffers and clear their addresses to prevent
-	 * issues during or after suspend. Delay the removal until all of that
-	 * is done, but not for more than 500ms.
-	 */
+	// The host needs to flush all buffers and reset the memory window
+	// of the hardware to prevent issues during or after suspend.
+	// Wait until all of that is done, but not for more than 500ms.
 	for (i = 0; i < 20; i++) {
 		if (ipts->status == IPTS_HOST_STATUS_STOPPED)
 			break;
@@ -98,33 +98,8 @@ static struct mei_cl_driver ipts_mei_driver = {
 	.probe = ipts_mei_probe,
 	.remove = ipts_mei_remove,
 };
-
-static int __init ipts_mei_init(void)
-{
-	int ret;
-
-	ret = ipts_uapi_init();
-	if (ret)
-		return ret;
-
-	ret = mei_cldev_driver_register(&ipts_mei_driver);
-	if (ret) {
-		ipts_uapi_free();
-		return ret;
-	}
-
-	return 0;
-}
-
-static void __exit ipts_mei_exit(void)
-{
-	mei_cldev_driver_unregister(&ipts_mei_driver);
-	ipts_uapi_free();
-}
+module_mei_cl_driver(ipts_mei_driver);
 
 MODULE_DESCRIPTION("IPTS touchscreen driver");
 MODULE_AUTHOR("Dorian Stoll <dorian.stoll@tmsp.io>");
 MODULE_LICENSE("GPL");
-
-module_init(ipts_mei_init);
-module_exit(ipts_mei_exit);

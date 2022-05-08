@@ -33,6 +33,8 @@ struct ipts_context {
 	struct device *dev;
 
 	bool restart;
+	enum ipts_mode mode;
+
 	enum ipts_host_status status;
 	struct ipts_get_device_info_rsp device_info;
 
