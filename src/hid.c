@@ -76,8 +76,6 @@ static int ipts_hid_raw_request(struct hid_device *hid, unsigned char reportnum,
 	// that was used before gen7. On gen7, this will only change how the
 	// data is received (incremented doorbell or READY_FOR_DATA event).
 	if (type == IPTS_FEEDBACK_DATA_TYPE_SET_FEATURES && reportnum == 0x5) {
-		int ret;
-
 		ret = ipts_control_change_mode(ipts, buf[1]);
 		if (ret) {
 			dev_err(ipts->dev, "Failed to switch modes: %d\n", ret);
@@ -88,7 +86,11 @@ static int ipts_hid_raw_request(struct hid_device *hid, unsigned char reportnum,
 	ipts->feature_report = NULL;
 
 	// Send HID2ME feedback, containing the report
-	ipts_control_hid2me_feedback(ipts, type, buf, len);
+	ret = ipts_control_hid2me_feedback(ipts, type, buf, len);
+	if (ret) {
+		dev_err(ipts->dev, "Failed to send hid2me feedback: %d\n", ret);
+		return ret;
+	}
 
 	// If this was a SET operation, there is no answer to wait for.
 	if (reqtype == HID_REQ_SET_REPORT)
@@ -108,6 +110,14 @@ static int ipts_hid_raw_request(struct hid_device *hid, unsigned char reportnum,
 	return 0;
 }
 
+static int ipts_hid_output_report(struct hid_device *hid, __u8 *buf, size_t len)
+{
+	struct ipts_context *ipts = hid->driver_data;
+
+	return ipts_control_hid2me_feedback(
+		ipts, IPTS_FEEDBACK_DATA_TYPE_OUTPUT_REPORT, buf, len);
+}
+
 static struct hid_ll_driver ipts_hid_driver = {
 	.start = ipts_hid_start,
 	.stop = ipts_hid_stop,
@@ -115,6 +125,7 @@ static struct hid_ll_driver ipts_hid_driver = {
 	.close = ipts_hid_close,
 	.parse = ipts_hid_parse,
 	.raw_request = ipts_hid_raw_request,
+	.output_report = ipts_hid_output_report,
 };
 
 int ipts_hid_input_data(struct ipts_context *ipts, int buffer)
