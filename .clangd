@@ -1,0 +1,15 @@
+# The kernel builds using gcc, and uses some flags that are
+# unknown to clang. This causes a lot of warnings when using
+# clangd for development, so remove the problematic flags.
+
+---
+CompileFlags:
+  Remove:
+    - -mpreferred-stack-boundary=3
+    - -mindirect-branch=thunk-extern
+    - -mindirect-branch-register
+    - -mindirect-branch-cs-prefix
+    - -fno-allow-store-data-races
+    - -fconserve-stack
+    - -mrecord-mcount
+  Compiler: clang
