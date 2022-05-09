@@ -42,13 +42,11 @@ static int ipts_receiver_handle_set_mode(struct ipts_context *ipts)
 
 static int ipts_receiver_handle_set_mem_window(struct ipts_context *ipts)
 {
-	if (ipts->status != IPTS_HOST_STATUS_STARTED) {
-		// Update host status
-		ipts->status = IPTS_HOST_STATUS_STARTED;
+	// Update host status
+	ipts->status = IPTS_HOST_STATUS_STARTED;
 
-		// Initialize HID device
-		ipts_hid_init(ipts);
-	}
+	// Initialize HID device
+	ipts_hid_init(ipts);
 
 	// Host and Hardware are now ready to receive data
 	return ipts_cmd_ready_for_data(ipts);
