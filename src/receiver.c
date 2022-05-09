@@ -17,6 +17,11 @@
 #include "protocol.h"
 #include "resources.h"
 
+static int ipts_receiver_handle_reset(struct ipts_context *ipts)
+{
+	return ipts_cmd_get_device_info(ipts);
+}
+
 static int ipts_receiver_handle_get_device_info(struct ipts_context *ipts,
 						struct ipts_response *rsp)
 {
@@ -104,12 +109,6 @@ static int ipts_receiver_handle_clear_mem_window(struct ipts_context *ipts)
 	return 0;
 }
 
-static bool ipts_receiver_sensor_was_reset(u32 status)
-{
-	return status == IPTS_STATUS_SENSOR_EXPECTED_RESET ||
-	       status == IPTS_STATUS_SENSOR_UNEXPECTED_RESET;
-}
-
 static bool ipts_receiver_handle_error(struct ipts_context *ipts,
 				       struct ipts_response *rsp)
 {
@@ -146,7 +145,7 @@ static void ipts_receiver_handle_response(struct ipts_context *ipts,
 	int ret;
 
 	// If the sensor was reset, initiate a restart
-	if (ipts_receiver_sensor_was_reset(rsp->status)) {
+	if (rsp->status == IPTS_STATUS_SENSOR_UNEXPECTED_RESET) {
 		dev_info(ipts->dev, "Sensor was reset\n");
 
 		if (ipts_control_restart(ipts))
@@ -176,6 +175,9 @@ static void ipts_receiver_handle_response(struct ipts_context *ipts,
 		break;
 	case IPTS_RSP_CLEAR_MEM_WINDOW:
 		ret = ipts_receiver_handle_clear_mem_window(ipts);
+		break;
+	case IPTS_CMD_RESET_SENSOR:
+		ret = ipts_receiver_handle_reset(ipts);
 		break;
 	default:
 		ret = 0;

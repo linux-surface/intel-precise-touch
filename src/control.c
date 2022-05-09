@@ -25,7 +25,7 @@ int ipts_control_start(struct ipts_context *ipts)
 	ipts->status = IPTS_HOST_STATUS_STARTING;
 
 	// Start initialization by requesting device info
-	return ipts_cmd_get_device_info(ipts);
+	return ipts_cmd_reset(ipts, IPTS_RESET_TYPE_SOFT);
 }
 
 int ipts_control_stop(struct ipts_context *ipts)
