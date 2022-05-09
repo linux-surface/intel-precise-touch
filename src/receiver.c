@@ -27,16 +27,13 @@ static int ipts_receiver_handle_get_device_info(struct ipts_context *ipts,
 
 static int ipts_receiver_handle_set_mode(struct ipts_context *ipts)
 {
+	int ret;
 
 	// Allocate buffers ...
-	if (ipts->status != IPTS_HOST_STATUS_STARTED) {
-		int ret;
-
-		ret = ipts_resources_alloc(ipts);
-		if (ret) {
-			dev_err(ipts->dev, "Failed to allocate resources\n");
-			return ret;
-		}
+	ret = ipts_resources_alloc(ipts);
+	if (ret) {
+		dev_err(ipts->dev, "Failed to allocate resources\n");
+		return ret;
 	}
 
 	// ... and send them to the hardware.

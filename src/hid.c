@@ -160,6 +160,9 @@ int ipts_hid_init(struct ipts_context *ipts)
 {
 	int ret;
 
+	if (ipts->hid)
+		return 0;
+
 	ipts->hid = hid_allocate_device();
 	if (IS_ERR(ipts->hid)) {
 		long err = PTR_ERR(ipts->hid);
@@ -182,7 +185,7 @@ int ipts_hid_init(struct ipts_context *ipts)
 	ret = hid_add_device(ipts->hid);
 	if (ret) {
 		dev_err(ipts->dev, "Failed to add HID device: %d\n", ret);
-		hid_destroy_device(ipts->hid);
+		ipts_hid_free(ipts);
 		return ret;
 	}
 
@@ -192,4 +195,5 @@ int ipts_hid_init(struct ipts_context *ipts)
 void ipts_hid_free(struct ipts_context *ipts)
 {
 	hid_destroy_device(ipts->hid);
+	ipts->hid = NULL;
 }

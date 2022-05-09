@@ -10,119 +10,84 @@
 
 #include "context.h"
 
+static int ipts_resources_alloc_buffer(struct ipts_context *ipts, struct ipts_buffer_info *buffer, size_t size)
+{
+	if (buffer->address)
+		return 0;
+
+	buffer->address = dma_alloc_coherent(ipts->dev, size, &buffer->dma_address, GFP_KERNEL);
+
+	if (!buffer->address)
+		return -ENOMEM;
+
+	return 0;
+}
+
+static void ipts_resources_free_buffer(struct ipts_context *ipts, struct ipts_buffer_info *buffer, size_t size)
+{
+	if (!buffer->address)
+		return;
+
+	dma_free_coherent(ipts->dev, size, buffer->address, buffer->dma_address);
+
+	buffer->address = NULL;
+	buffer->dma_address = 0;
+}
+
 void ipts_resources_free(struct ipts_context *ipts)
 {
 	int i;
-	struct ipts_buffer_info *buffers;
 
 	u32 data_buffer_size = ipts->device_info.data_size;
 	u32 feedback_buffer_size = ipts->device_info.feedback_size;
 
-	buffers = ipts->data;
-	for (i = 0; i < IPTS_BUFFERS; i++) {
-		if (!buffers[i].address)
-			continue;
+	for (i = 0; i < IPTS_BUFFERS; i++)
+		ipts_resources_free_buffer(ipts, &ipts->data[i], data_buffer_size);
 
-		dma_free_coherent(ipts->dev, data_buffer_size,
-				  buffers[i].address, buffers[i].dma_address);
+	for (i = 0; i < IPTS_BUFFERS; i++)
+		ipts_resources_free_buffer(ipts, &ipts->feedback[i], feedback_buffer_size);
 
-		buffers[i].address = NULL;
-		buffers[i].dma_address = 0;
-	}
-
-	buffers = ipts->feedback;
-	for (i = 0; i < IPTS_BUFFERS; i++) {
-		if (!buffers[i].address)
-			continue;
-
-		dma_free_coherent(ipts->dev, feedback_buffer_size,
-				  buffers[i].address, buffers[i].dma_address);
-
-		buffers[i].address = NULL;
-		buffers[i].dma_address = 0;
-	}
-
-	if (ipts->doorbell.address) {
-		dma_free_coherent(ipts->dev, sizeof(u32),
-				  ipts->doorbell.address,
-				  ipts->doorbell.dma_address);
-
-		ipts->doorbell.address = NULL;
-		ipts->doorbell.dma_address = 0;
-	}
-
-	if (ipts->workqueue.address) {
-		dma_free_coherent(ipts->dev, sizeof(u32),
-				  ipts->workqueue.address,
-				  ipts->workqueue.dma_address);
-
-		ipts->workqueue.address = NULL;
-		ipts->workqueue.dma_address = 0;
-	}
-
-	if (ipts->host2me.address) {
-		dma_free_coherent(ipts->dev, feedback_buffer_size,
-				  ipts->host2me.address,
-				  ipts->host2me.dma_address);
-
-		ipts->host2me.address = NULL;
-		ipts->host2me.dma_address = 0;
-	}
+	ipts_resources_free_buffer(ipts, &ipts->doorbell, sizeof(u32));
+	ipts_resources_free_buffer(ipts, &ipts->workqueue, sizeof(u32));
+	ipts_resources_free_buffer(ipts, &ipts->host2me, feedback_buffer_size);
 }
 
 int ipts_resources_alloc(struct ipts_context *ipts)
 {
 	int i;
-	struct ipts_buffer_info *buffers;
+	int ret;
 
 	u32 data_buffer_size = ipts->device_info.data_size;
 	u32 feedback_buffer_size = ipts->device_info.feedback_size;
 
-	buffers = ipts->data;
 	for (i = 0; i < IPTS_BUFFERS; i++) {
-		buffers[i].address =
-			dma_alloc_coherent(ipts->dev, data_buffer_size,
-					   &buffers[i].dma_address, GFP_KERNEL);
-
-		if (!buffers[i].address)
-			goto release_resources;
+		ret = ipts_resources_alloc_buffer(ipts, &ipts->data[i], data_buffer_size);
+		if (ret)
+			goto err;
 	}
 
-	buffers = ipts->feedback;
 	for (i = 0; i < IPTS_BUFFERS; i++) {
-		buffers[i].address =
-			dma_alloc_coherent(ipts->dev, feedback_buffer_size,
-					   &buffers[i].dma_address, GFP_KERNEL);
-
-		if (!buffers[i].address)
-			goto release_resources;
+		ret = ipts_resources_alloc_buffer(ipts, &ipts->feedback[i], feedback_buffer_size);
+		if (ret)
+			goto err;
 	}
 
-	ipts->doorbell.address =
-		dma_alloc_coherent(ipts->dev, sizeof(u32),
-				   &ipts->doorbell.dma_address, GFP_KERNEL);
+	ret = ipts_resources_alloc_buffer(ipts, &ipts->doorbell, sizeof(u32));
+	if (ret)
+		goto err;
 
-	if (!ipts->doorbell.address)
-		goto release_resources;
+	ret = ipts_resources_alloc_buffer(ipts, &ipts->workqueue, sizeof(u32));
+	if (ret)
+		goto err;
 
-	ipts->workqueue.address =
-		dma_alloc_coherent(ipts->dev, sizeof(u32),
-				   &ipts->workqueue.dma_address, GFP_KERNEL);
-
-	if (!ipts->workqueue.address)
-		goto release_resources;
-
-	ipts->host2me.address =
-		dma_alloc_coherent(ipts->dev, feedback_buffer_size,
-				   &ipts->host2me.dma_address, GFP_KERNEL);
-
-	if (!ipts->workqueue.address)
-		goto release_resources;
+	ret = ipts_resources_alloc_buffer(ipts, &ipts->host2me, feedback_buffer_size);
+	if (ret)
+		goto err;
 
 	return 0;
 
-release_resources:
+err:
 
 	ipts_resources_free(ipts);
-	return -ENOMEM;
+	return ret;
 }
