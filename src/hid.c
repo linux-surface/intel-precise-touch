@@ -2,6 +2,8 @@
 
 #include <linux/hid.h>
 #include <linux/kernel.h>
+#include <linux/wait.h>
+#include <linux/freezer.h>
 
 #include "cmd.h"
 #include "context.h"
@@ -50,6 +52,7 @@ static int ipts_hid_raw_request(struct hid_device *hid, unsigned char reportnum,
 				__u8 *buf, size_t len, unsigned char rtype,
 				int reqtype)
 {
+	int ret;
 	enum ipts_feedback_data_type type;
 	struct ipts_context *ipts = hid->driver_data;
 
@@ -86,10 +89,15 @@ static int ipts_hid_raw_request(struct hid_device *hid, unsigned char reportnum,
 		return 0;
 
 	// Wait for an answer to come in
-	wait_event(wq, ipts->feature_report);
-	memcpy(buf, ipts->feature_report, len);
+	ret = wait_event_freezable_timeout(wq, ipts->feature_report, msecs_to_jiffies(1000));
+	if (!ret) {
+		dev_warn(ipts->dev, "GET_FEATURES timed out!\n");
+		return -EIO;
+	}
 
+	memcpy(buf, ipts->feature_report, len);
 	ipts->feature_report = NULL;
+
 	return 0;
 }
 
