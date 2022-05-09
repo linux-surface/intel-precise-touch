@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <linux/freezer.h>
 #include <linux/hid.h>
 #include <linux/kernel.h>
 #include <linux/wait.h>
-#include <linux/freezer.h>
 
 #include "cmd.h"
 #include "context.h"
@@ -89,7 +89,8 @@ static int ipts_hid_raw_request(struct hid_device *hid, unsigned char reportnum,
 		return 0;
 
 	// Wait for an answer to come in
-	ret = wait_event_freezable_timeout(wq, ipts->feature_report, msecs_to_jiffies(1000));
+	ret = wait_event_freezable_timeout(wq, ipts->feature_report,
+					   msecs_to_jiffies(1000));
 	if (!ret) {
 		dev_warn(ipts->dev, "GET_FEATURES timed out!\n");
 		return -EIO;

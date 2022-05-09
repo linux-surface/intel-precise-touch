@@ -10,12 +10,15 @@
 
 #include "context.h"
 
-static int ipts_resources_alloc_buffer(struct ipts_context *ipts, struct ipts_buffer_info *buffer, size_t size)
+static int ipts_resources_alloc_buffer(struct ipts_context *ipts,
+				       struct ipts_buffer_info *buffer,
+				       size_t size)
 {
 	if (buffer->address)
 		return 0;
 
-	buffer->address = dma_alloc_coherent(ipts->dev, size, &buffer->dma_address, GFP_KERNEL);
+	buffer->address = dma_alloc_coherent(ipts->dev, size,
+					     &buffer->dma_address, GFP_KERNEL);
 
 	if (!buffer->address)
 		return -ENOMEM;
@@ -23,12 +26,15 @@ static int ipts_resources_alloc_buffer(struct ipts_context *ipts, struct ipts_bu
 	return 0;
 }
 
-static void ipts_resources_free_buffer(struct ipts_context *ipts, struct ipts_buffer_info *buffer, size_t size)
+static void ipts_resources_free_buffer(struct ipts_context *ipts,
+				       struct ipts_buffer_info *buffer,
+				       size_t size)
 {
 	if (!buffer->address)
 		return;
 
-	dma_free_coherent(ipts->dev, size, buffer->address, buffer->dma_address);
+	dma_free_coherent(ipts->dev, size, buffer->address,
+			  buffer->dma_address);
 
 	buffer->address = NULL;
 	buffer->dma_address = 0;
@@ -42,10 +48,12 @@ void ipts_resources_free(struct ipts_context *ipts)
 	u32 feedback_buffer_size = ipts->device_info.feedback_size;
 
 	for (i = 0; i < IPTS_BUFFERS; i++)
-		ipts_resources_free_buffer(ipts, &ipts->data[i], data_buffer_size);
+		ipts_resources_free_buffer(ipts, &ipts->data[i],
+					   data_buffer_size);
 
 	for (i = 0; i < IPTS_BUFFERS; i++)
-		ipts_resources_free_buffer(ipts, &ipts->feedback[i], feedback_buffer_size);
+		ipts_resources_free_buffer(ipts, &ipts->feedback[i],
+					   feedback_buffer_size);
 
 	ipts_resources_free_buffer(ipts, &ipts->doorbell, sizeof(u32));
 	ipts_resources_free_buffer(ipts, &ipts->workqueue, sizeof(u32));
@@ -61,13 +69,15 @@ int ipts_resources_alloc(struct ipts_context *ipts)
 	u32 feedback_buffer_size = ipts->device_info.feedback_size;
 
 	for (i = 0; i < IPTS_BUFFERS; i++) {
-		ret = ipts_resources_alloc_buffer(ipts, &ipts->data[i], data_buffer_size);
+		ret = ipts_resources_alloc_buffer(ipts, &ipts->data[i],
+						  data_buffer_size);
 		if (ret)
 			goto err;
 	}
 
 	for (i = 0; i < IPTS_BUFFERS; i++) {
-		ret = ipts_resources_alloc_buffer(ipts, &ipts->feedback[i], feedback_buffer_size);
+		ret = ipts_resources_alloc_buffer(ipts, &ipts->feedback[i],
+						  feedback_buffer_size);
 		if (ret)
 			goto err;
 	}
@@ -80,7 +90,8 @@ int ipts_resources_alloc(struct ipts_context *ipts)
 	if (ret)
 		goto err;
 
-	ret = ipts_resources_alloc_buffer(ipts, &ipts->host2me, feedback_buffer_size);
+	ret = ipts_resources_alloc_buffer(ipts, &ipts->host2me,
+					  feedback_buffer_size);
 	if (ret)
 		goto err;
 
