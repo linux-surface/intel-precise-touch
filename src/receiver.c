@@ -98,13 +98,13 @@ static int ipts_receiver_handle_clear_mem_window(struct ipts_context *ipts)
 	// Update host status (this disables receiving messages from MEI)
 	ipts->status = IPTS_HOST_STATUS_STOPPED;
 
-	// Clear out the resources
-	ipts_resources_free(ipts);
-	ipts_hid_free(ipts);
-
-	// If requested, immideately restart the host
+	// If the host is restarting, don't clear
+	// resources and restart immideately.
 	if (ipts->restart)
 		return ipts_control_start(ipts);
+
+	ipts_resources_free(ipts);
+	ipts_hid_free(ipts);
 
 	return 0;
 }
