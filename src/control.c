@@ -62,8 +62,8 @@ int ipts_control_change_mode(struct ipts_context *ipts, enum ipts_mode mode)
 }
 
 int ipts_control_hid2me_feedback(struct ipts_context *ipts,
-				  enum ipts_feedback_data_type type, u8 *report,
-				  size_t size)
+				 enum ipts_feedback_data_type type, u8 *report,
+				 size_t size)
 {
 	struct ipts_feedback_buffer *feedback;
 
