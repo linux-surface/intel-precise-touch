@@ -61,19 +61,19 @@ int ipts_control_change_mode(struct ipts_context *ipts, enum ipts_mode mode)
 	return ipts_cmd_set_mode(ipts, mode);
 }
 
-int ipts_control_host2me_feedback(struct ipts_context *ipts,
+int ipts_control_hid2me_feedback(struct ipts_context *ipts,
 				  enum ipts_feedback_data_type type, u8 *report,
 				  size_t size)
 {
 	struct ipts_feedback_buffer *feedback;
 
-	// Clear the Host2ME buffer
-	memset(ipts->host2me.address, 0, ipts->device_info.feedback_size);
-	feedback = (struct ipts_feedback_buffer *)ipts->host2me.address;
+	// Clear the HID2ME buffer
+	memset(ipts->hid2me.address, 0, ipts->device_info.feedback_size);
+	feedback = (struct ipts_feedback_buffer *)ipts->hid2me.address;
 
 	// Configure the buffer as a SET_FEATURES command
 	feedback->cmd_type = IPTS_FEEDBACK_CMD_TYPE_NONE;
-	feedback->buffer = IPTS_HOST2ME_BUFFER;
+	feedback->buffer = IPTS_HID2ME_BUFFER;
 	feedback->data_type = type;
 	feedback->size = size;
 
@@ -82,5 +82,5 @@ int ipts_control_host2me_feedback(struct ipts_context *ipts,
 		return -EINVAL;
 
 	memcpy(feedback->payload, report, size);
-	return ipts_cmd_feedback(ipts, IPTS_HOST2ME_BUFFER);
+	return ipts_cmd_feedback(ipts, IPTS_HID2ME_BUFFER);
 }

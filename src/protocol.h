@@ -142,9 +142,9 @@ enum ipts_status {
 #define IPTS_BUFFERS 16
 
 /*
- * The special buffer ID that is used for direct host2me feedback.
+ * The special buffer ID that is used for direct hid2me feedback.
  */
-#define IPTS_HOST2ME_BUFFER IPTS_BUFFERS
+#define IPTS_HID2ME_BUFFER IPTS_BUFFERS
 
 /**
  * enum ipts_mode - Operation mode for IPTS hardware
@@ -181,8 +181,8 @@ struct ipts_set_mode_cmd {
  * @doorbell_addr_upper:        Upper 32 bits of the doorbell buffer address.
  * @feedback_buffer_addr_lower: Lower 32 bits of the feedback buffer addresses.
  * @feedback_buffer_addr_upper: Upper 32 bits of the feedback buffer addresses.
- * @host2me_addr_lower:         Lower 32 bits of the host2me buffer address.
- * @host2me_addr_upper:         Upper 32 bits of the host2me buffer address.
+ * @hid2me_addr_lower:         Lower 32 bits of the hid2me buffer address.
+ * @hid2me_addr_upper:         Upper 32 bits of the hid2me buffer address.
  * @workqueue_item_size:        Magic value. (IPTS_WORKQUEUE_ITEM_SIZE)
  * @workqueue_size:             Magic value. (IPTS_WORKQUEUE_SIZE)
  *
@@ -204,9 +204,9 @@ struct ipts_set_mem_window_cmd {
 	u32 doorbell_addr_upper;
 	u32 feedback_buffer_addr_lower[IPTS_BUFFERS];
 	u32 feedback_buffer_addr_upper[IPTS_BUFFERS];
-	u32 host2me_addr_lower;
-	u32 host2me_addr_upper;
-	u32 host2me_size;
+	u32 hid2me_addr_lower;
+	u32 hid2me_addr_upper;
+	u32 hid2me_size;
 	u8 reserved1;
 	u8 workqueue_item_size;
 	u16 workqueue_size;

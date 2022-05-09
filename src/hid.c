@@ -81,8 +81,8 @@ static int ipts_hid_raw_request(struct hid_device *hid, unsigned char reportnum,
 
 	ipts->feature_report = NULL;
 
-	// Send Host2ME feedback, containing the report
-	ipts_control_host2me_feedback(ipts, type, buf, len);
+	// Send HID2ME feedback, containing the report
+	ipts_control_hid2me_feedback(ipts, type, buf, len);
 
 	// If this was a SET operation, there is no answer to wait for.
 	if (reqtype == HID_REQ_SET_REPORT)

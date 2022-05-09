@@ -73,8 +73,8 @@ int ipts_cmd_set_mem_window(struct ipts_context *ipts)
 	cmd.doorbell_addr_lower = lower_32_bits(ipts->doorbell.dma_address);
 	cmd.doorbell_addr_upper = upper_32_bits(ipts->doorbell.dma_address);
 
-	cmd.host2me_addr_lower = lower_32_bits(ipts->host2me.dma_address);
-	cmd.host2me_addr_upper = upper_32_bits(ipts->host2me.dma_address);
+	cmd.hid2me_addr_lower = lower_32_bits(ipts->hid2me.dma_address);
+	cmd.hid2me_addr_upper = upper_32_bits(ipts->hid2me.dma_address);
 
 	cmd.workqueue_size = IPTS_WORKQUEUE_SIZE;
 	cmd.workqueue_item_size = IPTS_WORKQUEUE_ITEM_SIZE;

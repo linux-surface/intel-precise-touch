@@ -57,7 +57,7 @@ void ipts_resources_free(struct ipts_context *ipts)
 
 	ipts_resources_free_buffer(ipts, &ipts->doorbell, sizeof(u32));
 	ipts_resources_free_buffer(ipts, &ipts->workqueue, sizeof(u32));
-	ipts_resources_free_buffer(ipts, &ipts->host2me, feedback_buffer_size);
+	ipts_resources_free_buffer(ipts, &ipts->hid2me, feedback_buffer_size);
 }
 
 int ipts_resources_alloc(struct ipts_context *ipts)
@@ -90,7 +90,7 @@ int ipts_resources_alloc(struct ipts_context *ipts)
 	if (ret)
 		goto err;
 
-	ret = ipts_resources_alloc_buffer(ipts, &ipts->host2me,
+	ret = ipts_resources_alloc_buffer(ipts, &ipts->hid2me,
 					  feedback_buffer_size);
 	if (ret)
 		goto err;

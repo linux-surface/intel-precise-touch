@@ -47,7 +47,7 @@ struct ipts_context {
 
 	struct ipts_buffer_info feedback[IPTS_BUFFERS];
 	struct ipts_buffer_info workqueue;
-	struct ipts_buffer_info host2me;
+	struct ipts_buffer_info hid2me;
 
 	struct task_struct *doorbell_loop;
 };
