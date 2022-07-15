@@ -165,7 +165,13 @@ int ipts_hid_input_data(struct ipts_context *ipts, int buffer)
 	if (!temp)
 		return -ENOMEM;
 
+	// Prepare the report
 	temp[0] = report;
+
+	// Hint to userspace that this is an older data format
+	temp[1] = 0xFF;
+	temp[2] = 0xFF;
+
 	memcpy(&temp[3], data->data, data->size);
 
 	ret = hid_input_report(ipts->hid, HID_INPUT_REPORT, temp, size, 1);
