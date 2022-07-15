@@ -176,7 +176,7 @@ static void ipts_receiver_handle_response(struct ipts_context *ipts,
 	case IPTS_RSP_CLEAR_MEM_WINDOW:
 		ret = ipts_receiver_handle_clear_mem_window(ipts);
 		break;
-	case IPTS_CMD_RESET_SENSOR:
+	case IPTS_RSP_RESET_SENSOR:
 		ret = ipts_receiver_handle_reset(ipts);
 		break;
 	default:
