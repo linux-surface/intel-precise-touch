@@ -6,6 +6,7 @@
  * Linux driver for Intel Precise Touch & Stylus
  */
 
+#include <linux/completion.h>
 #include <linux/mei_cl_bus.h>
 
 #include "cmd.h"
@@ -35,6 +36,7 @@ int ipts_control_stop(struct ipts_context *ipts)
 		return -EBUSY;
 
 	dev_info(ipts->dev, "Stopping IPTS\n");
+	reinit_completion(&ipts->on_device_ready);
 
 	// Update host status
 	ipts->status = IPTS_HOST_STATUS_STOPPING;
@@ -58,7 +60,7 @@ int ipts_control_change_mode(struct ipts_context *ipts, enum ipts_mode mode)
 		return 0;
 
 	ipts->mode = mode;
-	return ipts_cmd_set_mode(ipts, mode);
+	return ipts_control_restart(ipts);
 }
 
 int ipts_control_hid2me_feedback(struct ipts_context *ipts,

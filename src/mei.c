@@ -6,6 +6,7 @@
  * Linux driver for Intel Precise Touch & Stylus
  */
 
+#include <linux/completion.h>
 #include <linux/delay.h>
 #include <linux/dma-mapping.h>
 #include <linux/kthread.h>
@@ -57,9 +58,11 @@ static int ipts_mei_probe(struct mei_cl_device *cldev,
 	ipts->cldev = cldev;
 	ipts->dev = &cldev->dev;
 
-	// Init with default params
 	ipts->mode = IPTS_MODE_SINGLETOUCH;
 	ipts->status = IPTS_HOST_STATUS_STOPPED;
+
+	init_completion(&ipts->on_device_ready);
+	init_completion(&ipts->on_feature_report);
 
 	mei_cldev_set_drvdata(cldev, ipts);
 	mei_cldev_register_rx_cb(cldev, ipts_receiver_callback);

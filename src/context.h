@@ -10,10 +10,12 @@
 #define _IPTS_CONTEXT_H_
 
 #include <linux/cdev.h>
+#include <linux/completion.h>
 #include <linux/device.h>
 #include <linux/hid.h>
 #include <linux/mei_cl_bus.h>
 #include <linux/types.h>
+#include <linux/wait.h>
 
 #include "protocol.h"
 
@@ -50,6 +52,9 @@ struct ipts_context {
 	struct ipts_buffer_info hid2me;
 
 	struct task_struct *doorbell_loop;
+
+	struct completion on_device_ready;
+	struct completion on_feature_report;
 };
 
 #endif /* _IPTS_CONTEXT_H_ */

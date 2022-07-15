@@ -6,6 +6,7 @@
  * Linux driver for Intel Precise Touch & Stylus
  */
 
+#include <linux/completion.h>
 #include <linux/mei_cl_bus.h>
 #include <linux/moduleparam.h>
 #include <linux/types.h>
@@ -52,6 +53,9 @@ static int ipts_receiver_handle_set_mem_window(struct ipts_context *ipts)
 
 	// Initialize HID device
 	ipts_hid_init(ipts);
+
+	// Notify wait queue
+	complete_all(&ipts->on_device_ready);
 
 	// Host and Hardware are now ready to receive data
 	return ipts_cmd_ready_for_data(ipts);

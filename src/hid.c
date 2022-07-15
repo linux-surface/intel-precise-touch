@@ -6,8 +6,9 @@
  * Linux driver for Intel Precise Touch & Stylus
  */
 
-#include <linux/freezer.h>
+#include <linux/completion.h>
 #include <linux/hid.h>
+#include <linux/jiffies.h>
 #include <linux/kernel.h>
 #include <linux/wait.h>
 
@@ -17,8 +18,6 @@
 #include "desc.h"
 #include "hid.h"
 #include "protocol.h"
-
-DECLARE_WAIT_QUEUE_HEAD(wq);
 
 static int ipts_hid_start(struct hid_device *hid)
 {
@@ -59,6 +58,7 @@ static int ipts_hid_raw_request(struct hid_device *hid, unsigned char reportnum,
 				int reqtype)
 {
 	int ret;
+	int left;
 	enum ipts_feedback_data_type type;
 	struct ipts_context *ipts = hid->driver_data;
 
@@ -76,10 +76,14 @@ static int ipts_hid_raw_request(struct hid_device *hid, unsigned char reportnum,
 	// that was used before gen7. On gen7, this will only change how the
 	// data is received (incremented doorbell or READY_FOR_DATA event).
 	if (type == IPTS_FEEDBACK_DATA_TYPE_SET_FEATURES && reportnum == 0x5) {
-		ret = ipts_control_change_mode(ipts, buf[1]);
-		if (ret) {
-			dev_err(ipts->dev, "Failed to switch modes: %d\n", ret);
-			return ret;
+		ipts_control_change_mode(ipts, buf[1]);
+
+		// Wait until the device is available again
+		left = wait_for_completion_timeout(&ipts->on_device_ready,
+						       msecs_to_jiffies(5000));
+		if (left == 0) {
+			dev_err(ipts->dev, "Failed to switch modes\n");
+			return -EIO;
 		}
 	}
 
@@ -97,15 +101,17 @@ static int ipts_hid_raw_request(struct hid_device *hid, unsigned char reportnum,
 		return 0;
 
 	// Wait for an answer to come in
-	ret = wait_event_freezable_timeout(wq, ipts->feature_report,
-					   msecs_to_jiffies(1000));
+	ret = wait_for_completion_timeout(&ipts->on_feature_report,
+					  msecs_to_jiffies(5000));
 	if (!ret) {
 		dev_warn(ipts->dev, "GET_FEATURES timed out!\n");
 		return -EIO;
 	}
 
 	memcpy(buf, ipts->feature_report, len);
+
 	ipts->feature_report = NULL;
+	reinit_completion(&ipts->on_feature_report);
 
 	return 0;
 }
@@ -145,7 +151,7 @@ int ipts_hid_input_data(struct ipts_context *ipts, int buffer)
 	// Store the data and wake up the HID request handler.
 	if (data->type == IPTS_DATA_TYPE_GET_FEATURES) {
 		ipts->feature_report = data->data;
-		wake_up(&wq);
+		complete_all(&ipts->on_feature_report);
 		return 0;
 	}
 
