@@ -19,12 +19,21 @@
 #define IPTS_DATA_TYPE_HID_REPORT   0x3
 #define IPTS_DATA_TYPE_GET_FEATURES 0x4
 
+#define IPTS_HID_FRAME_TYPE_RAW 0xEE
+
 struct ipts_data {
 	u32 type;
 	u32 size;
 	u32 buffer;
 	u8 reserved[52];
 	u8 data[];
+} __packed;
+
+struct ipts_hid_frame {
+	u32 size;
+	u8 reserved1;
+	u8 type;
+	u8 reserved2;
 } __packed;
 
 int ipts_hid_input_data(struct ipts_context *ipts, int buffer);

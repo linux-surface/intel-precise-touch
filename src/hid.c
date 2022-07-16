@@ -140,6 +140,7 @@ int ipts_hid_input_data(struct ipts_context *ipts, int buffer)
 	u8 report;
 	u8 *temp;
 	size_t size;
+	struct ipts_hid_frame frame;
 	struct ipts_data *data = (struct ipts_data *)ipts->data[buffer].address;
 
 	// The buffer contains a HID report. Forward as-is.
@@ -159,7 +160,7 @@ int ipts_hid_input_data(struct ipts_context *ipts, int buffer)
 		return 0;
 
 	// Get the smallest report ID that could fit the data
-	report = ipts_desc_get_report(data->size);
+	report = ipts_desc_get_report(data->size + sizeof(struct ipts_hid_frame));
 	if (report == 0) {
 		dev_err(ipts->dev, "Could not find fitting report!\n");
 		return -E2BIG;
@@ -174,11 +175,13 @@ int ipts_hid_input_data(struct ipts_context *ipts, int buffer)
 	// Prepare the report
 	temp[0] = report;
 
-	// Hint to userspace that this is an older data format
-	temp[1] = 0xFF;
-	temp[2] = 0xFF;
+	// Create an IPTS HID frame that tells userspace that this is an older data format
+	memset(&frame, 0, sizeof(frame));
+	frame.size = data->size + sizeof(frame);
+	frame.type = IPTS_HID_FRAME_TYPE_RAW;
 
-	memcpy(&temp[3], data->data, data->size);
+	memcpy(&temp[3], &frame, sizeof(frame));
+	memcpy(&temp[3 + sizeof(frame)], data->data, data->size);
 
 	ret = hid_input_report(ipts->hid, HID_INPUT_REPORT, temp, size, 1);
 	kfree(temp);
