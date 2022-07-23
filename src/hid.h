@@ -1,43 +1,22 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 /*
  * Copyright (c) 2016 Intel Corporation
- * Copyright (c) 2022 Dorian Stoll
+ * Copyright (c) 2020-2022 Dorian Stoll
  *
  * Linux driver for Intel Precise Touch & Stylus
  */
 
-#ifndef _IPTS_HID_H_
-#define _IPTS_HID_H_
+#ifndef IPTS_HID_H
+#define IPTS_HID_H
 
 #include <linux/types.h>
 
 #include "context.h"
-
-#define IPTS_DATA_TYPE_PAYLOAD	    0x0
-#define IPTS_DATA_TYPE_ERROR	    0x1
-#define IPTS_DATA_TYPE_VENDOR_DATA  0x2
-#define IPTS_DATA_TYPE_HID_REPORT   0x3
-#define IPTS_DATA_TYPE_GET_FEATURES 0x4
-
-#define IPTS_HID_FRAME_TYPE_RAW 0xEE
-
-struct ipts_data {
-	u32 type;
-	u32 size;
-	u32 buffer;
-	u8 reserved[52];
-	u8 data[];
-} __packed;
-
-struct ipts_hid_frame {
-	u32 size;
-	u8 reserved1;
-	u8 type;
-	u8 reserved2;
-} __packed;
+#include "spec-device.h"
 
 int ipts_hid_input_data(struct ipts_context *ipts, int buffer);
-int ipts_hid_init(struct ipts_context *ipts);
+
+int ipts_hid_init(struct ipts_context *ipts, struct ipts_device_info info);
 void ipts_hid_free(struct ipts_context *ipts);
 
-#endif /* _IPTS_HID_H_ */
+#endif /* IPTS_HID_H */

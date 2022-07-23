@@ -6,198 +6,201 @@
  * Linux driver for Intel Precise Touch & Stylus
  */
 
-#include <linux/completion.h>
 #include <linux/delay.h>
-#include <linux/mei_cl_bus.h>
-#include <linux/moduleparam.h>
+#include <linux/kthread.h>
+#include <linux/time64.h>
+#include <linux/timekeeping.h>
 #include <linux/types.h>
 
 #include "cmd.h"
 #include "context.h"
 #include "control.h"
 #include "hid.h"
-#include "protocol.h"
 #include "resources.h"
+#include "spec-device.h"
 
-static int ipts_receiver_handle_get_device_info(struct ipts_context *ipts,
-						struct ipts_response *rsp)
+static void ipts_receiver_next_doorbell(struct ipts_context *ipts)
 {
-	memcpy(&ipts->device_info, rsp->payload, sizeof(ipts->device_info));
-
-	return ipts_cmd_set_mode(ipts, ipts->mode);
+	u32 *doorbell = (u32 *)ipts->resources.doorbell.address;
+	*doorbell = *doorbell + 1;
 }
 
-static int ipts_receiver_handle_set_mode(struct ipts_context *ipts)
+static u32 ipts_receiver_current_doorbell(struct ipts_context *ipts)
+{
+	u32 *doorbell = (u32 *)ipts->resources.doorbell.address;
+	return *doorbell;
+}
+
+static void ipts_receiver_backoff(time64_t last, u32 n)
+{
+	/*
+	 * If the last change was less than n seconds ago,
+	 * sleep for a shorter period so that new data can be
+	 * processed quickly. If there was no change for more than
+	 * n seconds, sleep longer to avoid wasting CPU cycles.
+	 */
+	if (last + n > ktime_get_seconds())
+		msleep(20);
+	else
+		msleep(200);
+}
+
+static int ipts_receiver_event_loop(void *data)
 {
 	int ret;
+	u32 buffer;
 
-	// Allocate buffers ...
-	ret = ipts_resources_alloc(ipts);
+	struct ipts_context *ipts = data;
+	time64_t last = ktime_get_seconds();
+
+	if (!ipts)
+		return -EFAULT;
+
+	dev_info(ipts->dev, "IPTS running in event mode\n");
+
+	while (!kthread_should_stop()) {
+		ret = ipts_control_wait_data(ipts, false);
+		if (ret == -EAGAIN) {
+			ipts_receiver_backoff(last, 5);
+			continue;
+		}
+
+		if (ret) {
+			dev_err(ipts->dev, "Failed to read ready for data response: %d\n", ret);
+			continue;
+		}
+
+		buffer = ipts_receiver_current_doorbell(ipts) % IPTS_BUFFERS;
+		ipts_receiver_next_doorbell(ipts);
+
+		ret = ipts_hid_input_data(ipts, buffer);
+		if (ret)
+			dev_err(ipts->dev, "Failed to process buffer: %d\n", ret);
+
+		ret = ipts_control_send_feedback(ipts, buffer);
+		if (ret)
+			dev_err(ipts->dev, "Failed to send feedback: %d\n", ret);
+
+		ret = ipts_control_request_data(ipts);
+		if (ret)
+			dev_err(ipts->dev, "Failed to request data: %d\n", ret);
+
+		last = ktime_get_seconds();
+	}
+
+	ret = ipts_control_request_flush(ipts);
 	if (ret) {
-		dev_err(ipts->dev, "Failed to allocate resources\n");
+		dev_err(ipts->dev, "Failed to request flush: %d\n", ret);
 		return ret;
 	}
 
-	// ... and send them to the hardware.
-	return ipts_cmd_set_mem_window(ipts);
-}
-
-static int ipts_receiver_handle_set_mem_window(struct ipts_context *ipts)
-{
-	// Update host status
-	ipts->status = IPTS_HOST_STATUS_STARTED;
-
-	// Initialize HID device
-	ipts_hid_init(ipts);
-
-	// Notify wait queue
-	complete_all(&ipts->on_device_ready);
-
-	// Host and Hardware are now ready to receive data
-	return ipts_cmd_ready_for_data(ipts);
-}
-
-static int ipts_receiver_handle_ready_for_data(struct ipts_context *ipts)
-{
-	u32 *doorbell = (u32 *)ipts->doorbell.address;
-
-	if (ipts->mode != IPTS_MODE_SINGLETOUCH)
-		return 0;
-
-	// Trigger a doorbell update
-	*doorbell = *doorbell + 1;
-	return 0;
-}
-
-static int ipts_receiver_handle_feedback(struct ipts_context *ipts,
-					 struct ipts_response *rsp)
-{
-	// In singletouch mode, the READY_FOR_DATA command
-	// needs to be resent after every feedback command.
-	if (ipts->mode == IPTS_MODE_SINGLETOUCH)
-		return ipts_cmd_ready_for_data(ipts);
-
-	return 0;
-}
-
-static int ipts_receiver_handle_reset(struct ipts_context *ipts)
-{
-	// Update host status (this disables receiving messages from MEI)
-	ipts->status = IPTS_HOST_STATUS_STOPPED;
-
-	// If the host is restarting, don't clear
-	// resources and restart immideately.
-	if (ipts->restart) {
-		msleep(1000);
-		return ipts_control_start(ipts);
+	ret = ipts_control_wait_data(ipts, true);
+	if (ret) {
+		dev_err(ipts->dev, "Failed to wait for data: %d\n", ret);
+		return ret;
 	}
 
-	ipts_resources_free(ipts);
-	ipts_hid_free(ipts);
+	ret = ipts_control_wait_flush(ipts);
+	if (ret) {
+		dev_err(ipts->dev, "Failed to wait for flush: %d\n", ret);
+		return ret;
+	}
 
 	return 0;
 }
 
-static bool ipts_receiver_handle_error(struct ipts_context *ipts,
-				       struct ipts_response *rsp)
-{
-	bool error;
-
-	switch (rsp->status) {
-	case IPTS_STATUS_SUCCESS:
-	case IPTS_STATUS_COMPAT_CHECK_FAIL:
-		error = false;
-		break;
-	case IPTS_STATUS_INVALID_PARAMS:
-		error = rsp->code != IPTS_RSP_FEEDBACK;
-		break;
-	case IPTS_STATUS_SENSOR_DISABLED:
-	case IPTS_STATUS_SENSOR_EXPECTED_RESET:
-		error = ipts->status != IPTS_HOST_STATUS_STOPPING;
-		break;
-	default:
-		error = true;
-		break;
-	}
-
-	if (!error)
-		return false;
-
-	dev_err(ipts->dev, "Command 0x%08x failed: %d\n", rsp->code,
-		rsp->status);
-
-	return true;
-}
-
-static void ipts_receiver_handle_response(struct ipts_context *ipts,
-					  struct ipts_response *rsp)
+static int ipts_receiver_doorbell_loop(void *data)
 {
 	int ret;
+	u32 buffer;
 
-	// If the sensor was reset, initiate a restart
-	if (rsp->status == IPTS_STATUS_SENSOR_UNEXPECTED_RESET) {
-		dev_info(ipts->dev, "Sensor was reset\n");
+	u32 doorbell = 0;
+	u32 lastdb = 0;
 
-		if (ipts_control_restart(ipts))
-			dev_err(ipts->dev, "Failed to restart IPTS\n");
+	struct ipts_context *ipts = data;
+	time64_t last = ktime_get_seconds();
 
-		return;
+	if (!ipts)
+		return -EFAULT;
+
+	dev_info(ipts->dev, "IPTS running in doorbell mode\n");
+
+	while (true) {
+		if (kthread_should_stop()) {
+			ret = ipts_control_request_flush(ipts);
+			if (ret) {
+				dev_err(ipts->dev, "Failed to request flush: %d\n", ret);
+				return ret;
+			}
+		}
+
+		doorbell = ipts_receiver_current_doorbell(ipts);
+
+		/*
+		 * After filling up one of the data buffers, IPTS will increment
+		 * the doorbell. The value of the doorbell stands for the *next*
+		 * buffer that IPTS is going to fill.
+		 */
+		while (lastdb != doorbell) {
+			buffer = lastdb % IPTS_BUFFERS;
+
+			ret = ipts_hid_input_data(ipts, buffer);
+			if (ret)
+				dev_err(ipts->dev, "Failed to process buffer: %d\n", ret);
+
+			ret = ipts_control_send_feedback(ipts, buffer);
+			if (ret)
+				dev_err(ipts->dev, "Failed to send feedback: %d\n", ret);
+
+			last = ktime_get_seconds();
+			lastdb++;
+		}
+
+		if (kthread_should_stop())
+			break;
+
+		ipts_receiver_backoff(last, 5);
 	}
 
-	if (ipts_receiver_handle_error(ipts, rsp))
-		return;
-
-	switch (rsp->code) {
-	case IPTS_RSP_GET_DEVICE_INFO:
-		ret = ipts_receiver_handle_get_device_info(ipts, rsp);
-		break;
-	case IPTS_RSP_SET_MODE:
-		ret = ipts_receiver_handle_set_mode(ipts);
-		break;
-	case IPTS_RSP_SET_MEM_WINDOW:
-		ret = ipts_receiver_handle_set_mem_window(ipts);
-		break;
-	case IPTS_RSP_READY_FOR_DATA:
-		ret = ipts_receiver_handle_ready_for_data(ipts);
-		break;
-	case IPTS_RSP_FEEDBACK:
-		ret = ipts_receiver_handle_feedback(ipts, rsp);
-		break;
-	case IPTS_RSP_RESET_SENSOR:
-		ret = ipts_receiver_handle_reset(ipts);
-		break;
-	default:
-		ret = 0;
-		break;
+	ret = ipts_control_wait_data(ipts, true);
+	if (ret) {
+		dev_err(ipts->dev, "Failed to wait for data: %d\n", ret);
+		return ret;
 	}
 
-	if (!ret)
-		return;
+	ret = ipts_control_wait_flush(ipts);
+	if (ret) {
+		dev_err(ipts->dev, "Failed to wait for flush: %d\n", ret);
+		return ret;
+	}
 
-	dev_err(ipts->dev, "Error while handling response 0x%08x: %d\n",
-		rsp->code, ret);
-
-	if (ipts_control_stop(ipts))
-		dev_err(ipts->dev, "Failed to stop IPTS\n");
+	return 0;
 }
 
-void ipts_receiver_callback(struct mei_cl_device *cldev)
+void ipts_receiver_start(struct ipts_context *ipts)
 {
-	int ret;
-	struct ipts_response rsp;
-	struct ipts_context *ipts;
-
-	ipts = mei_cldev_get_drvdata(cldev);
-
-	// Ignore incoming messages if the host is stopped
-	if (ipts->status == IPTS_HOST_STATUS_STOPPED)
+	if (!ipts)
 		return;
 
-	ret = mei_cldev_recv(cldev, (u8 *)&rsp, sizeof(rsp));
-	if (ret <= 0) {
-		dev_err(ipts->dev, "Error while reading response: %d\n", ret);
+	if (ipts->mode == IPTS_MODE_EVENT)
+		ipts->event_loop = kthread_run(ipts_receiver_event_loop, ipts, "ipts_event");
+
+	if (ipts->mode == IPTS_MODE_DOORBELL)
+		ipts->doorbell_loop = kthread_run(ipts_receiver_doorbell_loop, ipts, "ipts_db");
+}
+
+void ipts_receiver_stop(struct ipts_context *ipts)
+{
+	if (!ipts)
 		return;
+
+	if (ipts->event_loop) {
+		kthread_stop(ipts->event_loop);
+		ipts->event_loop = NULL;
 	}
 
-	ipts_receiver_handle_response(ipts, &rsp);
+	if (ipts->doorbell_loop) {
+		kthread_stop(ipts->doorbell_loop);
+		ipts->doorbell_loop = NULL;
+	}
 }

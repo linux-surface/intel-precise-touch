@@ -8,39 +8,43 @@
 
 #include <linux/completion.h>
 #include <linux/delay.h>
+#include <linux/device.h>
 #include <linux/dma-mapping.h>
-#include <linux/kthread.h>
 #include <linux/mei_cl_bus.h>
 #include <linux/mod_devicetable.h>
 #include <linux/module.h>
 #include <linux/slab.h>
+#include <linux/stddef.h>
+#include <linux/types.h>
 
 #include "context.h"
 #include "control.h"
-#include "doorbell.h"
-#include "protocol.h"
 #include "receiver.h"
+#include "spec-device.h"
+
+/*
+ * The MEI client ID for IPTS functionality.
+ */
+#define IPTS_MEI_UUID                                                                              \
+	UUID_LE(0x3e8d0870, 0x271a, 0x4208, 0x8e, 0xb5, 0x9a, 0xcb, 0x94, 0x02, 0xae, 0x04)
 
 static int ipts_mei_set_dma_mask(struct mei_cl_device *cldev)
 {
-	int ret;
-
-	ret = dma_coerce_mask_and_coherent(&cldev->dev, DMA_BIT_MASK(64));
-	if (!ret)
+	if (!dma_coerce_mask_and_coherent(&cldev->dev, DMA_BIT_MASK(64)))
 		return 0;
 
 	return dma_coerce_mask_and_coherent(&cldev->dev, DMA_BIT_MASK(32));
 }
 
-static int ipts_mei_probe(struct mei_cl_device *cldev,
-			  const struct mei_cl_device_id *id)
+static int ipts_mei_probe(struct mei_cl_device *cldev, const struct mei_cl_device_id *id)
 {
 	int ret;
 	struct ipts_context *ipts;
 
-	if (ipts_mei_set_dma_mask(cldev)) {
-		dev_err(&cldev->dev, "Failed to set DMA mask for IPTS\n");
-		return -EFAULT;
+	ret = ipts_mei_set_dma_mask(cldev);
+	if (ret) {
+		dev_err(&cldev->dev, "Failed to set DMA mask for IPTS: %d\n", ret);
+		return ret;
 	}
 
 	ret = mei_cldev_enable(cldev);
@@ -57,41 +61,28 @@ static int ipts_mei_probe(struct mei_cl_device *cldev,
 
 	ipts->cldev = cldev;
 	ipts->dev = &cldev->dev;
-
-	ipts->mode = IPTS_MODE_SINGLETOUCH;
-	ipts->status = IPTS_HOST_STATUS_STOPPED;
-
-	init_completion(&ipts->on_device_ready);
-	init_completion(&ipts->on_feature_report);
+	ipts->mode = IPTS_MODE_EVENT;
 
 	mei_cldev_set_drvdata(cldev, ipts);
-	mei_cldev_register_rx_cb(cldev, ipts_receiver_callback);
 
-	ipts->doorbell_loop =
-		kthread_run(ipts_doorbell_loop, ipts, "ipts_db_loop");
+	ret = ipts_control_start(ipts);
+	if (ret) {
+		dev_err(&cldev->dev, "Failed to start IPTS: %d\n", ret);
+		return ret;
+	}
 
-	return ipts_control_start(ipts);
+	return 0;
 }
 
 static void ipts_mei_remove(struct mei_cl_device *cldev)
 {
-	int i;
+	int ret;
 	struct ipts_context *ipts = mei_cldev_get_drvdata(cldev);
 
-	// Start the shutdown procedure
-	ipts_control_stop(ipts);
+	ret = ipts_control_stop(ipts);
+	if (ret)
+		dev_err(&cldev->dev, "Failed to stop IPTS: %d\n", ret);
 
-	// The host needs to flush all buffers and reset the memory window
-	// of the hardware to prevent issues during or after suspend.
-	// Wait until all of that is done, but not for more than 500ms.
-	for (i = 0; i < 20; i++) {
-		if (ipts->status == IPTS_HOST_STATUS_STOPPED)
-			break;
-
-		msleep(25);
-	}
-
-	kthread_stop(ipts->doorbell_loop);
 	mei_cldev_disable(cldev);
 }
 

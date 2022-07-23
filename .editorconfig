@@ -9,7 +9,4 @@ insert_final_newline = true
 trim_trailing_whitespace = true
 
 [*.{c,h}]
-max_line_length = 80
-
-[protocol.h]
 max_line_length = 100

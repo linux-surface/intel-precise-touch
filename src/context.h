@@ -6,55 +6,30 @@
  * Linux driver for Intel Precise Touch & Stylus
  */
 
-#ifndef _IPTS_CONTEXT_H_
-#define _IPTS_CONTEXT_H_
+#ifndef IPTS_CONTEXT_H
+#define IPTS_CONTEXT_H
 
-#include <linux/cdev.h>
-#include <linux/completion.h>
 #include <linux/device.h>
 #include <linux/hid.h>
 #include <linux/mei_cl_bus.h>
+#include <linux/sched.h>
 #include <linux/types.h>
-#include <linux/wait.h>
 
-#include "protocol.h"
-
-enum ipts_host_status {
-	IPTS_HOST_STATUS_STARTING,
-	IPTS_HOST_STATUS_STARTED,
-	IPTS_HOST_STATUS_STOPPING,
-	IPTS_HOST_STATUS_STOPPED,
-};
-
-struct ipts_buffer_info {
-	u8 *address;
-	dma_addr_t dma_address;
-};
+#include "resources.h"
+#include "spec-device.h"
 
 struct ipts_context {
-	struct mei_cl_device *cldev;
 	struct device *dev;
+	struct mei_cl_device *cldev;
 
-	bool restart;
 	enum ipts_mode mode;
+	u8 *get_feature_report;
 
 	struct hid_device *hid;
-	u8 *feature_report;
+	struct ipts_resources resources;
 
-	enum ipts_host_status status;
-	struct ipts_get_device_info_rsp device_info;
-
-	struct ipts_buffer_info data[IPTS_BUFFERS];
-	struct ipts_buffer_info doorbell;
-
-	struct ipts_buffer_info feedback[IPTS_BUFFERS];
-	struct ipts_buffer_info workqueue;
-	struct ipts_buffer_info hid2me;
-
+	struct task_struct *event_loop;
 	struct task_struct *doorbell_loop;
-
-	struct completion on_device_ready;
-	struct completion on_feature_report;
 };
 
-#endif /* _IPTS_CONTEXT_H_ */
+#endif /* IPTS_CONTEXT_H */

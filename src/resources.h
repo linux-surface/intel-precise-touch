@@ -6,12 +6,32 @@
  * Linux driver for Intel Precise Touch & Stylus
  */
 
-#ifndef _IPTS_RESOURCES_H_
-#define _IPTS_RESOURCES_H_
+#ifndef IPTS_RESOURCES_H
+#define IPTS_RESOURCES_H
 
-#include "context.h"
+#include <linux/device.h>
+#include <linux/types.h>
 
-int ipts_resources_alloc(struct ipts_context *ipts);
-void ipts_resources_free(struct ipts_context *ipts);
+#include "spec-device.h"
 
-#endif /* _IPTS_RESOURCES_H_ */
+struct ipts_buffer {
+	u8 *address;
+	size_t size;
+
+	dma_addr_t dma_address;
+	struct device *device;
+};
+
+struct ipts_resources {
+	struct ipts_buffer data[IPTS_BUFFERS];
+	struct ipts_buffer feedback[IPTS_BUFFERS];
+
+	struct ipts_buffer doorbell;
+	struct ipts_buffer workqueue;
+	struct ipts_buffer hid2me;
+};
+
+int ipts_resources_init(struct ipts_resources *res, struct device *dev, size_t ds, size_t fs);
+void ipts_resources_free(struct ipts_resources *res);
+
+#endif /* IPTS_RESOURCES_H */

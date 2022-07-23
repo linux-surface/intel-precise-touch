@@ -6,11 +6,12 @@
  * Linux driver for Intel Precise Touch & Stylus
  */
 
-#ifndef _IPTS_RECEIVER_H_
-#define _IPTS_RECEIVER_H_
+#ifndef IPTS_RECEIVER_H
+#define IPTS_RECEIVER_H
 
-#include <linux/mei_cl_bus.h>
+#include "context.h"
 
-void ipts_receiver_callback(struct mei_cl_device *cldev);
+void ipts_receiver_start(struct ipts_context *ipts);
+void ipts_receiver_stop(struct ipts_context *ipts);
 
-#endif /* _IPTS_RECEIVER_H_ */
+#endif /* IPTS_RECEIVER_H */

@@ -1,113 +1,152 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Copyright (c) 2016 Intel Corporation
- * Copyright (c) 2022 Dorian Stoll
+ * Copyright (c) 2020-2022 Dorian Stoll
  *
  * Linux driver for Intel Precise Touch & Stylus
  */
 
-#include <linux/mei_cl_bus.h>
+#include <linux/errno.h>
+#include <linux/types.h>
 
 #include "context.h"
-#include "protocol.h"
+#include "spec-device.h"
 
-int ipts_cmd_send(struct ipts_context *ipts, u32 code, void *payload,
-		  size_t size)
+static int ipts_cmd_get_errno(struct ipts_response rsp, enum ipts_status expect)
+{
+	if (rsp.status == IPTS_STATUS_SUCCESS)
+		return 0;
+
+	/*
+	 * If a status code was expected, dont produce an error.
+	 */
+	if (rsp.status == expect)
+		return 0;
+
+	/*
+	 * Some devices will always return this error. It is allowed
+	 * to ignore it and to try continuing.
+	 */
+	if (rsp.status == IPTS_STATUS_COMPAT_CHECK_FAIL)
+		return 0;
+
+	/*
+	 * The driver is sending incomplete feedback on purpose.
+	 * "Proper" feedback needs to come from binary GuC firmware,
+	 * that cannot be run. But incomplete feedback works fine.
+	 */
+	if (rsp.status == IPTS_STATUS_INVALID_PARAMS && rsp.cmd == IPTS_CMD_FEEDBACK)
+		return 0;
+
+	/*
+	 * Return something, this is not going to be checked.
+	 * Any error will just cause the driver to stop.
+	 */
+	return -EINVAL;
+}
+
+static int _ipts_cmd_recv(struct ipts_context *ipts, enum ipts_command_code code, void *data,
+			  size_t size, bool block, enum ipts_status expect)
 {
 	int ret;
-	struct ipts_command cmd;
+	struct ipts_response rsp = { 0 };
 
-	memset(&cmd, 0, sizeof(cmd));
-	cmd.code = code;
+	if (!ipts)
+		return -EFAULT;
 
-	if (payload && size > 0)
-		memcpy(cmd.payload, payload, size);
+	if (size > sizeof(rsp.payload))
+		return -EINVAL;
 
-	ret = mei_cldev_send(ipts->cldev, (u8 *)&cmd, sizeof(cmd.code) + size);
+	if (block)
+		ret = mei_cldev_recv(ipts->cldev, (u8 *)&rsp, sizeof(rsp));
+	else
+		ret = mei_cldev_recv_nonblock(ipts->cldev, (u8 *)&rsp, sizeof(rsp));
+
+	if (ret == -EAGAIN)
+		return ret;
+
+	if (ret <= 0) {
+		dev_err(ipts->dev, "Error while reading response: %d\n", ret);
+		return ret;
+	}
+
+	/*
+	 * In a response, the command code will have the most significant bit
+	 * flipped to one. We check for this and then set the bit to 0.
+	 */
+	if ((rsp.cmd & 0x80000000) == 0) {
+		dev_err(ipts->dev, "Invalid command code received: 0x%02X\n", rsp.cmd);
+		return -EINVAL;
+	}
+
+	rsp.cmd = rsp.cmd & ~(0x80000000);
+	if (rsp.cmd != code) {
+		dev_err(ipts->dev, "Received response to wrong command: 0x%02X\n", rsp.cmd);
+		return -EINVAL;
+	}
+
+	ret = ipts_cmd_get_errno(rsp, expect);
+	if (ret) {
+		dev_err(ipts->dev, "Command 0x%02X failed: 0x%02X\n", rsp.cmd, rsp.status);
+		return ret;
+	}
+
+	if (data && size > 0)
+		memcpy(data, rsp.payload, size);
+
+	return 0;
+}
+
+int ipts_cmd_send(struct ipts_context *ipts, enum ipts_command_code code, void *data, size_t size)
+{
+	int ret;
+	struct ipts_command cmd = { 0 };
+
+	if (!ipts)
+		return -EFAULT;
+
+	cmd.cmd = code;
+
+	if (data && size > 0)
+		memcpy(cmd.payload, data, size);
+
+	ret = mei_cldev_send(ipts->cldev, (u8 *)&cmd, sizeof(cmd.cmd) + size);
 	if (ret >= 0)
 		return 0;
 
-	dev_err(ipts->dev, "Error while sending: 0x%X:%d\n", code, ret);
+	dev_err(ipts->dev, "Error while sending: 0x%02X:%d\n", code, ret);
 	return ret;
 }
 
-int ipts_cmd_get_device_info(struct ipts_context *ipts)
+int ipts_cmd_recv(struct ipts_context *ipts, enum ipts_command_code code, void *data, size_t size)
 {
-	return ipts_cmd_send(ipts, IPTS_CMD_GET_DEVICE_INFO, NULL, 0);
+	return _ipts_cmd_recv(ipts, code, data, size, true, IPTS_STATUS_SUCCESS);
 }
 
-int ipts_cmd_set_mode(struct ipts_context *ipts, enum ipts_mode mode)
+int ipts_cmd_recv_nonblock(struct ipts_context *ipts, enum ipts_command_code code, void *data,
+			   size_t size)
 {
-	struct ipts_set_mode_cmd cmd;
-
-	memset(&cmd, 0, sizeof(cmd));
-	cmd.mode = mode;
-
-	return ipts_cmd_send(ipts, IPTS_CMD_SET_MODE, &cmd, sizeof(cmd));
+	return _ipts_cmd_recv(ipts, code, data, size, false, IPTS_STATUS_SUCCESS);
 }
 
-int ipts_cmd_set_mem_window(struct ipts_context *ipts)
+int ipts_cmd_recv_expect(struct ipts_context *ipts, enum ipts_command_code code, void *data,
+			 size_t size, enum ipts_status expect)
 {
-	int i;
-	struct ipts_set_mem_window_cmd cmd;
-
-	memset(&cmd, 0, sizeof(cmd));
-
-	for (i = 0; i < IPTS_BUFFERS; i++) {
-		cmd.data_buffer_addr_lower[i] =
-			lower_32_bits(ipts->data[i].dma_address);
-
-		cmd.data_buffer_addr_upper[i] =
-			upper_32_bits(ipts->data[i].dma_address);
-
-		cmd.feedback_buffer_addr_lower[i] =
-			lower_32_bits(ipts->feedback[i].dma_address);
-
-		cmd.feedback_buffer_addr_upper[i] =
-			upper_32_bits(ipts->feedback[i].dma_address);
-	}
-
-	cmd.workqueue_addr_lower = lower_32_bits(ipts->workqueue.dma_address);
-	cmd.workqueue_addr_upper = upper_32_bits(ipts->workqueue.dma_address);
-
-	cmd.doorbell_addr_lower = lower_32_bits(ipts->doorbell.dma_address);
-	cmd.doorbell_addr_upper = upper_32_bits(ipts->doorbell.dma_address);
-
-	cmd.hid2me_addr_lower = lower_32_bits(ipts->hid2me.dma_address);
-	cmd.hid2me_addr_upper = upper_32_bits(ipts->hid2me.dma_address);
-
-	cmd.workqueue_size = IPTS_WORKQUEUE_SIZE;
-	cmd.workqueue_item_size = IPTS_WORKQUEUE_ITEM_SIZE;
-
-	return ipts_cmd_send(ipts, IPTS_CMD_SET_MEM_WINDOW, &cmd, sizeof(cmd));
+	return _ipts_cmd_recv(ipts, code, data, size, true, expect);
 }
 
-int ipts_cmd_ready_for_data(struct ipts_context *ipts)
+int ipts_cmd_run(struct ipts_context *ipts, enum ipts_command_code code, void *in, size_t insize,
+		 void *out, size_t outsize)
 {
-	return ipts_cmd_send(ipts, IPTS_CMD_READY_FOR_DATA, NULL, 0);
-}
+	int ret;
 
-int ipts_cmd_feedback(struct ipts_context *ipts, u32 buffer)
-{
-	struct ipts_feedback_cmd cmd;
+	ret = ipts_cmd_send(ipts, code, in, insize);
+	if (ret)
+		return ret;
 
-	memset(&cmd, 0, sizeof(cmd));
-	cmd.buffer = buffer;
+	ret = ipts_cmd_recv(ipts, code, out, outsize);
+	if (ret)
+		return ret;
 
-	return ipts_cmd_send(ipts, IPTS_CMD_FEEDBACK, &cmd, sizeof(cmd));
-}
-
-int ipts_cmd_clear_mem_window(struct ipts_context *ipts)
-{
-	return ipts_cmd_send(ipts, IPTS_CMD_CLEAR_MEM_WINDOW, NULL, 0);
-}
-
-int ipts_cmd_reset(struct ipts_context *ipts, enum ipts_reset_type type)
-{
-	struct ipts_reset_sensor_cmd cmd;
-
-	memset(&cmd, 0, sizeof(cmd));
-	cmd.type = type;
-
-	return ipts_cmd_send(ipts, IPTS_CMD_RESET_SENSOR, &cmd, sizeof(cmd));
+	return 0;
 }
