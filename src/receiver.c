@@ -7,6 +7,7 @@
  */
 
 #include <linux/completion.h>
+#include <linux/delay.h>
 #include <linux/mei_cl_bus.h>
 #include <linux/moduleparam.h>
 #include <linux/types.h>
@@ -17,11 +18,6 @@
 #include "hid.h"
 #include "protocol.h"
 #include "resources.h"
-
-static int ipts_receiver_handle_reset(struct ipts_context *ipts)
-{
-	return ipts_cmd_get_device_info(ipts);
-}
 
 static int ipts_receiver_handle_get_device_info(struct ipts_context *ipts,
 						struct ipts_response *rsp)
@@ -76,36 +72,25 @@ static int ipts_receiver_handle_ready_for_data(struct ipts_context *ipts)
 static int ipts_receiver_handle_feedback(struct ipts_context *ipts,
 					 struct ipts_response *rsp)
 {
-	struct ipts_feedback_rsp *feedback =
-		(struct ipts_feedback_rsp *)rsp->payload;
+	// In singletouch mode, the READY_FOR_DATA command
+	// needs to be resent after every feedback command.
+	if (ipts->mode == IPTS_MODE_SINGLETOUCH)
+		return ipts_cmd_ready_for_data(ipts);
 
-	if (ipts->status != IPTS_HOST_STATUS_STOPPING) {
-		// In singletouch mode, the READY_FOR_DATA command
-		// needs to be resent after every feedback command.
-		if (ipts->mode == IPTS_MODE_SINGLETOUCH)
-			return ipts_cmd_ready_for_data(ipts);
-
-		return 0;
-	}
-
-	// When the host is shutting down, send feedback for every buffer
-	if (feedback->buffer < IPTS_BUFFERS - 1)
-		return ipts_cmd_feedback(ipts, feedback->buffer + 1);
-
-	// After all buffers have been cleared,
-	// run CLEAR_MEM_WINDOW to disable the hardware
-	return ipts_cmd_clear_mem_window(ipts);
+	return 0;
 }
 
-static int ipts_receiver_handle_clear_mem_window(struct ipts_context *ipts)
+static int ipts_receiver_handle_reset(struct ipts_context *ipts)
 {
 	// Update host status (this disables receiving messages from MEI)
 	ipts->status = IPTS_HOST_STATUS_STOPPED;
 
 	// If the host is restarting, don't clear
 	// resources and restart immideately.
-	if (ipts->restart)
+	if (ipts->restart) {
+		msleep(1000);
 		return ipts_control_start(ipts);
+	}
 
 	ipts_resources_free(ipts);
 	ipts_hid_free(ipts);
@@ -127,6 +112,7 @@ static bool ipts_receiver_handle_error(struct ipts_context *ipts,
 		error = rsp->code != IPTS_RSP_FEEDBACK;
 		break;
 	case IPTS_STATUS_SENSOR_DISABLED:
+	case IPTS_STATUS_SENSOR_EXPECTED_RESET:
 		error = ipts->status != IPTS_HOST_STATUS_STOPPING;
 		break;
 	default:
@@ -176,9 +162,6 @@ static void ipts_receiver_handle_response(struct ipts_context *ipts,
 		break;
 	case IPTS_RSP_FEEDBACK:
 		ret = ipts_receiver_handle_feedback(ipts, rsp);
-		break;
-	case IPTS_RSP_CLEAR_MEM_WINDOW:
-		ret = ipts_receiver_handle_clear_mem_window(ipts);
 		break;
 	case IPTS_RSP_RESET_SENSOR:
 		ret = ipts_receiver_handle_reset(ipts);

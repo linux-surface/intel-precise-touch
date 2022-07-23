@@ -25,8 +25,8 @@ int ipts_control_start(struct ipts_context *ipts)
 	ipts->restart = false;
 	ipts->status = IPTS_HOST_STATUS_STARTING;
 
-	// Start initialization by resetting the device
-	return ipts_cmd_reset(ipts, IPTS_RESET_TYPE_SOFT);
+	// Start initialization by requesting device info
+	return ipts_cmd_get_device_info(ipts);
 }
 
 int ipts_control_stop(struct ipts_context *ipts)
@@ -41,8 +41,8 @@ int ipts_control_stop(struct ipts_context *ipts)
 	// Update host status
 	ipts->status = IPTS_HOST_STATUS_STOPPING;
 
-	// Start shutdown by sending feedback for first buffer
-	return ipts_cmd_feedback(ipts, 0);
+	// Shut down the device by resetting it
+	return ipts_cmd_reset(ipts, IPTS_RESET_TYPE_HARD);
 }
 
 int ipts_control_restart(struct ipts_context *ipts)
