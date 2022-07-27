@@ -76,6 +76,10 @@ int ipts_resources_init(struct ipts_resources *res, struct device *dev, size_t d
 	if (ret)
 		goto err;
 
+	ret = ipts_resources_alloc_buffer(&res->descriptor, dev, ds + 8);
+	if (ret)
+		goto err;
+
 	return 0;
 
 err:
@@ -98,4 +102,5 @@ void ipts_resources_free(struct ipts_resources *res)
 	ipts_resources_free_buffer(&res->doorbell);
 	ipts_resources_free_buffer(&res->workqueue);
 	ipts_resources_free_buffer(&res->hid2me);
+	ipts_resources_free_buffer(&res->descriptor);
 }

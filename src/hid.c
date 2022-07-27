@@ -80,9 +80,13 @@ static int ipts_hid_parse(struct hid_device *hid)
 	if (!ipts)
 		return -EFAULT;
 
-	// TODO: Somehow integrate the gen7 0xF command into this
-	ret = hid_parse_report(hid, (u8 *)ipts_fallback_descriptor,
-			       sizeof(ipts_fallback_descriptor));
+	if (ipts->descriptor && ipts->desc_size > 0) {
+		ret = hid_parse_report(hid, ipts->descriptor, ipts->desc_size);
+	} else {
+		ret = hid_parse_report(hid, (u8 *)ipts_fallback_descriptor,
+				       sizeof(ipts_fallback_descriptor));
+	}
+
 	if (ret) {
 		dev_err(ipts->dev, "Failed to parse HID descriptor: %d\n", ret);
 		return ret;

@@ -13,9 +13,12 @@
 
 #include "cmd.h"
 #include "context.h"
+#include "desc.h"
 #include "hid.h"
+#include "linux/kernel.h"
 #include "receiver.h"
 #include "resources.h"
+#include "spec-data.h"
 #include "spec-device.h"
 
 static int ipts_control_get_device_info(struct ipts_context *ipts, struct ipts_device_info *info)
@@ -71,6 +74,47 @@ static int ipts_control_reset_sensor(struct ipts_context *ipts, enum ipts_reset_
 	return ipts_cmd_run(ipts, IPTS_CMD_RESET_SENSOR, &cmd, sizeof(cmd), NULL, 0);
 }
 
+static int ipts_control_get_descriptor(struct ipts_context *ipts)
+{
+	int ret;
+	struct ipts_data_header *header;
+	struct ipts_get_descriptor cmd = { 0 };
+
+	if (!ipts)
+		return -EFAULT;
+
+	memset(ipts->resources.descriptor.address, 0, ipts->resources.descriptor.size);
+
+	cmd.addr_lower = lower_32_bits(ipts->resources.descriptor.dma_address);
+	cmd.addr_upper = upper_32_bits(ipts->resources.descriptor.dma_address);
+	cmd.magic = 8;
+
+	ret = ipts_cmd_send(ipts, IPTS_CMD_GET_DESCRIPTOR, &cmd, sizeof(cmd));
+	if (ret)
+		return ret;
+
+	ret = ipts_cmd_recv_expect(ipts, IPTS_CMD_GET_DESCRIPTOR, NULL, 0,
+				   IPTS_STATUS_ACCESS_DENIED);
+	if (ret)
+		return ret;
+
+	header = (struct ipts_data_header *)ipts->resources.descriptor.address;
+
+	/*
+	 * Fetching the descriptor will only work on newer devices.
+	 * For older devices, a fallback descriptor will be used.
+	 */
+	if (header->type == IPTS_DATA_TYPE_DESCRIPTOR) {
+		ipts->descriptor = &header->data[8];
+		ipts->desc_size = header->size - 8;
+	} else {
+		ipts->descriptor = NULL;
+		ipts->desc_size = 0;
+	}
+
+	return 0;
+}
+
 int ipts_control_request_flush(struct ipts_context *ipts)
 {
 	struct ipts_quiesce_io cmd = { 0 };
@@ -124,6 +168,12 @@ int ipts_control_start(struct ipts_context *ipts)
 	ret = ipts_resources_init(&ipts->resources, ipts->dev, info.data_size, info.feedback_size);
 	if (ret) {
 		dev_err(ipts->dev, "Failed to allocate buffers: %d", ret);
+		return ret;
+	}
+
+	ret = ipts_control_get_descriptor(ipts);
+	if (ret) {
+		dev_err(ipts->dev, "Failed to fetch HID descriptor: %d\n", ret);
 		return ret;
 	}
 

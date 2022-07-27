@@ -29,6 +29,8 @@ struct ipts_resources {
 	struct ipts_buffer doorbell;
 	struct ipts_buffer workqueue;
 	struct ipts_buffer hid2me;
+
+	struct ipts_buffer descriptor;
 };
 
 int ipts_resources_init(struct ipts_resources *res, struct device *dev, size_t ds, size_t fs);

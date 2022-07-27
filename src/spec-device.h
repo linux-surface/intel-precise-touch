@@ -32,6 +32,7 @@
  * @IPTS_CMD_FEEDBACK:         Informs the device that a buffer was processed and can be refilled.
  * @IPTS_CMD_CLEAR_MEM_WINDOW: Stops the data flow and clears the buffer addresses on the device.
  * @IPTS_CMD_RESET_SENSOR:     Resets the sensor to its default state.
+ * @IPTS_CMD_GET_DESCRIPTOR:   Retrieves the HID descriptor of the device.
  */
 enum ipts_command_code {
 	IPTS_CMD_GET_DEVICE_INFO = 0x01,
@@ -42,6 +43,7 @@ enum ipts_command_code {
 	IPTS_CMD_FEEDBACK = 0x06,
 	IPTS_CMD_CLEAR_MEM_WINDOW = 0x07,
 	IPTS_CMD_RESET_SENSOR = 0x0B,
+	IPTS_CMD_GET_DESCRIPTOR = 0x0F,
 };
 
 /**
@@ -213,6 +215,21 @@ struct ipts_reset_sensor {
 } __packed;
 
 static_assert(sizeof(struct ipts_reset_sensor) == 8);
+
+/**
+ * struct ipts_get_descriptor - Payload for the GET_DESCRIPTOR command.
+ * @addr_lower: The lower 32 bits of the descriptor buffer address.
+ * @addr_upper: The upper 32 bits of the descriptor buffer address.
+ * @magic:      A magic value. Must be 8.
+ */
+struct ipts_get_descriptor {
+	u32 addr_lower;
+	u32 addr_upper;
+	u32 magic;
+	u8 reserved[12];
+} __packed;
+
+static_assert(sizeof(struct ipts_get_descriptor) == 24);
 
 /**
  * struct ipts_response - Data returned from the device in response to a command.

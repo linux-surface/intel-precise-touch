@@ -25,6 +25,9 @@ struct ipts_context {
 	enum ipts_mode mode;
 	u8 *get_feature_report;
 
+	u8 *descriptor;
+	size_t desc_size;
+
 	struct hid_device *hid;
 	struct ipts_resources resources;
 
