@@ -29,6 +29,7 @@ struct ipts_context {
 	size_t desc_size;
 
 	struct hid_device *hid;
+	struct ipts_device_info info;
 	struct ipts_resources resources;
 
 	struct task_struct *event_loop;

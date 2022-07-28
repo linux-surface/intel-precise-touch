@@ -99,30 +99,20 @@ static int ipts_control_get_descriptor(struct ipts_context *ipts)
 	cmd.addr_upper = upper_32_bits(ipts->resources.descriptor.dma_address);
 	cmd.magic = 8;
 
-	ret = ipts_cmd_send(ipts, IPTS_CMD_GET_DESCRIPTOR, &cmd, sizeof(cmd));
-	if (ret)
-		return ret;
-
-	ret = ipts_cmd_recv_expect(ipts, IPTS_CMD_GET_DESCRIPTOR, NULL, 0,
-				   IPTS_STATUS_ACCESS_DENIED);
+	ret = ipts_cmd_run(ipts, IPTS_CMD_GET_DESCRIPTOR, &cmd, sizeof(cmd), NULL, 0);
 	if (ret)
 		return ret;
 
 	header = (struct ipts_data_header *)ipts->resources.descriptor.address;
 
-	/*
-	 * Fetching the descriptor will only work on newer devices.
-	 * For older devices, a fallback descriptor will be used.
-	 */
 	if (header->type == IPTS_DATA_TYPE_DESCRIPTOR) {
 		ipts->descriptor = &header->data[8];
 		ipts->desc_size = header->size - 8;
-	} else {
-		ipts->descriptor = NULL;
-		ipts->desc_size = 0;
+
+		return 0;
 	}
 
-	return 0;
+	return -EINVAL;
 }
 
 int ipts_control_request_flush(struct ipts_context *ipts)
@@ -190,16 +180,34 @@ int ipts_control_start(struct ipts_context *ipts)
 		return ret;
 	}
 
+	ipts->info = info;
+
 	ret = ipts_resources_init(&ipts->resources, ipts->dev, info.data_size, info.feedback_size);
 	if (ret) {
 		dev_err(ipts->dev, "Failed to allocate buffers: %d", ret);
 		return ret;
 	}
 
-	ret = ipts_control_get_descriptor(ipts);
-	if (ret) {
-		dev_err(ipts->dev, "Failed to fetch HID descriptor: %d\n", ret);
-		return ret;
+	dev_info(ipts->dev, "IPTS EDS Version: %d\n", info.intf_eds);
+
+	/*
+	 * Handle newer devices
+	 */
+	if (info.intf_eds > 1) {
+		/*
+		* Fetching the descriptor will only work on newer devices.
+		* For older devices, a fallback descriptor will be used.
+		*/
+		ret = ipts_control_get_descriptor(ipts);
+		if (ret) {
+			dev_err(ipts->dev, "Failed to fetch HID descriptor: %d\n", ret);
+			return ret;
+		}
+
+		/*
+		 * Newer devices can be directly initialized in doorbell mode.
+		 */
+		ipts->mode = IPTS_MODE_DOORBELL;
 	}
 
 	ret = ipts_hid_init(ipts, info);

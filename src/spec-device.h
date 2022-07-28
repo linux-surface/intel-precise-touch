@@ -265,7 +265,13 @@ struct ipts_device_info {
 	u32 feedback_size;
 	enum ipts_mode mode;
 	u8 max_contacts;
-	u8 reserved[19];
+	u8 reserved1[3];
+	u8 sensor_min_eds;
+	u8 sensor_maj_eds;
+	u8 me_min_eds;
+	u8 me_maj_eds;
+	u8 intf_eds;
+	u8 reserved2[11];
 } __packed;
 
 static_assert(sizeof(struct ipts_device_info) == 44);

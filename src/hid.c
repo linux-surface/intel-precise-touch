@@ -63,6 +63,12 @@ static int ipts_hid_switch_mode(struct ipts_context *ipts, enum ipts_mode mode)
 	if (ipts->mode == mode)
 		return 0;
 
+	/*
+	 * This is only allowed on older devices.
+	 */
+	if (ipts->info.intf_eds > 1)
+		return 0;
+
 	ipts->mode = mode;
 	return ipts_control_restart(ipts);
 }
