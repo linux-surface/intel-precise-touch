@@ -149,6 +149,21 @@ int ipts_control_send_feedback(struct ipts_context *ipts, u32 buffer)
 	return ipts_cmd_run(ipts, IPTS_CMD_FEEDBACK, &cmd, sizeof(cmd), NULL, 0);
 }
 
+int ipts_control_refill_buffer(struct ipts_context *ipts, u32 buffer)
+{
+	struct ipts_feedback_header *header;
+
+	if (!ipts)
+		return -EFAULT;
+
+	memset(ipts->resources.feedback[buffer].address, 0, ipts->resources.feedback[buffer].size);
+	header = (struct ipts_feedback_header *)ipts->resources.feedback[buffer].address;
+
+	header->buffer = buffer;
+
+	return ipts_control_send_feedback(ipts, buffer);
+}
+
 int ipts_control_start(struct ipts_context *ipts)
 {
 	int ret;

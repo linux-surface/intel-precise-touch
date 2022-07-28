@@ -31,14 +31,6 @@ static int ipts_cmd_get_errno(struct ipts_response rsp, enum ipts_status expect)
 		return 0;
 
 	/*
-	 * The driver is sending incomplete feedback on purpose.
-	 * "Proper" feedback needs to come from binary GuC firmware,
-	 * that cannot be run. But incomplete feedback works fine.
-	 */
-	if (rsp.status == IPTS_STATUS_INVALID_PARAMS && rsp.cmd == IPTS_CMD_FEEDBACK)
-		return 0;
-
-	/*
 	 * Return something, this is not going to be checked.
 	 * Any error will just cause the driver to stop.
 	 */

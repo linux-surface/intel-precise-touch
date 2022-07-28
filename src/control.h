@@ -46,10 +46,14 @@ int ipts_control_request_data(struct ipts_context *ipts);
 int ipts_control_wait_data(struct ipts_context *ipts, bool shutdown);
 
 /*
- * Acknowledges that the data in a buffer has been
- * processed by sending feedback.
+ * Submits the given feedback buffer to the hardware.
  */
 int ipts_control_send_feedback(struct ipts_context *ipts, u32 buffer);
+
+/*
+ * Acknowledges that the data in a buffer has been processed.
+ */
+int ipts_control_refill_buffer(struct ipts_context *ipts, u32 buffer);
 
 /*
  * Initializes the IPTS device and starts the data flow.

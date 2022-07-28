@@ -77,7 +77,7 @@ static int ipts_receiver_event_loop(void *data)
 		if (ret)
 			dev_err(ipts->dev, "Failed to process buffer: %d\n", ret);
 
-		ret = ipts_control_send_feedback(ipts, buffer);
+		ret = ipts_control_refill_buffer(ipts, buffer);
 		if (ret)
 			dev_err(ipts->dev, "Failed to send feedback: %d\n", ret);
 
@@ -148,7 +148,7 @@ static int ipts_receiver_doorbell_loop(void *data)
 			if (ret)
 				dev_err(ipts->dev, "Failed to process buffer: %d\n", ret);
 
-			ret = ipts_control_send_feedback(ipts, buffer);
+			ret = ipts_control_refill_buffer(ipts, buffer);
 			if (ret)
 				dev_err(ipts->dev, "Failed to send feedback: %d\n", ret);
 
