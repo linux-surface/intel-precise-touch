@@ -193,6 +193,9 @@ int ipts_hid_input_data(struct ipts_context *ipts, int buffer)
 
 	header = (struct ipts_data_header *)ipts->resources.data[buffer].address;
 
+	if (header->size == 0)
+		return 0;
+
 	if (header->type == IPTS_DATA_TYPE_HID)
 		return hid_input_report(ipts->hid, HID_INPUT_REPORT, header->data, header->size, 1);
 
