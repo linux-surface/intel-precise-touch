@@ -6,16 +6,18 @@
  * Linux driver for Intel Precise Touch & Stylus
  */
 
+#include <linux/delay.h>
 #include <linux/dev_printk.h>
 #include <linux/errno.h>
+#include <linux/kernel.h>
 #include <linux/kthread.h>
 #include <linux/types.h>
 
 #include "cmd.h"
 #include "context.h"
+#include "control.h"
 #include "desc.h"
 #include "hid.h"
-#include "linux/kernel.h"
 #include "receiver.h"
 #include "resources.h"
 #include "spec-data.h"
@@ -66,12 +68,20 @@ static int ipts_control_set_mem_window(struct ipts_context *ipts, struct ipts_re
 	return ipts_cmd_run(ipts, IPTS_CMD_SET_MEM_WINDOW, &cmd, sizeof(cmd), NULL, 0);
 }
 
-static int ipts_control_reset_sensor(struct ipts_context *ipts, enum ipts_reset_type type)
+static int ipts_control_reset_sensor(struct ipts_context *ipts)
 {
-	struct ipts_reset_sensor cmd = { 0 };
+	struct ipts_feedback_header *header;
 
-	cmd.type = type;
-	return ipts_cmd_run(ipts, IPTS_CMD_RESET_SENSOR, &cmd, sizeof(cmd), NULL, 0);
+	if (!ipts)
+		return -EFAULT;
+
+	memset(ipts->resources.hid2me.address, 0, ipts->resources.hid2me.size);
+	header = (struct ipts_feedback_header *)ipts->resources.hid2me.address;
+
+	header->cmd_type = IPTS_FEEDBACK_CMD_TYPE_SOFT_RESET;
+	header->buffer = IPTS_HID2ME_BUFFER;
+
+	return ipts_control_send_feedback(ipts, IPTS_HID2ME_BUFFER);
 }
 
 static int ipts_control_get_descriptor(struct ipts_context *ipts)
@@ -231,7 +241,7 @@ static int _ipts_control_stop(struct ipts_context *ipts)
 	dev_info(ipts->dev, "Stopping IPTS\n");
 	ipts_receiver_stop(ipts);
 
-	ret = ipts_control_reset_sensor(ipts, IPTS_RESET_TYPE_HARD);
+	ret = ipts_control_reset_sensor(ipts);
 	if (ret) {
 		dev_err(ipts->dev, "Failed to reset sensor: %d\n", ret);
 		return ret;
@@ -261,6 +271,11 @@ int ipts_control_restart(struct ipts_context *ipts)
 	ret = _ipts_control_stop(ipts);
 	if (ret)
 		return ret;
+
+	/*
+	 * Give the sensor some time to come back from resetting
+	 */
+	msleep(1000);
 
 	ret = ipts_control_start(ipts);
 	if (ret)
