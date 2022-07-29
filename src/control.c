@@ -195,9 +195,9 @@ int ipts_control_start(struct ipts_context *ipts)
 	 */
 	if (info.intf_eds > 1) {
 		/*
-		* Fetching the descriptor will only work on newer devices.
-		* For older devices, a fallback descriptor will be used.
-		*/
+		 * Fetching the descriptor will only work on newer devices.
+		 * For older devices, a fallback descriptor will be used.
+		 */
 		ret = ipts_control_get_descriptor(ipts);
 		if (ret) {
 			dev_err(ipts->dev, "Failed to fetch HID descriptor: %d\n", ret);
