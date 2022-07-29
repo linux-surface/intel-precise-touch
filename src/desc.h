@@ -17,7 +17,11 @@
 
 #define IPTS_HID_REPORT_DATA_SIZE 7485
 
-static const u8 ipts_fallback_descriptor[] = {
+/*
+ * HID descriptor for singletouch data.
+ * This descriptor should be present on all IPTS devices.
+ */
+static const u8 ipts_singletouch_descriptor[] = {
 	0x05, 0x0D,	  /*  Usage Page (Digitizer),            */
 	0x09, 0x04,	  /*  Usage (Touchscreen),               */
 	0xA1, 0x01,	  /*  Collection (Application),          */
@@ -46,6 +50,13 @@ static const u8 ipts_fallback_descriptor[] = {
 	0x81, 0x02,	  /*      Input (Variable),              */
 	0xB4,		  /*      Pop,                           */
 	0xC0,		  /*  End Collection                     */
+};
+
+/*
+ * Fallback HID descriptor for older devices that do not have
+ * the ability to query their HID descriptor.
+ */
+static const u8 ipts_fallback_descriptor[] = {
 	0x05, 0x0D,	  /*  Usage Page (Digitizer),            */
 	0x09, 0x0F,	  /*  Usage (Capacitive Hm Digitizer),   */
 	0xA1, 0x01,	  /*  Collection (Application),          */

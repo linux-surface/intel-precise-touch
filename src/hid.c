@@ -7,6 +7,7 @@
  */
 
 #include <linux/completion.h>
+#include <linux/gfp.h>
 #include <linux/hid.h>
 #include <linux/slab.h>
 #include <linux/types.h>
@@ -73,50 +74,11 @@ static int ipts_hid_switch_mode(struct ipts_context *ipts, enum ipts_mode mode)
 	return ipts_control_restart(ipts);
 }
 
-static void ipts_hid_fix_descriptor(struct ipts_context *ipts)
-{
-	if (!ipts)
-		return;
-
-	if (!ipts->descriptor || ipts->desc_size == 0)
-		return;
-
-	/*
-	 * Try to find the report descriptor for singletouch
-	 * and change its collection type from Logical to Application.
-	 */
-	for (size_t i = 0; i < ipts->desc_size - 8; i++) {
-		if (ipts->descriptor[i] != 0x05)
-			continue;
-
-		if (ipts->descriptor[i + 1] != 0x0D)
-			continue;
-
-		if (ipts->descriptor[i + 2] != 0x09)
-			continue;
-
-		if (ipts->descriptor[i + 3] != 0x04)
-			continue;
-
-		if (ipts->descriptor[i + 4] != 0xA1)
-			continue;
-
-		if (ipts->descriptor[i + 6] != 0x85)
-			continue;
-
-		if (ipts->descriptor[i + 7] != 0x40)
-			continue;
-
-		if (ipts->descriptor[i + 5] == 0x02)
-			ipts->descriptor[i + 5] = 0x01;
-
-		break;
-	}
-}
-
 static int ipts_hid_parse(struct hid_device *hid)
 {
 	int ret;
+	u8 *buffer;
+	size_t size;
 	struct ipts_context *ipts;
 
 	if (!hid)
@@ -127,13 +89,26 @@ static int ipts_hid_parse(struct hid_device *hid)
 	if (!ipts)
 		return -EFAULT;
 
+	size = sizeof(ipts_singletouch_descriptor);
+
+	if (ipts->descriptor && ipts->desc_size > 0)
+		size += ipts->desc_size;
+	else
+		size += sizeof(ipts_fallback_descriptor);
+
+	buffer = kzalloc(size, GFP_KERNEL);
+	memcpy(buffer, ipts_singletouch_descriptor, sizeof(ipts_singletouch_descriptor));
+
 	if (ipts->descriptor && ipts->desc_size > 0) {
-		ipts_hid_fix_descriptor(ipts);
-		ret = hid_parse_report(hid, ipts->descriptor, ipts->desc_size);
+		memcpy(&buffer[sizeof(ipts_singletouch_descriptor)], ipts->descriptor,
+		       ipts->desc_size);
 	} else {
-		ret = hid_parse_report(hid, (u8 *)ipts_fallback_descriptor,
-				       sizeof(ipts_fallback_descriptor));
+		memcpy(&buffer[sizeof(ipts_singletouch_descriptor)], ipts_fallback_descriptor,
+		       sizeof(ipts_fallback_descriptor));
 	}
+
+	ret = hid_parse_report(hid, buffer, size);
+	kfree(buffer);
 
 	if (ret) {
 		dev_err(ipts->dev, "Failed to parse HID descriptor: %d\n", ret);
