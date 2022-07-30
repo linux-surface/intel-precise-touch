@@ -12,7 +12,7 @@ ipts-objs += src/receiver.o
 ipts-objs += src/resources.o
 
 MODULE_NAME    := ipts
-MODULE_VERSION := 2022-05-08
+MODULE_VERSION := 1.0.0
 
 sources := Makefile
 sources += Kconfig
@@ -51,8 +51,7 @@ check_strict:
 	$(KDIR)/scripts/checkpatch.pl -f -q --no-tree --strict --ignore EMBEDDED_FILENAME $(sources)
 
 dkms-install: $(sources)
-	mkdir -p $(MDIR)
-	cp -t $(MDIR) $(sources)
+	cp -r $(shell pwd) $(MDIR)
 	dkms add $(MODULE_NAME)/$(MODULE_VERSION)
 	dkms build $(MODULE_NAME)/$(MODULE_VERSION)
 	dkms install $(MODULE_NAME)/$(MODULE_VERSION)
