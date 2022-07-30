@@ -210,12 +210,6 @@ int ipts_control_start(struct ipts_context *ipts)
 		ipts->mode = IPTS_MODE_DOORBELL;
 	}
 
-	ret = ipts_hid_init(ipts, info);
-	if (ret) {
-		dev_err(ipts->dev, "Failed to initialize HID device: %d\n", ret);
-		return ret;
-	}
-
 	ret = ipts_control_set_mode(ipts, ipts->mode);
 	if (ret) {
 		dev_err(ipts->dev, "Failed to set mode: %d\n", ret);
@@ -233,6 +227,12 @@ int ipts_control_start(struct ipts_context *ipts)
 	ret = ipts_control_request_data(ipts);
 	if (ret) {
 		dev_err(ipts->dev, "Failed to request data: %d\n", ret);
+		return ret;
+	}
+
+	ret = ipts_hid_init(ipts, info);
+	if (ret) {
+		dev_err(ipts->dev, "Failed to initialize HID device: %d\n", ret);
 		return ret;
 	}
 
