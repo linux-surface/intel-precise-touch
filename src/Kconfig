@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-config MISC_IPTS
+config HID_IPTS
 	tristate "Intel Precise Touch & Stylus"
 	depends on INTEL_MEI
 	help

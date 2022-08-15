@@ -3,20 +3,11 @@
 # Makefile for the IPTS touchscreen driver
 #
 
-obj-$(CONFIG_MISC_IPTS) += ipts.o
-ipts-objs := src/cmd.o
-ipts-objs += src/control.o
-ipts-objs += src/hid.o
-ipts-objs += src/mei.o
-ipts-objs += src/receiver.o
-ipts-objs += src/resources.o
-
 MODULE_NAME    := ipts
 MODULE_VERSION := 1.0.0
 
-sources := Makefile
-sources += Kconfig
 sources += dkms.conf
+sources := Makefile
 sources += src/cmd.c
 sources += src/cmd.h
 sources += src/context.h
@@ -25,6 +16,8 @@ sources += src/control.h
 sources += src/desc.h
 sources += src/hid.c
 sources += src/hid.h
+sources += src/Kconfig
+sources := src/Makefile
 sources += src/mei.c
 sources += src/receiver.c
 sources += src/receiver.h
@@ -39,15 +32,12 @@ KDIR := /lib/modules/$(KVERSION)/build
 MDIR := /usr/src/$(MODULE_NAME)-$(MODULE_VERSION)
 
 all:
-	$(MAKE) -C $(KDIR) M=$(PWD) CONFIG_MISC_IPTS=m modules
+	$(MAKE) -C $(KDIR) M=$(PWD)/src CONFIG_HID_IPTS=m modules
 
 clean:
-	$(MAKE) -C $(KDIR) M=$(PWD) CONFIG_MISC_IPTS=m clean
+	$(MAKE) -C $(KDIR) M=$(PWD)/src CONFIG_HID_IPTS=m clean
 
 check:
-	$(KDIR)/scripts/checkpatch.pl -f -q --no-tree --ignore EMBEDDED_FILENAME $(sources)
-
-check_strict:
 	$(KDIR)/scripts/checkpatch.pl -f -q --no-tree --strict --ignore EMBEDDED_FILENAME $(sources)
 
 dkms-install: $(sources)
