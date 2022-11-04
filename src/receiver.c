@@ -59,33 +59,36 @@ static int ipts_receiver_event_loop(void *data)
 	dev_info(ipts->dev, "IPTS running in event mode\n");
 
 	while (!kthread_should_stop()) {
-		ret = ipts_control_wait_data(ipts, false);
-		if (ret == -EAGAIN) {
-			ipts_receiver_backoff(last, 5);
-			continue;
+		for (int i = 0; i < IPTS_BUFFERS; i++) {
+			ret = ipts_control_wait_data(ipts, false);
+			if (ret == -EAGAIN) {
+				break;
+			}
+
+			if (ret) {
+				dev_err(ipts->dev, "Failed to wait for data: %d\n", ret);
+				continue;
+			}
+
+			buffer = ipts_receiver_current_doorbell(ipts) % IPTS_BUFFERS;
+			ipts_receiver_next_doorbell(ipts);
+
+			ret = ipts_hid_input_data(ipts, buffer);
+			if (ret)
+				dev_err(ipts->dev, "Failed to process buffer: %d\n", ret);
+
+			ret = ipts_control_refill_buffer(ipts, buffer);
+			if (ret)
+				dev_err(ipts->dev, "Failed to send feedback: %d\n", ret);
+
+			ret = ipts_control_request_data(ipts);
+			if (ret)
+				dev_err(ipts->dev, "Failed to request data: %d\n", ret);
+
+			last = ktime_get_seconds();
 		}
 
-		if (ret) {
-			dev_err(ipts->dev, "Failed to read ready for data response: %d\n", ret);
-			continue;
-		}
-
-		buffer = ipts_receiver_current_doorbell(ipts) % IPTS_BUFFERS;
-		ipts_receiver_next_doorbell(ipts);
-
-		ret = ipts_hid_input_data(ipts, buffer);
-		if (ret)
-			dev_err(ipts->dev, "Failed to process buffer: %d\n", ret);
-
-		ret = ipts_control_refill_buffer(ipts, buffer);
-		if (ret)
-			dev_err(ipts->dev, "Failed to send feedback: %d\n", ret);
-
-		ret = ipts_control_request_data(ipts);
-		if (ret)
-			dev_err(ipts->dev, "Failed to request data: %d\n", ret);
-
-		last = ktime_get_seconds();
+		ipts_receiver_backoff(last, 5);
 	}
 
 	ret = ipts_control_request_flush(ipts);
