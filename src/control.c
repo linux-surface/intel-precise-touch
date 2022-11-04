@@ -203,6 +203,11 @@ int ipts_control_start(struct ipts_context *ipts)
 			dev_err(ipts->dev, "Failed to fetch HID descriptor: %d\n", ret);
 			return ret;
 		}
+
+		/*
+		 * Newer devices can be directly initialized in doorbell mode.
+		 */
+		ipts->mode = IPTS_MODE_DOORBELL;
 	}
 
 	ret = ipts_control_set_mode(ipts, ipts->mode);
