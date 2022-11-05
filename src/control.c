@@ -143,23 +143,30 @@ int ipts_control_wait_data(struct ipts_context *ipts, bool shutdown)
 
 int ipts_control_send_feedback(struct ipts_context *ipts, u32 buffer)
 {
+	int ret;
 	struct ipts_feedback cmd = { 0 };
 
 	cmd.buffer = buffer;
-	return ipts_cmd_run(ipts, IPTS_CMD_FEEDBACK, &cmd, sizeof(cmd), NULL, 0);
+
+	ret = ipts_cmd_send(ipts, IPTS_CMD_FEEDBACK, &cmd, sizeof(cmd));
+	if (ret)
+		return ret;
+
+	return ipts_cmd_recv_expect(ipts, IPTS_CMD_FEEDBACK, NULL, 0, IPTS_STATUS_INVALID_PARAMS);
 }
 
 int ipts_control_refill_buffer(struct ipts_context *ipts, u32 buffer)
 {
-	struct ipts_feedback_header *header;
-
 	if (!ipts)
 		return -EFAULT;
 
-	memset(ipts->resources.feedback[buffer].address, 0, ipts->resources.feedback[buffer].size);
-	header = (struct ipts_feedback_header *)ipts->resources.feedback[buffer].address;
-
-	header->buffer = buffer;
+	/*
+	 * IPTS expects structured data in the feedback buffer matching the buffer that will be refilled.
+	 * We don't know what that data looks like, so we just keep the buffer empty.
+	 * This results in an INVALID_PARAMS error, but the buffer gets refilled without an issue.
+	 * Sending a minimal structure with the buffer ID fixes the error, but breaks refilling
+	 * the buffers on some devices.
+	 */
 
 	return ipts_control_send_feedback(ipts, buffer);
 }
