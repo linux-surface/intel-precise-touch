@@ -165,6 +165,7 @@ static int ipts_hid_raw_request(struct hid_device *hid, unsigned char reportnum,
 		return 0;
 
 	ipts->get_feature_report = NULL;
+	ipts->get_feature_size = 0;
 	reinit_completion(&on_feature);
 
 	ret = wait_for_completion_timeout(&on_feature, msecs_to_jiffies(5000));
@@ -176,8 +177,11 @@ static int ipts_hid_raw_request(struct hid_device *hid, unsigned char reportnum,
 	if (!ipts->get_feature_report)
 		return -EFAULT;
 
-	memcpy(buf, ipts->get_feature_report, size);
-	return size;
+	if (ipts->get_feature_size > size)
+		return -ETOOSMALL;
+
+	memcpy(buf, ipts->get_feature_report, ipts->get_feature_size);
+	return ipts->get_feature_size;
 }
 
 static int ipts_hid_output_report(struct hid_device *hid, __u8 *data, size_t size)
@@ -223,8 +227,9 @@ int ipts_hid_input_data(struct ipts_context *ipts, int buffer)
 
 	if (header->type == IPTS_DATA_TYPE_GET_FEATURES) {
 		ipts->get_feature_report = header->data;
-		complete_all(&on_feature);
+		ipts->get_feature_size = header->size;
 
+		complete_all(&on_feature);
 		return 0;
 	}
 

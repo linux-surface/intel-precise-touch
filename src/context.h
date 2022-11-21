@@ -23,7 +23,9 @@ struct ipts_context {
 	struct mei_cl_device *cldev;
 
 	enum ipts_mode mode;
+
 	u8 *get_feature_report;
+	size_t get_feature_size;
 
 	u8 *descriptor;
 	size_t desc_size;
