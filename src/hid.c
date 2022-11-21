@@ -150,6 +150,11 @@ static int ipts_hid_raw_request(struct hid_device *hid, unsigned char reportnum,
 		}
 	}
 
+	if (reqtype == HID_REQ_GET_REPORT)
+		memset(buf, 0, size);
+
+	buf[0] = reportnum;
+
 	ret = ipts_hid_hid2me_feedback(ipts, type, buf, size);
 	if (ret) {
 		dev_err(ipts->dev, "Failed to send hid2me feedback: %d\n", ret);
@@ -172,7 +177,7 @@ static int ipts_hid_raw_request(struct hid_device *hid, unsigned char reportnum,
 		return -EFAULT;
 
 	memcpy(buf, ipts->get_feature_report, size);
-	return 0;
+	return size;
 }
 
 static int ipts_hid_output_report(struct hid_device *hid, __u8 *data, size_t size)
