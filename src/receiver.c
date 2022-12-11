@@ -61,9 +61,8 @@ static int ipts_receiver_event_loop(void *data)
 	while (!kthread_should_stop()) {
 		for (int i = 0; i < IPTS_BUFFERS; i++) {
 			ret = ipts_control_wait_data(ipts, false);
-			if (ret == -EAGAIN) {
+			if (ret == -EAGAIN)
 				break;
-			}
 
 			if (ret) {
 				dev_err(ipts->dev, "Failed to wait for data: %d\n", ret);
