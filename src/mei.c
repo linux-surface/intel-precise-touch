@@ -13,6 +13,7 @@
 #include <linux/mei_cl_bus.h>
 #include <linux/mod_devicetable.h>
 #include <linux/module.h>
+#include <linux/mutex.h>
 #include <linux/slab.h>
 #include <linux/stddef.h>
 #include <linux/types.h>
@@ -62,6 +63,9 @@ static int ipts_mei_probe(struct mei_cl_device *cldev, const struct mei_cl_devic
 	ipts->cldev = cldev;
 	ipts->dev = &cldev->dev;
 	ipts->mode = IPTS_MODE_EVENT;
+
+	mutex_init(&ipts->feature_lock);
+	init_completion(&ipts->feature_event);
 
 	mei_cldev_set_drvdata(cldev, ipts);
 

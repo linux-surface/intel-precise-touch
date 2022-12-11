@@ -21,9 +21,6 @@
 #include "spec-device.h"
 #include "spec-hid.h"
 
-DECLARE_COMPLETION(on_feature);
-DEFINE_MUTEX(lock_feature);
-
 static int ipts_hid_start(struct hid_device *hid)
 {
 	return 0;
@@ -125,14 +122,14 @@ static int ipts_hid_get_feature(struct ipts_context *ipts, unsigned char reportn
 {
 	int ret;
 
-	mutex_lock(&lock_feature);
+	mutex_lock(&ipts->feature_lock);
 
 	memset(buf, 0, size);
 	buf[0] = reportnum;
 
 	ipts->get_feature_report = NULL;
 	ipts->get_feature_size = 0;
-	reinit_completion(&on_feature);
+	reinit_completion(&ipts->feature_event);
 
 	ret = ipts_hid_hid2me_feedback(ipts, type, buf, size);
 	if (ret) {
@@ -140,7 +137,7 @@ static int ipts_hid_get_feature(struct ipts_context *ipts, unsigned char reportn
 		goto out;
 	}
 
-	ret = wait_for_completion_timeout(&on_feature, msecs_to_jiffies(5000));
+	ret = wait_for_completion_timeout(&ipts->feature_event, msecs_to_jiffies(5000));
 	if (ret == 0) {
 		dev_warn(ipts->dev, "GET_FEATURES timed out!\n");
 		ret = -EIO;
@@ -161,7 +158,7 @@ static int ipts_hid_get_feature(struct ipts_context *ipts, unsigned char reportn
 	memcpy(buf, ipts->get_feature_report, ipts->get_feature_size);
 
 out:
-	mutex_unlock(&lock_feature);
+	mutex_unlock(&ipts->feature_lock);
 	return ret;
 }
 
@@ -274,7 +271,7 @@ int ipts_hid_input_data(struct ipts_context *ipts, int buffer)
 		ipts->get_feature_report = header->data;
 		ipts->get_feature_size = header->size;
 
-		complete_all(&on_feature);
+		complete_all(&ipts->feature_event);
 		return 0;
 	}
 

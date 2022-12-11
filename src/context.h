@@ -9,9 +9,11 @@
 #ifndef IPTS_CONTEXT_H
 #define IPTS_CONTEXT_H
 
+#include <linux/completion.h>
 #include <linux/device.h>
 #include <linux/hid.h>
 #include <linux/mei_cl_bus.h>
+#include <linux/mutex.h>
 #include <linux/sched.h>
 #include <linux/types.h>
 
@@ -23,6 +25,9 @@ struct ipts_context {
 	struct mei_cl_device *cldev;
 
 	enum ipts_mode mode;
+
+	struct mutex feature_lock;
+	struct completion feature_event;
 
 	u8 *get_feature_report;
 	size_t get_feature_size;
