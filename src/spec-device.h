@@ -231,9 +231,15 @@ struct ipts_get_descriptor {
 
 static_assert(sizeof(struct ipts_get_descriptor) == 24);
 
+/*
+ * The type of a response is indicated by a
+ * command code, with the most significant bit flipped to 1.
+ */
+#define IPTS_RSP_BIT BIT(31)
+
 /**
  * struct ipts_response - Data returned from the device in response to a command.
- * @cmd:     The command that this response answers.
+ * @cmd:     The command that this response answers (IPTS_RSP_BIT will be 1).
  * @status:  The return code of the command.
  * @payload: The data that was produced by the command.
  */

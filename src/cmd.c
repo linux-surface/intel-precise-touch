@@ -64,14 +64,14 @@ static int _ipts_cmd_recv(struct ipts_context *ipts, enum ipts_command_code code
 
 	/*
 	 * In a response, the command code will have the most significant bit
-	 * flipped to one. We check for this and then set the bit to 0.
+	 * flipped to 1. We check for this and then set the bit to 0.
 	 */
-	if ((rsp.cmd & 0x80000000) == 0) {
+	if ((rsp.cmd & IPTS_RSP_BIT) == 0) {
 		dev_err(ipts->dev, "Invalid command code received: 0x%02X\n", rsp.cmd);
 		return -EINVAL;
 	}
 
-	rsp.cmd = rsp.cmd & ~(0x80000000);
+	rsp.cmd = rsp.cmd & ~(IPTS_RSP_BIT);
 	if (rsp.cmd != code) {
 		dev_err(ipts->dev, "Received response to wrong command: 0x%02X\n", rsp.cmd);
 		return -EINVAL;
