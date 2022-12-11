@@ -9,6 +9,7 @@
 #include <linux/completion.h>
 #include <linux/gfp.h>
 #include <linux/hid.h>
+#include <linux/mutex.h>
 #include <linux/slab.h>
 #include <linux/types.h>
 
@@ -21,6 +22,7 @@
 #include "spec-hid.h"
 
 DECLARE_COMPLETION(on_feature);
+DEFINE_MUTEX(lock_feature);
 
 static int ipts_hid_start(struct hid_device *hid)
 {
@@ -118,6 +120,65 @@ static int ipts_hid_parse(struct hid_device *hid)
 	return 0;
 }
 
+static int ipts_hid_get_feature(struct ipts_context *ipts, unsigned char reportnum, __u8 *buf,
+				size_t size, enum ipts_feedback_data_type type)
+{
+	int ret;
+
+	mutex_lock(&lock_feature);
+
+	memset(buf, 0, size);
+	buf[0] = reportnum;
+
+	ipts->get_feature_report = NULL;
+	ipts->get_feature_size = 0;
+	reinit_completion(&on_feature);
+
+	ret = ipts_hid_hid2me_feedback(ipts, type, buf, size);
+	if (ret) {
+		dev_err(ipts->dev, "Failed to send hid2me feedback: %d\n", ret);
+		goto out;
+	}
+
+	ret = wait_for_completion_timeout(&on_feature, msecs_to_jiffies(5000));
+	if (ret == 0) {
+		dev_warn(ipts->dev, "GET_FEATURES timed out!\n");
+		ret = -EIO;
+		goto out;
+	}
+
+	if (!ipts->get_feature_report) {
+		ret = -EFAULT;
+		goto out;
+	}
+
+	if (ipts->get_feature_size > size) {
+		ret = -ETOOSMALL;
+		goto out;
+	}
+
+	ret = ipts->get_feature_size;
+	memcpy(buf, ipts->get_feature_report, ipts->get_feature_size);
+
+out:
+	mutex_unlock(&lock_feature);
+	return ret;
+}
+
+static int ipts_hid_set_feature(struct ipts_context *ipts, unsigned char reportnum, __u8 *buf,
+				size_t size, enum ipts_feedback_data_type type)
+{
+	int ret;
+
+	buf[0] = reportnum;
+
+	ret = ipts_hid_hid2me_feedback(ipts, type, buf, size);
+	if (ret)
+		dev_err(ipts->dev, "Failed to send hid2me feedback: %d\n", ret);
+
+	return ret;
+}
+
 static int ipts_hid_raw_request(struct hid_device *hid, unsigned char reportnum, __u8 *buf,
 				size_t size, unsigned char rtype, int reqtype)
 {
@@ -133,6 +194,9 @@ static int ipts_hid_raw_request(struct hid_device *hid, unsigned char reportnum,
 	if (!ipts)
 		return -EFAULT;
 
+	if (!buf)
+		return -EFAULT;
+
 	if (rtype == HID_OUTPUT_REPORT && reqtype == HID_REQ_SET_REPORT)
 		type = IPTS_FEEDBACK_DATA_TYPE_OUTPUT_REPORT;
 	else if (rtype == HID_FEATURE_REPORT && reqtype == HID_REQ_GET_REPORT)
@@ -142,6 +206,7 @@ static int ipts_hid_raw_request(struct hid_device *hid, unsigned char reportnum,
 	else
 		return -EIO;
 
+	// Implemente mode switching report for older devices without native HID support
 	if (type == IPTS_FEEDBACK_DATA_TYPE_SET_FEATURES && reportnum == IPTS_HID_REPORT_SET_MODE) {
 		ret = ipts_hid_switch_mode(ipts, buf[1]);
 		if (ret) {
@@ -151,44 +216,24 @@ static int ipts_hid_raw_request(struct hid_device *hid, unsigned char reportnum,
 	}
 
 	if (reqtype == HID_REQ_GET_REPORT)
-		memset(buf, 0, size);
-
-	buf[0] = reportnum;
-
-	ret = ipts_hid_hid2me_feedback(ipts, type, buf, size);
-	if (ret) {
-		dev_err(ipts->dev, "Failed to send hid2me feedback: %d\n", ret);
-		return ret;
-	}
-
-	if (reqtype == HID_REQ_SET_REPORT)
-		return 0;
-
-	ipts->get_feature_report = NULL;
-	ipts->get_feature_size = 0;
-	reinit_completion(&on_feature);
-
-	ret = wait_for_completion_timeout(&on_feature, msecs_to_jiffies(5000));
-	if (ret == 0) {
-		dev_warn(ipts->dev, "GET_FEATURES timed out!\n");
-		return -EIO;
-	}
-
-	if (!ipts->get_feature_report)
-		return -EFAULT;
-
-	if (ipts->get_feature_size > size)
-		return -ETOOSMALL;
-
-	memcpy(buf, ipts->get_feature_report, ipts->get_feature_size);
-	return ipts->get_feature_size;
+		return ipts_hid_get_feature(ipts, reportnum, buf, size, type);
+	else
+		return ipts_hid_set_feature(ipts, reportnum, buf, size, type);
 }
 
 static int ipts_hid_output_report(struct hid_device *hid, __u8 *data, size_t size)
 {
-	struct ipts_context *ipts = hid->driver_data;
+	struct ipts_context *ipts;
+
+	if (!hid)
+		return -EFAULT;
+
+	ipts = hid->driver_data;
 
 	if (!ipts)
+		return -EFAULT;
+
+	if (!data)
 		return -EFAULT;
 
 	return ipts_hid_hid2me_feedback(ipts, IPTS_FEEDBACK_DATA_TYPE_OUTPUT_REPORT, data, size);
