@@ -106,8 +106,8 @@ static int ipts_control_get_descriptor(struct ipts_context *ipts)
 	header = (struct ipts_data_header *)ipts->resources.descriptor.address;
 
 	if (header->type == IPTS_DATA_TYPE_DESCRIPTOR) {
-		ipts->descriptor = &header->data[8];
-		ipts->desc_size = header->size - 8;
+		ipts->descriptor.address = &header->data[8];
+		ipts->descriptor.size = header->size - 8;
 
 		return 0;
 	}

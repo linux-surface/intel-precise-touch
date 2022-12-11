@@ -79,6 +79,7 @@ static int ipts_hid_parse(struct hid_device *hid)
 	u8 *buffer;
 	size_t size;
 	struct ipts_context *ipts;
+	bool has_native_descriptor;
 
 	if (!hid)
 		return -EFAULT;
@@ -89,18 +90,19 @@ static int ipts_hid_parse(struct hid_device *hid)
 		return -EFAULT;
 
 	size = sizeof(ipts_singletouch_descriptor);
+	has_native_descriptor = ipts->descriptor.address && ipts->descriptor.size > 0;
 
-	if (ipts->descriptor && ipts->desc_size > 0)
-		size += ipts->desc_size;
+	if (has_native_descriptor)
+		size += ipts->descriptor.size;
 	else
 		size += sizeof(ipts_fallback_descriptor);
 
 	buffer = kzalloc(size, GFP_KERNEL);
 	memcpy(buffer, ipts_singletouch_descriptor, sizeof(ipts_singletouch_descriptor));
 
-	if (ipts->descriptor && ipts->desc_size > 0) {
-		memcpy(&buffer[sizeof(ipts_singletouch_descriptor)], ipts->descriptor,
-		       ipts->desc_size);
+	if (has_native_descriptor) {
+		memcpy(&buffer[sizeof(ipts_singletouch_descriptor)], ipts->descriptor.address,
+		       ipts->descriptor.size);
 	} else {
 		memcpy(&buffer[sizeof(ipts_singletouch_descriptor)], ipts_fallback_descriptor,
 		       sizeof(ipts_fallback_descriptor));
@@ -127,8 +129,7 @@ static int ipts_hid_get_feature(struct ipts_context *ipts, unsigned char reportn
 	memset(buf, 0, size);
 	buf[0] = reportnum;
 
-	ipts->get_feature_report = NULL;
-	ipts->get_feature_size = 0;
+	memset(&ipts->feature_report, 0, sizeof(ipts->feature_report));
 	reinit_completion(&ipts->feature_event);
 
 	ret = ipts_hid_hid2me_feedback(ipts, type, buf, size);
@@ -144,18 +145,18 @@ static int ipts_hid_get_feature(struct ipts_context *ipts, unsigned char reportn
 		goto out;
 	}
 
-	if (!ipts->get_feature_report) {
+	if (!ipts->feature_report.address) {
 		ret = -EFAULT;
 		goto out;
 	}
 
-	if (ipts->get_feature_size > size) {
+	if (ipts->feature_report.size > size) {
 		ret = -ETOOSMALL;
 		goto out;
 	}
 
-	ret = ipts->get_feature_size;
-	memcpy(buf, ipts->get_feature_report, ipts->get_feature_size);
+	ret = ipts->feature_report.size;
+	memcpy(buf, ipts->feature_report.address, ipts->feature_report.size);
 
 out:
 	mutex_unlock(&ipts->feature_lock);
@@ -268,8 +269,8 @@ int ipts_hid_input_data(struct ipts_context *ipts, int buffer)
 		return hid_input_report(ipts->hid, HID_INPUT_REPORT, header->data, header->size, 1);
 
 	if (header->type == IPTS_DATA_TYPE_GET_FEATURES) {
-		ipts->get_feature_report = header->data;
-		ipts->get_feature_size = header->size;
+		ipts->feature_report.address = header->data;
+		ipts->feature_report.size = header->size;
 
 		complete_all(&ipts->feature_event);
 		return 0;
