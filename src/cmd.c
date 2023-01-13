@@ -37,6 +37,31 @@ static int ipts_cmd_get_errno(struct ipts_response rsp, enum ipts_status expect)
 	return -EINVAL;
 }
 
+static ssize_t _mei_recv(struct mei_cl_device *cldev, u8 *buf, size_t length, bool blocking)
+{
+	ssize_t ret = 0;
+
+	do {
+		if (blocking)
+			ret = mei_cldev_recv(cldev, buf, length);
+		else
+			ret = mei_cldev_recv_nonblock(cldev, buf, length);
+	} while (ret == -EINTR);
+
+	return ret;
+}
+
+static ssize_t _mei_send(struct mei_cl_device *cldev, u8 *buf, size_t length)
+{
+	ssize_t ret = 0;
+
+	do {
+		ret = mei_cldev_send(cldev, buf, length);
+	} while (ret == -EINTR);
+
+	return ret;
+}
+
 static int _ipts_cmd_recv(struct ipts_context *ipts, enum ipts_command_code code, void *data,
 			  size_t size, bool block, enum ipts_status expect)
 {
@@ -49,11 +74,7 @@ static int _ipts_cmd_recv(struct ipts_context *ipts, enum ipts_command_code code
 	if (size > sizeof(rsp.payload))
 		return -EINVAL;
 
-	if (block)
-		ret = mei_cldev_recv(ipts->cldev, (u8 *)&rsp, sizeof(rsp));
-	else
-		ret = mei_cldev_recv_nonblock(ipts->cldev, (u8 *)&rsp, sizeof(rsp));
-
+	ret = _mei_recv(ipts->cldev, (u8 *)&rsp, sizeof(rsp), block);
 	if (ret == -EAGAIN)
 		return ret;
 
@@ -102,7 +123,7 @@ int ipts_cmd_send(struct ipts_context *ipts, enum ipts_command_code code, void *
 	if (data && size > 0)
 		memcpy(cmd.payload, data, size);
 
-	ret = mei_cldev_send(ipts->cldev, (u8 *)&cmd, sizeof(cmd.cmd) + size);
+	ret = _mei_send(ipts->cldev, (u8 *)&cmd, sizeof(cmd.cmd) + size);
 	if (ret >= 0)
 		return 0;
 
