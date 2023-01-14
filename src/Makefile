@@ -7,6 +7,6 @@ obj-$(CONFIG_HID_IPTS) += ipts.o
 ipts-objs := cmd.o
 ipts-objs += control.o
 ipts-objs += hid.o
-ipts-objs += mei.o
+ipts-objs += main.o
 ipts-objs += receiver.o
 ipts-objs += resources.o
