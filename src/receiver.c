@@ -99,13 +99,17 @@ static int ipts_receiver_event_loop(void *data)
 	ret = ipts_control_wait_data(ipts, true);
 	if (ret) {
 		dev_err(ipts->dev, "Failed to wait for data: %d\n", ret);
-		return ret;
+
+		if (ret != -EAGAIN)
+			return ret;
 	}
 
 	ret = ipts_control_wait_flush(ipts);
 	if (ret) {
 		dev_err(ipts->dev, "Failed to wait for flush: %d\n", ret);
-		return ret;
+
+		if (ret != -EAGAIN)
+			return ret;
 	}
 
 	return 0;
@@ -167,13 +171,17 @@ static int ipts_receiver_doorbell_loop(void *data)
 	ret = ipts_control_wait_data(ipts, true);
 	if (ret) {
 		dev_err(ipts->dev, "Failed to wait for data: %d\n", ret);
-		return ret;
+
+		if (ret != -EAGAIN)
+			return ret;
 	}
 
 	ret = ipts_control_wait_flush(ipts);
 	if (ret) {
 		dev_err(ipts->dev, "Failed to wait for flush: %d\n", ret);
-		return ret;
+
+		if (ret != -EAGAIN)
+			return ret;
 	}
 
 	return 0;
