@@ -15,6 +15,11 @@
 #include "spec-device.h"
 
 /*
+ * The default timeout for receiving responses
+ */
+#define IPTS_CMD_DEFAULT_TIMEOUT 1000
+
+/*
  * Executes the specified command with the given payload on the device.
  */
 int ipts_cmd_send(struct ipts_context *ipts, enum ipts_command_code code, void *data, size_t size);

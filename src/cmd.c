@@ -9,6 +9,7 @@
 #include <linux/errno.h>
 #include <linux/types.h>
 
+#include "cmd.h"
 #include "context.h"
 #include "mei.h"
 #include "spec-device.h"
@@ -39,7 +40,7 @@ static int ipts_cmd_get_errno(struct ipts_response rsp, enum ipts_status expect)
 }
 
 static int _ipts_cmd_recv(struct ipts_context *ipts, enum ipts_command_code code, void *data,
-			  size_t size, bool block, enum ipts_status expect)
+			  size_t size, int timeout, enum ipts_status expect)
 {
 	int ret;
 	struct ipts_response rsp = { 0 };
@@ -54,7 +55,7 @@ static int _ipts_cmd_recv(struct ipts_context *ipts, enum ipts_command_code code
 	 * In a response, the command code will have the most significant bit flipped to 1.
 	 * If code is passed to ipts_mei_recv as is, no messages will be recevied.
 	 */
-	ret = ipts_mei_recv_timeout(&ipts->mei, code | IPTS_RSP_BIT, &rsp, block ? -1 : 0);
+	ret = ipts_mei_recv_timeout(&ipts->mei, code | IPTS_RSP_BIT, &rsp, timeout);
 	if (ret == -EAGAIN)
 		return ret;
 
@@ -110,19 +111,20 @@ int ipts_cmd_send(struct ipts_context *ipts, enum ipts_command_code code, void *
 
 int ipts_cmd_recv(struct ipts_context *ipts, enum ipts_command_code code, void *data, size_t size)
 {
-	return _ipts_cmd_recv(ipts, code, data, size, true, IPTS_STATUS_SUCCESS);
+	return _ipts_cmd_recv(ipts, code, data, size, IPTS_CMD_DEFAULT_TIMEOUT,
+			      IPTS_STATUS_SUCCESS);
 }
 
 int ipts_cmd_recv_nonblock(struct ipts_context *ipts, enum ipts_command_code code, void *data,
 			   size_t size)
 {
-	return _ipts_cmd_recv(ipts, code, data, size, false, IPTS_STATUS_SUCCESS);
+	return _ipts_cmd_recv(ipts, code, data, size, 0, IPTS_STATUS_SUCCESS);
 }
 
 int ipts_cmd_recv_expect(struct ipts_context *ipts, enum ipts_command_code code, void *data,
 			 size_t size, enum ipts_status expect)
 {
-	return _ipts_cmd_recv(ipts, code, data, size, true, expect);
+	return _ipts_cmd_recv(ipts, code, data, size, IPTS_CMD_DEFAULT_TIMEOUT, expect);
 }
 
 int ipts_cmd_run(struct ipts_context *ipts, enum ipts_command_code code, void *in, size_t insize,
