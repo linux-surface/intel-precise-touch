@@ -20,6 +20,7 @@
 
 #include "context.h"
 #include "control.h"
+#include "mei.h"
 #include "receiver.h"
 #include "spec-device.h"
 
@@ -59,7 +60,12 @@ static int ipts_probe(struct mei_cl_device *cldev, const struct mei_cl_device_id
 		return -ENOMEM;
 	}
 
-	ipts->cldev = cldev;
+	ret = ipts_mei_init(&ipts->mei, cldev);
+	if (ret) {
+		dev_err(&cldev->dev, "Failed to init MEI bus logic: %d\n", ret);
+		return ret;
+	}
+
 	ipts->dev = &cldev->dev;
 	ipts->mode = IPTS_MODE_EVENT;
 

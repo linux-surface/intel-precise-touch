@@ -17,12 +17,13 @@
 #include <linux/sched.h>
 #include <linux/types.h>
 
+#include "mei.h"
 #include "resources.h"
 #include "spec-device.h"
 
 struct ipts_context {
 	struct device *dev;
-	struct mei_cl_device *cldev;
+	struct ipts_mei mei;
 
 	enum ipts_mode mode;
 

@@ -10,6 +10,7 @@
 #include <linux/types.h>
 
 #include "context.h"
+#include "mei.h"
 #include "spec-device.h"
 
 static int ipts_cmd_get_errno(struct ipts_response rsp, enum ipts_status expect)
@@ -37,31 +38,6 @@ static int ipts_cmd_get_errno(struct ipts_response rsp, enum ipts_status expect)
 	return -EINVAL;
 }
 
-static ssize_t _mei_recv(struct mei_cl_device *cldev, u8 *buf, size_t length, bool blocking)
-{
-	ssize_t ret = 0;
-
-	do {
-		if (blocking)
-			ret = mei_cldev_recv(cldev, buf, length);
-		else
-			ret = mei_cldev_recv_nonblock(cldev, buf, length);
-	} while (ret == -EINTR);
-
-	return ret;
-}
-
-static ssize_t _mei_send(struct mei_cl_device *cldev, u8 *buf, size_t length)
-{
-	ssize_t ret = 0;
-
-	do {
-		ret = mei_cldev_send(cldev, buf, length);
-	} while (ret == -EINTR);
-
-	return ret;
-}
-
 static int _ipts_cmd_recv(struct ipts_context *ipts, enum ipts_command_code code, void *data,
 			  size_t size, bool block, enum ipts_status expect)
 {
@@ -74,25 +50,27 @@ static int _ipts_cmd_recv(struct ipts_context *ipts, enum ipts_command_code code
 	if (size > sizeof(rsp.payload))
 		return -EINVAL;
 
-	ret = _mei_recv(ipts->cldev, (u8 *)&rsp, sizeof(rsp), block);
+	/*
+	 * In a response, the command code will have the most significant bit flipped to 1.
+	 * If code is passed to ipts_mei_recv as is, no messages will be recevied.
+	 */
+	ret = ipts_mei_recv_timeout(&ipts->mei, code | IPTS_RSP_BIT, &rsp, block ? -1 : 0);
 	if (ret == -EAGAIN)
 		return ret;
 
-	if (ret <= 0) {
+	if (ret < 0) {
 		dev_err(ipts->dev, "Error while reading response: %d\n", ret);
 		return ret;
 	}
 
 	/*
-	 * In a response, the command code will have the most significant bit
-	 * flipped to 1. We check for this and then set the bit to 0.
-	 */
-	if ((rsp.cmd & IPTS_RSP_BIT) == 0) {
-		dev_err(ipts->dev, "Invalid command code received: 0x%02X\n", rsp.cmd);
-		return -EINVAL;
-	}
-
+	 * Flip the bit back for easier logging.
+	*/
 	rsp.cmd = rsp.cmd & ~(IPTS_RSP_BIT);
+
+	/*
+	 * Make sure that we really received the correct response.
+	 */
 	if (rsp.cmd != code) {
 		dev_err(ipts->dev, "Received response to wrong command: 0x%02X\n", rsp.cmd);
 		return -EINVAL;
@@ -123,11 +101,10 @@ int ipts_cmd_send(struct ipts_context *ipts, enum ipts_command_code code, void *
 	if (data && size > 0)
 		memcpy(cmd.payload, data, size);
 
-	ret = _mei_send(ipts->cldev, (u8 *)&cmd, sizeof(cmd.cmd) + size);
-	if (ret >= 0)
-		return 0;
+	ret = ipts_mei_send(&ipts->mei, &cmd, sizeof(cmd.cmd) + size);
+	if (ret)
+		dev_err(ipts->dev, "Error while sending: 0x%02X:%d\n", code, ret);
 
-	dev_err(ipts->dev, "Error while sending: 0x%02X:%d\n", code, ret);
 	return ret;
 }
 
