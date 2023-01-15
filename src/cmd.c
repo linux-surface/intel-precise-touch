@@ -56,13 +56,8 @@ static int _ipts_cmd_recv(struct ipts_context *ipts, enum ipts_command_code code
 	 * If code is passed to ipts_mei_recv as is, no messages will be recevied.
 	 */
 	ret = ipts_mei_recv_timeout(&ipts->mei, code | IPTS_RSP_BIT, &rsp, timeout);
-	if (ret == -EAGAIN)
+	if (ret < 0)
 		return ret;
-
-	if (ret < 0) {
-		dev_err(ipts->dev, "Error while reading response: %d\n", ret);
-		return ret;
-	}
 
 	/*
 	 * Flip the bit back for easier logging.

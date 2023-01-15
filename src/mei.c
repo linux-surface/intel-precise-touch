@@ -125,9 +125,6 @@ int ipts_mei_recv_timeout(struct ipts_mei *mei, enum ipts_command_code code,
 	if (ret > 0)
 		return 0;
 
-	if (ret < 0)
-		return ret;
-
 	return -EAGAIN;
 }
 
