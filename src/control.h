@@ -15,58 +15,83 @@
 #include "spec-device.h"
 
 /*
- * Sends a request to stop the data flow to the device.
- * All outstanding data needs to be acknowledged using
- * feedback before the request can be finalized.
- */
+ * ipts_control_request_flush() - Stop the data flow.
+ * @ipts: The IPTS driver context.
+ *
+ * Runs the command to stop the data flow on the device.
+ * All outstanding data needs to be acknowledged using feedback before the command will return.
+ *
+ * Returns: 0 on success, <0 on error.
+*/
 int ipts_control_request_flush(struct ipts_context *ipts);
 
 /*
- * Waits until the flushing request has been finalized.
- */
+ * ipts_control_wait_flush() - Wait until data flow has been stopped.
+ * @ipts: The IPTS driver context.
+ *
+ * Returns: 0 on success, <0 on error.
+*/
 int ipts_control_wait_flush(struct ipts_context *ipts);
 
 /*
- * Notify the device that the driver can receive new data.
- */
+ * ipts_control_wait_flush() - Notify the device that the driver can receive new data.
+ * @ipts: The IPTS driver context.
+ *
+ * Returns: 0 on success, <0 on error.
+*/
 int ipts_control_request_data(struct ipts_context *ipts);
 
 /*
- * Wait until new data is available on the device.
- * In doorbell mode, this function will never return while the data
- * flow is active. Instead, the doorbell will be incremented when new
- * data is available.
+ * ipts_control_wait_data() - Wait until new data is available.
+ * @ipts: The IPTS driver context.
+ * @block: Whether to block execution until data is available.
  *
- * If shutdown == true, the function will block, and errors that are
- * produced by the device due to a disabled sensor will be ignored.
+ * In doorbell mode, this function will never return while the data flow is active. Instead,
+ * the doorbell will be incremented when new data is available.
  *
- * If shutdown == false, the function will not block. If no data is
- * available, -EAGAIN will be returned.
- */
-int ipts_control_wait_data(struct ipts_context *ipts, bool shutdown);
+ * Returns: 0 on success, <0 on error, -EAGAIN if no data is available.
+*/
+int ipts_control_wait_data(struct ipts_context *ipts, bool block);
 
 /*
- * Submits the given feedback buffer to the hardware.
- */
+ * ipts_control_send_feedback() - Submits a feedback buffer to the device.
+ * @ipts: The IPTS driver context.
+ * @buffer: The ID of the buffer containing feedback data.
+ *
+ * Returns: 0 on success, <0 on error.
+*/
 int ipts_control_send_feedback(struct ipts_context *ipts, u32 buffer);
 
 /*
- * Acknowledges that the data in a buffer has been processed.
+ * ipts_control_refill_buffer() - Acknowledges that data in a buffer has been processed.
+ * @ipts: The IPTS driver context.
+ * @buffer: The buffer that has been processed and can be refilled.
+ *
+ * Returns: 0 on success, <0 on error.
  */
 int ipts_control_refill_buffer(struct ipts_context *ipts, u32 buffer);
 
 /*
- * Initializes the IPTS device and starts the data flow.
+ * ipts_control_start() - Initialized the device and starts the data flow.
+ * @ipts: The IPTS driver context.
+ *
+ * Returns: 0 on success, <0 on error.
  */
 int ipts_control_start(struct ipts_context *ipts);
 
 /*
- * Stops the data flow and resets the device.
+ * ipts_control_stop() - Stops the data flow and resets the device.
+ * @ipts: The IPTS driver context.
+ *
+ * Returns: 0 on success, <0 on error.
  */
 int ipts_control_stop(struct ipts_context *ipts);
 
 /*
- * Stops the device and immideately starts it again.
+ * ipts_control_restart() - Stops the device and starts it again.
+ * @ipts: The IPTS driver context.
+ *
+ * Returns: 0 on success, <0 on error.
  */
 int ipts_control_restart(struct ipts_context *ipts);
 

@@ -96,8 +96,8 @@ static bool ipts_mei_search(struct ipts_mei *mei, enum ipts_command_code code,
 	return false;
 }
 
-int ipts_mei_recv_timeout(struct ipts_mei *mei, enum ipts_command_code code,
-			  struct ipts_response *rsp, int timeout)
+int ipts_mei_recv(struct ipts_mei *mei, enum ipts_command_code code, struct ipts_response *rsp,
+		  int timeout)
 {
 	int ret;
 
@@ -126,11 +126,6 @@ int ipts_mei_recv_timeout(struct ipts_mei *mei, enum ipts_command_code code,
 		return 0;
 
 	return -EAGAIN;
-}
-
-int ipts_mei_recv(struct ipts_mei *mei, enum ipts_command_code code, struct ipts_response *rsp)
-{
-	return ipts_mei_recv_timeout(mei, code, rsp, -1);
 }
 
 int ipts_mei_send(struct ipts_mei *mei, void *data, size_t length)

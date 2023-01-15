@@ -29,7 +29,7 @@ int ipts_cmd_recv_timeout(struct ipts_context *ipts, enum ipts_command_code code
 	 * In a response, the command code will have the most significant bit flipped to 1.
 	 * If code is passed to ipts_mei_recv as is, no messages will be recevied.
 	 */
-	ret = ipts_mei_recv_timeout(&ipts->mei, code | IPTS_RSP_BIT, rsp, timeout);
+	ret = ipts_mei_recv(&ipts->mei, code | IPTS_RSP_BIT, rsp, timeout);
 	if (ret < 0)
 		return ret;
 
@@ -43,11 +43,6 @@ int ipts_cmd_recv_timeout(struct ipts_context *ipts, enum ipts_command_code code
 		rsp->status = IPTS_STATUS_SUCCESS;
 
 	return 0;
-}
-
-int ipts_cmd_recv(struct ipts_context *ipts, enum ipts_command_code code, struct ipts_response *rsp)
-{
-	return ipts_cmd_recv_timeout(ipts, code, rsp, IPTS_CMD_DEFAULT_TIMEOUT);
 }
 
 int ipts_cmd_send(struct ipts_context *ipts, enum ipts_command_code code, void *data, size_t size)

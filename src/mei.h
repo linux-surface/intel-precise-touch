@@ -31,12 +31,37 @@ struct ipts_mei {
 	struct rw_semaphore message_lock;
 };
 
-int ipts_mei_recv_timeout(struct ipts_mei *mei, enum ipts_command_code code,
-			  struct ipts_response *rsp, int timeout);
+/*
+ * ipts_mei_recv() - Receive data from a MEI device.
+ * @mei: The IPTS MEI device context.
+ * @code: The IPTS command code to look for.
+ * @rsp: The address that the received data will be copied to.
+ * @timeout: How many milliseconds the function will wait at most.
+ *
+ * A negative timeout means to wait forever.
+ *
+ * Returns: 0 on success, <0 on error, -EAGAIN if no response has been received.
+ */
+int ipts_mei_recv(struct ipts_mei *mei, enum ipts_command_code code, struct ipts_response *rsp,
+		  int timeout);
 
-int ipts_mei_recv(struct ipts_mei *mei, enum ipts_command_code code, struct ipts_response *rsp);
+/*
+ * ipts_mei_send() - Send data to a MEI device.
+ * @ipts: The IPTS MEI device context.
+ * @data: The data to send.
+ * @size: The size of the data.
+ *
+ * Returns: 0 on success, <0 on error.
+ */
 int ipts_mei_send(struct ipts_mei *mei, void *data, size_t length);
 
+/*
+ * ipts_mei_init() - Initialize the MEI device context.
+ * @mei: The MEI device context to initialize.
+ * @cldev: The MEI device the context will be bound to.
+ *
+ * Returns: 0 on success, <0 on error.
+ */
 int ipts_mei_init(struct ipts_mei *mei, struct mei_cl_device *cldev);
 
 #endif /* IPTS_MEI_H */
