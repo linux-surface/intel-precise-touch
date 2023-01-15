@@ -247,7 +247,7 @@ static struct hid_ll_driver ipts_hid_driver = {
 	.output_report = ipts_hid_output_report,
 };
 
-int ipts_hid_input_data(struct ipts_context *ipts, int buffer)
+int ipts_hid_input_data(struct ipts_context *ipts, u32 buffer)
 {
 	int ret;
 	u8 *temp;

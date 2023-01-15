@@ -43,7 +43,7 @@ struct ipts_mei {
  * Returns: 0 on success, <0 on error, -EAGAIN if no response has been received.
  */
 int ipts_mei_recv(struct ipts_mei *mei, enum ipts_command_code code, struct ipts_response *rsp,
-		  int timeout);
+		  u64 timeout);
 
 /*
  * ipts_mei_send() - Send data to a MEI device.

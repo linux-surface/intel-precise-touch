@@ -97,7 +97,7 @@ static bool ipts_mei_search(struct ipts_mei *mei, enum ipts_command_code code,
 }
 
 int ipts_mei_recv(struct ipts_mei *mei, enum ipts_command_code code, struct ipts_response *rsp,
-		  int timeout)
+		  u64 timeout)
 {
 	int ret;
 

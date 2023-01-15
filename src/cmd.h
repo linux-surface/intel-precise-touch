@@ -31,7 +31,7 @@
  * Returns: 0 on success, <0 on error, -EAGAIN if no response has been received.
 */
 int ipts_cmd_recv_timeout(struct ipts_context *ipts, enum ipts_command_code code,
-			  struct ipts_response *rsp, int timeout);
+			  struct ipts_response *rsp, u64 timeout);
 
 /*
  * ipts_cmd_recv() - Receives a response to a command.
