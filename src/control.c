@@ -25,23 +25,75 @@
 
 static int ipts_control_get_device_info(struct ipts_context *ipts, struct ipts_device_info *info)
 {
+	int ret;
+	struct ipts_response rsp = { 0 };
+
+	if (!ipts)
+		return -EFAULT;
+
 	if (!info)
 		return -EFAULT;
 
-	return ipts_cmd_run(ipts, IPTS_CMD_GET_DEVICE_INFO, NULL, 0, info, sizeof(*info));
+	ret = ipts_cmd_send(ipts, IPTS_CMD_GET_DEVICE_INFO, NULL, 0);
+	if (ret) {
+		dev_err(ipts->dev, "GET_DEVICE_INFO: send failed: %d\n", ret);
+		return ret;
+	}
+
+	ret = ipts_cmd_recv(ipts, IPTS_CMD_GET_DEVICE_INFO, &rsp);
+	if (ret) {
+		dev_err(ipts->dev, "GET_DEVICE_INFO: recv failed: %d\n", ret);
+		return ret;
+	}
+
+	if (rsp.status != IPTS_STATUS_SUCCESS) {
+		dev_err(ipts->dev, "GET_DEVICE_INFO: cmd failed: %d\n", rsp.status);
+		return -EBADR;
+	}
+
+	memcpy(info, rsp.payload, sizeof(*info));
+	return 0;
 }
 
 static int ipts_control_set_mode(struct ipts_context *ipts, enum ipts_mode mode)
 {
+	int ret;
 	struct ipts_set_mode cmd = { 0 };
+	struct ipts_response rsp = { 0 };
+
+	if (!ipts)
+		return -EFAULT;
 
 	cmd.mode = mode;
-	return ipts_cmd_run(ipts, IPTS_CMD_SET_MODE, &cmd, sizeof(cmd), NULL, 0);
+
+	ret = ipts_cmd_send(ipts, IPTS_CMD_SET_MODE, &cmd, sizeof(cmd));
+	if (ret) {
+		dev_err(ipts->dev, "SET_MODE: send failed: %d\n", ret);
+		return ret;
+	}
+
+	ret = ipts_cmd_recv(ipts, IPTS_CMD_SET_MODE, &rsp);
+	if (ret) {
+		dev_err(ipts->dev, "SET_MODE: recv failed: %d\n", ret);
+		return ret;
+	}
+
+	if (rsp.status != IPTS_STATUS_SUCCESS) {
+		dev_err(ipts->dev, "SET_MODE: cmd failed: %d\n", rsp.status);
+		return -EBADR;
+	}
+
+	return 0;
 }
 
 static int ipts_control_set_mem_window(struct ipts_context *ipts, struct ipts_resources *res)
 {
+	int ret;
 	struct ipts_mem_window cmd = { 0 };
+	struct ipts_response rsp = { 0 };
+
+	if (!ipts)
+		return -EFAULT;
 
 	if (!res)
 		return -EFAULT;
@@ -65,7 +117,24 @@ static int ipts_control_set_mem_window(struct ipts_context *ipts, struct ipts_re
 	cmd.workqueue_size = IPTS_WORKQUEUE_SIZE;
 	cmd.workqueue_item_size = IPTS_WORKQUEUE_ITEM_SIZE;
 
-	return ipts_cmd_run(ipts, IPTS_CMD_SET_MEM_WINDOW, &cmd, sizeof(cmd), NULL, 0);
+	ret = ipts_cmd_send(ipts, IPTS_CMD_SET_MEM_WINDOW, &cmd, sizeof(cmd));
+	if (ret) {
+		dev_err(ipts->dev, "SET_MEM_WINDOW: send failed: %d\n", ret);
+		return ret;
+	}
+
+	ret = ipts_cmd_recv(ipts, IPTS_CMD_SET_MEM_WINDOW, &rsp);
+	if (ret) {
+		dev_err(ipts->dev, "SET_MEM_WINDOW: recv failed: %d\n", ret);
+		return ret;
+	}
+
+	if (rsp.status != IPTS_STATUS_SUCCESS) {
+		dev_err(ipts->dev, "SET_MEM_WINDOW: cmd failed: %d\n", rsp.status);
+		return -EBADR;
+	}
+
+	return 0;
 }
 
 static int ipts_control_reset_sensor(struct ipts_context *ipts)
@@ -89,6 +158,7 @@ static int ipts_control_get_descriptor(struct ipts_context *ipts)
 	int ret;
 	struct ipts_data_header *header;
 	struct ipts_get_descriptor cmd = { 0 };
+	struct ipts_response rsp = { 0 };
 
 	if (!ipts)
 		return -EFAULT;
@@ -99,9 +169,22 @@ static int ipts_control_get_descriptor(struct ipts_context *ipts)
 	cmd.addr_upper = upper_32_bits(ipts->resources.descriptor.dma_address);
 	cmd.magic = 8;
 
-	ret = ipts_cmd_run(ipts, IPTS_CMD_GET_DESCRIPTOR, &cmd, sizeof(cmd), NULL, 0);
-	if (ret)
+	ret = ipts_cmd_send(ipts, IPTS_CMD_GET_DESCRIPTOR, &cmd, sizeof(cmd));
+	if (ret) {
+		dev_err(ipts->dev, "GET_DESCRIPTOR: send failed: %d\n", ret);
 		return ret;
+	}
+
+	ret = ipts_cmd_recv(ipts, IPTS_CMD_GET_DESCRIPTOR, &rsp);
+	if (ret) {
+		dev_err(ipts->dev, "GET_DESCRIPTOR: recv failed: %d\n", ret);
+		return ret;
+	}
+
+	if (rsp.status != IPTS_STATUS_SUCCESS) {
+		dev_err(ipts->dev, "GET_DESCRIPTOR: cmd failed: %d\n", rsp.status);
+		return -EBADR;
+	}
 
 	header = (struct ipts_data_header *)ipts->resources.descriptor.address;
 
@@ -112,47 +195,129 @@ static int ipts_control_get_descriptor(struct ipts_context *ipts)
 		return 0;
 	}
 
-	return -EINVAL;
+	return -ENODATA;
 }
 
 int ipts_control_request_flush(struct ipts_context *ipts)
 {
+	int ret;
 	struct ipts_quiesce_io cmd = { 0 };
 
-	return ipts_cmd_send(ipts, IPTS_CMD_QUIESCE_IO, &cmd, sizeof(cmd));
+	if (!ipts)
+		return -EFAULT;
+
+	ret = ipts_cmd_send(ipts, IPTS_CMD_QUIESCE_IO, &cmd, sizeof(cmd));
+	if (ret)
+		dev_err(ipts->dev, "QUIESCE_IO: send failed: %d\n", ret);
+
+	return ret;
 }
 
 int ipts_control_wait_flush(struct ipts_context *ipts)
 {
-	return ipts_cmd_recv(ipts, IPTS_CMD_QUIESCE_IO, NULL, 0);
+	int ret;
+	struct ipts_response rsp = { 0 };
+
+	if (!ipts)
+		return -EFAULT;
+
+	ret = ipts_cmd_recv(ipts, IPTS_CMD_QUIESCE_IO, &rsp);
+	if (ret) {
+		dev_err(ipts->dev, "QUIESCE_IO: recv failed: %d\n", ret);
+		return ret;
+	}
+
+	if (rsp.status != IPTS_STATUS_SUCCESS) {
+		dev_err(ipts->dev, "QUIESCE_IO: cmd failed: %d\n", rsp.status);
+		return -EBADR;
+	}
+
+	return 0;
 }
 
 int ipts_control_request_data(struct ipts_context *ipts)
 {
-	return ipts_cmd_send(ipts, IPTS_CMD_READY_FOR_DATA, NULL, 0);
+	int ret;
+
+	if (!ipts)
+		return -EFAULT;
+
+	ret = ipts_cmd_send(ipts, IPTS_CMD_READY_FOR_DATA, NULL, 0);
+	if (ret)
+		dev_err(ipts->dev, "READY_FOR_DATA: send failed: %d\n", ret);
+
+	return ret;
 }
 
 int ipts_control_wait_data(struct ipts_context *ipts, bool shutdown)
 {
-	if (!shutdown)
-		return ipts_cmd_recv_nonblock(ipts, IPTS_CMD_READY_FOR_DATA, NULL, 0);
+	int ret;
+	struct ipts_response rsp = { 0 };
 
-	return ipts_cmd_recv_expect(ipts, IPTS_CMD_READY_FOR_DATA, NULL, 0,
-				    IPTS_STATUS_SENSOR_DISABLED);
+	if (!ipts)
+		return -EFAULT;
+
+	if (!shutdown)
+		ret = ipts_cmd_recv_timeout(ipts, IPTS_CMD_READY_FOR_DATA, &rsp, 0);
+	else
+		ret = ipts_cmd_recv(ipts, IPTS_CMD_READY_FOR_DATA, &rsp);
+
+	if (ret) {
+		if (ret != -EAGAIN)
+			dev_err(ipts->dev, "READY_FOR_DATA: recv failed: %d\n", ret);
+
+		return ret;
+	}
+
+	/*
+	 * During shutdown, it is possible that the sensor has already been disabled.
+	*/
+	if (rsp.status == IPTS_STATUS_SENSOR_DISABLED)
+		return 0;
+
+	if (rsp.status != IPTS_STATUS_SUCCESS) {
+		dev_err(ipts->dev, "READY_FOR_DATA: cmd failed: %d\n", rsp.status);
+		return -EBADR;
+	}
+
+	return 0;
 }
 
 int ipts_control_send_feedback(struct ipts_context *ipts, u32 buffer)
 {
 	int ret;
 	struct ipts_feedback cmd = { 0 };
+	struct ipts_response rsp = { 0 };
+
+	if (!ipts)
+		return -EFAULT;
 
 	cmd.buffer = buffer;
 
 	ret = ipts_cmd_send(ipts, IPTS_CMD_FEEDBACK, &cmd, sizeof(cmd));
-	if (ret)
+	if (ret) {
+		dev_err(ipts->dev, "FEEDBACK: send failed: %d\n", ret);
 		return ret;
+	}
 
-	return ipts_cmd_recv_expect(ipts, IPTS_CMD_FEEDBACK, NULL, 0, IPTS_STATUS_INVALID_PARAMS);
+	ret = ipts_cmd_recv(ipts, IPTS_CMD_FEEDBACK, &rsp);
+	if (ret) {
+		dev_err(ipts->dev, "FEEDBACK: recv failed: %d\n", ret);
+		return ret;
+	}
+
+	/*
+	 * Explained below, we don't know what feedback data looks like so we are sending zeros.
+	 */
+	if (rsp.status == IPTS_STATUS_INVALID_PARAMS)
+		return 0;
+
+	if (rsp.status != IPTS_STATUS_SUCCESS) {
+		dev_err(ipts->dev, "FEEDBACK: cmd failed: %d\n", rsp.status);
+		return -EBADR;
+	}
+
+	return 0;
 }
 
 int ipts_control_refill_buffer(struct ipts_context *ipts, u32 buffer)
