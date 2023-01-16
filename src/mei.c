@@ -38,15 +38,22 @@ static void ipts_mei_incoming(struct mei_cl_device *cldev)
 {
 	ssize_t ret = 0;
 	struct ipts_mei_message *entry = NULL;
+	struct ipts_context *ipts = NULL;
 
-	struct ipts_context *ipts = mei_cldev_get_drvdata(cldev);
-	struct ipts_mei *mei = &ipts->mei;
-
-	entry = devm_kzalloc(ipts->dev, sizeof(*entry), GFP_KERNEL);
-	if (!entry) {
-		pr_err("Failed to allocate new list element!");
+	if (!cldev) {
+		pr_err("MEI device is NULL!");
 		return;
 	}
+
+	ipts = mei_cldev_get_drvdata(cldev);
+	if (!ipts) {
+		pr_err("IPTS driver context is NULL!");
+		return;
+	}
+
+	entry = devm_kzalloc(ipts->dev, sizeof(*entry), GFP_KERNEL);
+	if (!entry)
+		return;
 
 	INIT_LIST_HEAD(&entry->list);
 
@@ -64,14 +71,20 @@ static void ipts_mei_incoming(struct mei_cl_device *cldev)
 		return;
 	}
 
-	locked_list_add(&entry->list, &mei->messages, &mei->message_lock);
-	wake_up_all(&mei->message_queue);
+	locked_list_add(&entry->list, &ipts->mei.messages, &ipts->mei.message_lock);
+	wake_up_all(&ipts->mei.message_queue);
 }
 
-static bool ipts_mei_search(struct ipts_mei *mei, enum ipts_command_code code,
-			    struct ipts_response *rsp)
+static int ipts_mei_search(struct ipts_mei *mei, enum ipts_command_code code,
+			   struct ipts_response *rsp)
 {
 	struct ipts_mei_message *entry = NULL;
+
+	if (!mei)
+		return -EFAULT;
+
+	if (!rsp)
+		return -EFAULT;
 
 	down_read(&mei->message_lock);
 
@@ -96,10 +109,10 @@ static bool ipts_mei_search(struct ipts_mei *mei, enum ipts_command_code code,
 		*rsp = entry->rsp;
 		devm_kfree(&mei->cldev->dev, entry);
 
-		return true;
+		return 0;
 	}
 
-	return false;
+	return -EAGAIN;
 }
 
 int ipts_mei_recv(struct ipts_mei *mei, enum ipts_command_code code, struct ipts_response *rsp,
@@ -107,25 +120,24 @@ int ipts_mei_recv(struct ipts_mei *mei, enum ipts_command_code code, struct ipts
 {
 	int ret = 0;
 
+	if (!mei)
+		return -EFAULT;
+
 	/*
 	 * A timeout of 0 means check and return immideately.
 	 */
-	if (timeout == 0) {
-		if (ipts_mei_search(mei, code, rsp))
-			return 0;
-		else
-			return -EAGAIN;
-	}
+	if (timeout == 0)
+		return ipts_mei_search(mei, code, rsp);
 
 	/*
 	 * A timeout of less than 0 means to wait forever.
 	 */
 	if (timeout < 0) {
-		wait_event(mei->message_queue, ipts_mei_search(mei, code, rsp));
+		wait_event(mei->message_queue, ipts_mei_search(mei, code, rsp) == 0);
 		return 0;
 	}
 
-	ret = wait_event_timeout(mei->message_queue, ipts_mei_search(mei, code, rsp),
+	ret = wait_event_timeout(mei->message_queue, ipts_mei_search(mei, code, rsp) == 0,
 				 msecs_to_jiffies(timeout));
 
 	if (ret > 0)
@@ -142,6 +154,9 @@ int ipts_mei_send(struct ipts_mei *mei, void *data, size_t length)
 		return -EFAULT;
 
 	if (!mei->cldev)
+		return -EFAULT;
+
+	if (!data)
 		return -EFAULT;
 
 	do {

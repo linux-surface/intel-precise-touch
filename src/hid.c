@@ -132,6 +132,9 @@ static int ipts_hid_get_feature(struct ipts_context *ipts, unsigned char reportn
 {
 	int ret = 0;
 
+	if (!ipts)
+		return -EFAULT;
+
 	if (!buf)
 		return -EFAULT;
 
@@ -178,6 +181,12 @@ static int ipts_hid_set_feature(struct ipts_context *ipts, unsigned char reportn
 				size_t size, enum ipts_feedback_data_type type)
 {
 	int ret = 0;
+
+	if (!ipts)
+		return -EFAULT;
+
+	if (!buf)
+		return -EFAULT;
 
 	buf[0] = reportnum;
 
@@ -240,12 +249,6 @@ static int ipts_hid_output_report(struct hid_device *hid, __u8 *data, size_t siz
 
 	ipts = hid->driver_data;
 
-	if (!ipts)
-		return -EFAULT;
-
-	if (!data)
-		return -EFAULT;
-
 	return ipts_hid_hid2me_feedback(ipts, IPTS_FEEDBACK_DATA_TYPE_OUTPUT_REPORT, data, size);
 }
 
@@ -273,6 +276,9 @@ int ipts_hid_input_data(struct ipts_context *ipts, u32 buffer)
 		return -ENODEV;
 
 	header = (struct ipts_data_header *)ipts->resources.data[buffer].address;
+
+	if (!header)
+		return -EFAULT;
 
 	if (header->size == 0)
 		return 0;
@@ -356,6 +362,9 @@ int ipts_hid_init(struct ipts_context *ipts, struct ipts_device_info info)
 
 void ipts_hid_free(struct ipts_context *ipts)
 {
+	if (!ipts)
+		return;
+
 	hid_destroy_device(ipts->hid);
 	ipts->hid = NULL;
 }

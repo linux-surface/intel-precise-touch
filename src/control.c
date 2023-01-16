@@ -328,9 +328,6 @@ int ipts_control_send_feedback(struct ipts_context *ipts, u32 buffer)
 
 int ipts_control_refill_buffer(struct ipts_context *ipts, u32 buffer)
 {
-	if (!ipts)
-		return -EFAULT;
-
 	/*
 	 * IPTS expects structured data in the feedback buffer matching the buffer that will be refilled.
 	 * We don't know what that data looks like, so we just keep the buffer empty.

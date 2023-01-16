@@ -33,7 +33,10 @@ static int ipts_resources_alloc_buffer(struct ipts_buffer *buffer, struct device
 
 static void ipts_resources_free_buffer(struct ipts_buffer *buffer)
 {
-	if (!buffer || !buffer->address)
+	if (!buffer)
+		return;
+
+	if (buffer->address)
 		return;
 
 	dma_free_coherent(buffer->device, buffer->size, buffer->address, buffer->dma_address);
