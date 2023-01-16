@@ -87,7 +87,7 @@ static int ipts_hid_parse(struct hid_device *hid)
 	size_t size = 0;
 
 	if (!hid)
-		return -EFAULT;
+		return -ENODEV;
 
 	ipts = hid->driver_data;
 
@@ -206,7 +206,7 @@ static int ipts_hid_raw_request(struct hid_device *hid, unsigned char reportnum,
 	enum ipts_feedback_data_type type = IPTS_FEEDBACK_DATA_TYPE_VENDOR;
 
 	if (!hid)
-		return -EFAULT;
+		return -ENODEV;
 
 	ipts = hid->driver_data;
 
@@ -245,7 +245,7 @@ static int ipts_hid_output_report(struct hid_device *hid, __u8 *data, size_t siz
 	struct ipts_context *ipts = NULL;
 
 	if (!hid)
-		return -EFAULT;
+		return -ENODEV;
 
 	ipts = hid->driver_data;
 
