@@ -99,7 +99,7 @@ static bool ipts_mei_search(struct ipts_mei *mei, enum ipts_command_code code,
 int ipts_mei_recv(struct ipts_mei *mei, enum ipts_command_code code, struct ipts_response *rsp,
 		  u64 timeout)
 {
-	int ret;
+	int ret = 0;
 
 	/*
 	 * A timeout of 0 means check and return immideately.

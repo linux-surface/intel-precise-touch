@@ -47,8 +47,8 @@ static void ipts_receiver_backoff(time64_t last, u32 n)
 
 static int ipts_receiver_event_loop(void *data)
 {
-	int ret;
-	u32 buffer;
+	int ret = 0;
+	u32 buffer = 0;
 
 	struct ipts_context *ipts = data;
 	time64_t last = ktime_get_seconds();
@@ -117,8 +117,8 @@ static int ipts_receiver_event_loop(void *data)
 
 static int ipts_receiver_doorbell_loop(void *data)
 {
-	int ret;
-	u32 buffer;
+	int ret = 0;
+	u32 buffer = 0;
 
 	u32 doorbell = 0;
 	u32 lastdb = 0;

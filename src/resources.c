@@ -47,7 +47,7 @@ static void ipts_resources_free_buffer(struct ipts_buffer *buffer)
 
 int ipts_resources_init(struct ipts_resources *res, struct device *dev, size_t ds, size_t fs)
 {
-	int ret;
+	int ret = 0;
 
 	if (!res)
 		return -EFAULT;

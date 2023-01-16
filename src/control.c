@@ -25,7 +25,7 @@
 
 static int ipts_control_get_device_info(struct ipts_context *ipts, struct ipts_device_info *info)
 {
-	int ret;
+	int ret = 0;
 	struct ipts_response rsp = { 0 };
 
 	if (!ipts)
@@ -57,7 +57,7 @@ static int ipts_control_get_device_info(struct ipts_context *ipts, struct ipts_d
 
 static int ipts_control_set_mode(struct ipts_context *ipts, enum ipts_mode mode)
 {
-	int ret;
+	int ret = 0;
 	struct ipts_set_mode cmd = { 0 };
 	struct ipts_response rsp = { 0 };
 
@@ -88,7 +88,7 @@ static int ipts_control_set_mode(struct ipts_context *ipts, enum ipts_mode mode)
 
 static int ipts_control_set_mem_window(struct ipts_context *ipts, struct ipts_resources *res)
 {
-	int ret;
+	int ret = 0;
 	struct ipts_mem_window cmd = { 0 };
 	struct ipts_response rsp = { 0 };
 
@@ -139,7 +139,7 @@ static int ipts_control_set_mem_window(struct ipts_context *ipts, struct ipts_re
 
 static int ipts_control_reset_sensor(struct ipts_context *ipts)
 {
-	struct ipts_feedback_header *header;
+	struct ipts_feedback_header *header = NULL;
 
 	if (!ipts)
 		return -EFAULT;
@@ -155,8 +155,8 @@ static int ipts_control_reset_sensor(struct ipts_context *ipts)
 
 static int ipts_control_get_descriptor(struct ipts_context *ipts)
 {
-	int ret;
-	struct ipts_data_header *header;
+	int ret = 0;
+	struct ipts_data_header *header = NULL;
 	struct ipts_get_descriptor cmd = { 0 };
 	struct ipts_response rsp = { 0 };
 
@@ -200,7 +200,7 @@ static int ipts_control_get_descriptor(struct ipts_context *ipts)
 
 int ipts_control_request_flush(struct ipts_context *ipts)
 {
-	int ret;
+	int ret = 0;
 	struct ipts_quiesce_io cmd = { 0 };
 
 	if (!ipts)
@@ -215,7 +215,7 @@ int ipts_control_request_flush(struct ipts_context *ipts)
 
 int ipts_control_wait_flush(struct ipts_context *ipts)
 {
-	int ret;
+	int ret = 0;
 	struct ipts_response rsp = { 0 };
 
 	if (!ipts)
@@ -237,7 +237,7 @@ int ipts_control_wait_flush(struct ipts_context *ipts)
 
 int ipts_control_request_data(struct ipts_context *ipts)
 {
-	int ret;
+	int ret = 0;
 
 	if (!ipts)
 		return -EFAULT;
@@ -251,7 +251,7 @@ int ipts_control_request_data(struct ipts_context *ipts)
 
 int ipts_control_wait_data(struct ipts_context *ipts, bool shutdown)
 {
-	int ret;
+	int ret = 0;
 	struct ipts_response rsp = { 0 };
 
 	if (!ipts)
@@ -285,7 +285,7 @@ int ipts_control_wait_data(struct ipts_context *ipts, bool shutdown)
 
 int ipts_control_send_feedback(struct ipts_context *ipts, u32 buffer)
 {
-	int ret;
+	int ret = 0;
 	struct ipts_feedback cmd = { 0 };
 	struct ipts_response rsp = { 0 };
 
@@ -338,8 +338,8 @@ int ipts_control_refill_buffer(struct ipts_context *ipts, u32 buffer)
 
 int ipts_control_start(struct ipts_context *ipts)
 {
-	int ret;
-	struct ipts_device_info info;
+	int ret = 0;
+	struct ipts_device_info info = { 0 };
 
 	if (!ipts)
 		return -EFAULT;
@@ -413,7 +413,7 @@ int ipts_control_start(struct ipts_context *ipts)
 
 static int _ipts_control_stop(struct ipts_context *ipts)
 {
-	int ret;
+	int ret = 0;
 
 	if (!ipts)
 		return -EFAULT;
@@ -433,7 +433,7 @@ static int _ipts_control_stop(struct ipts_context *ipts)
 
 int ipts_control_stop(struct ipts_context *ipts)
 {
-	int ret;
+	int ret = 0;
 
 	ret = _ipts_control_stop(ipts);
 	if (ret)
@@ -446,7 +446,7 @@ int ipts_control_stop(struct ipts_context *ipts)
 
 int ipts_control_restart(struct ipts_context *ipts)
 {
-	int ret;
+	int ret = 0;
 
 	ret = _ipts_control_stop(ipts);
 	if (ret)

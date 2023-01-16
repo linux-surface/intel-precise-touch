@@ -17,7 +17,7 @@
 int ipts_cmd_recv_timeout(struct ipts_context *ipts, enum ipts_command_code code,
 			  struct ipts_response *rsp, u64 timeout)
 {
-	int ret;
+	int ret = 0;
 
 	if (!ipts)
 		return -EFAULT;

@@ -33,7 +33,7 @@ static void ipts_hid_stop(struct hid_device *hid)
 static int ipts_hid_hid2me_feedback(struct ipts_context *ipts, enum ipts_feedback_data_type type,
 				    void *data, size_t size)
 {
-	struct ipts_feedback_header *header;
+	struct ipts_feedback_header *header = NULL;
 
 	if (!ipts)
 		return -EFAULT;
@@ -75,11 +75,13 @@ static int ipts_hid_switch_mode(struct ipts_context *ipts, enum ipts_mode mode)
 
 static int ipts_hid_parse(struct hid_device *hid)
 {
-	int ret;
-	u8 *buffer;
-	size_t size;
-	struct ipts_context *ipts;
-	bool has_native_descriptor;
+	int ret = 0;
+	struct ipts_context *ipts = NULL;
+
+	bool has_native_descriptor = false;
+
+	u8 *buffer = NULL;
+	size_t size = 0;
 
 	if (!hid)
 		return -EFAULT;
@@ -122,7 +124,7 @@ static int ipts_hid_parse(struct hid_device *hid)
 static int ipts_hid_get_feature(struct ipts_context *ipts, unsigned char reportnum, __u8 *buf,
 				size_t size, enum ipts_feedback_data_type type)
 {
-	int ret;
+	int ret = 0;
 
 	mutex_lock(&ipts->feature_lock);
 
@@ -166,7 +168,7 @@ out:
 static int ipts_hid_set_feature(struct ipts_context *ipts, unsigned char reportnum, __u8 *buf,
 				size_t size, enum ipts_feedback_data_type type)
 {
-	int ret;
+	int ret = 0;
 
 	buf[0] = reportnum;
 
@@ -180,9 +182,10 @@ static int ipts_hid_set_feature(struct ipts_context *ipts, unsigned char reportn
 static int ipts_hid_raw_request(struct hid_device *hid, unsigned char reportnum, __u8 *buf,
 				size_t size, unsigned char rtype, int reqtype)
 {
-	int ret;
-	enum ipts_feedback_data_type type;
-	struct ipts_context *ipts;
+	int ret = 0;
+	struct ipts_context *ipts = NULL;
+
+	enum ipts_feedback_data_type type = IPTS_FEEDBACK_DATA_TYPE_VENDOR;
 
 	if (!hid)
 		return -EFAULT;
@@ -221,7 +224,7 @@ static int ipts_hid_raw_request(struct hid_device *hid, unsigned char reportnum,
 
 static int ipts_hid_output_report(struct hid_device *hid, __u8 *data, size_t size)
 {
-	struct ipts_context *ipts;
+	struct ipts_context *ipts = NULL;
 
 	if (!hid)
 		return -EFAULT;
@@ -249,10 +252,10 @@ static struct hid_ll_driver ipts_hid_driver = {
 
 int ipts_hid_input_data(struct ipts_context *ipts, u32 buffer)
 {
-	int ret;
-	u8 *temp;
-	struct ipts_hid_header *frame;
-	struct ipts_data_header *header;
+	int ret = 0;
+	u8 *temp = NULL;
+	struct ipts_hid_header *frame = NULL;
+	struct ipts_data_header *header = NULL;
 
 	if (!ipts)
 		return -EFAULT;
@@ -305,7 +308,7 @@ int ipts_hid_input_data(struct ipts_context *ipts, u32 buffer)
 
 int ipts_hid_init(struct ipts_context *ipts, struct ipts_device_info info)
 {
-	int ret;
+	int ret = 0;
 
 	if (!ipts)
 		return -EFAULT;
