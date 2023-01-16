@@ -397,7 +397,11 @@ int ipts_control_start(struct ipts_context *ipts)
 		return ret;
 	}
 
-	ipts_receiver_start(ipts);
+	ret = ipts_receiver_start(ipts);
+	if (ret) {
+		dev_err(ipts->dev, "Failed to start receiver: %d\n", ret);
+		return ret;
+	}
 
 	ret = ipts_control_request_data(ipts);
 	if (ret) {
@@ -422,7 +426,12 @@ static int _ipts_control_stop(struct ipts_context *ipts)
 		return -EFAULT;
 
 	dev_info(ipts->dev, "Stopping IPTS\n");
-	ipts_receiver_stop(ipts);
+
+	ret = ipts_receiver_stop(ipts);
+	if (ret) {
+		dev_err(ipts->dev, "Failed to stop receiver: %d\n", ret);
+		return ret;
+	}
 
 	ret = ipts_control_reset_sensor(ipts);
 	if (ret) {
@@ -430,7 +439,12 @@ static int _ipts_control_stop(struct ipts_context *ipts)
 		return ret;
 	}
 
-	ipts_resources_free(&ipts->resources);
+	ret = ipts_resources_free(&ipts->resources);
+	if (ret) {
+		dev_err(ipts->dev, "Failed to free resources: %d\n", ret);
+		return ret;
+	}
+
 	return 0;
 }
 
@@ -442,7 +456,11 @@ int ipts_control_stop(struct ipts_context *ipts)
 	if (ret)
 		return ret;
 
-	ipts_hid_free(ipts);
+	ret = ipts_hid_free(ipts);
+	if (ret) {
+		dev_err(ipts->dev, "Failed to free HID device: %d\n", ret);
+		return ret;
+	}
 
 	return 0;
 }

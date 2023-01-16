@@ -33,10 +33,7 @@ static int ipts_resources_alloc_buffer(struct ipts_buffer *buffer, struct device
 
 static void ipts_resources_free_buffer(struct ipts_buffer *buffer)
 {
-	if (!buffer)
-		return;
-
-	if (buffer->address)
+	if (!buffer->address)
 		return;
 
 	dma_free_coherent(buffer->device, buffer->size, buffer->address, buffer->dma_address);
@@ -91,10 +88,10 @@ err:
 	return ret;
 }
 
-void ipts_resources_free(struct ipts_resources *res)
+int ipts_resources_free(struct ipts_resources *res)
 {
 	if (!res)
-		return;
+		return -EFAULT;
 
 	for (int i = 0; i < IPTS_BUFFERS; i++)
 		ipts_resources_free_buffer(&res->data[i]);
@@ -106,4 +103,6 @@ void ipts_resources_free(struct ipts_resources *res)
 	ipts_resources_free_buffer(&res->workqueue);
 	ipts_resources_free_buffer(&res->hid2me);
 	ipts_resources_free_buffer(&res->descriptor);
+
+	return 0;
 }

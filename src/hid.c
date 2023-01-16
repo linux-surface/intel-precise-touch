@@ -360,11 +360,16 @@ int ipts_hid_init(struct ipts_context *ipts, struct ipts_device_info info)
 	return 0;
 }
 
-void ipts_hid_free(struct ipts_context *ipts)
+int ipts_hid_free(struct ipts_context *ipts)
 {
 	if (!ipts)
-		return;
+		return -EFAULT;
+
+	if (!ipts->hid)
+		return 0;
 
 	hid_destroy_device(ipts->hid);
 	ipts->hid = NULL;
+
+	return 0;
 }

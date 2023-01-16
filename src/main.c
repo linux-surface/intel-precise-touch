@@ -94,8 +94,10 @@ static void ipts_remove(struct mei_cl_device *cldev)
 	int ret = 0;
 	struct ipts_context *ipts = NULL;
 
-	if (!cldev)
+	if (!cldev) {
+		pr_err("MEI device is NULL!");
 		return;
+	}
 
 	ipts = mei_cldev_get_drvdata(cldev);
 

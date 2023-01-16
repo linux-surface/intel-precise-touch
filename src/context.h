@@ -41,8 +41,7 @@ struct ipts_context {
 	struct ipts_device_info info;
 	struct ipts_resources resources;
 
-	struct task_struct *event_loop;
-	struct task_struct *doorbell_loop;
+	struct task_struct *receiver_loop;
 };
 
 #endif /* IPTS_CONTEXT_H */
