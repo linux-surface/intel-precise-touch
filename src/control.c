@@ -144,6 +144,9 @@ static int ipts_control_reset_sensor(struct ipts_context *ipts)
 	if (!ipts)
 		return -EFAULT;
 
+	if (!ipts->resources.hid2me.address)
+		return -EFAULT;
+
 	memset(ipts->resources.hid2me.address, 0, ipts->resources.hid2me.size);
 	header = (struct ipts_feedback_header *)ipts->resources.hid2me.address;
 
@@ -161,6 +164,9 @@ static int ipts_control_get_descriptor(struct ipts_context *ipts)
 	struct ipts_response rsp = { 0 };
 
 	if (!ipts)
+		return -EFAULT;
+
+	if (!ipts->resources.descriptor.address)
 		return -EFAULT;
 
 	memset(ipts->resources.descriptor.address, 0, ipts->resources.descriptor.size);

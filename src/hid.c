@@ -38,6 +38,9 @@ static int ipts_hid_hid2me_feedback(struct ipts_context *ipts, enum ipts_feedbac
 	if (!ipts)
 		return -EFAULT;
 
+	if (!ipts->resources.hid2me.address)
+		return -EFAULT;
+
 	memset(ipts->resources.hid2me.address, 0, ipts->resources.hid2me.size);
 	header = (struct ipts_feedback_header *)ipts->resources.hid2me.address;
 
@@ -128,6 +131,9 @@ static int ipts_hid_get_feature(struct ipts_context *ipts, unsigned char reportn
 				size_t size, enum ipts_feedback_data_type type)
 {
 	int ret = 0;
+
+	if (!buf)
+		return -EFAULT;
 
 	mutex_lock(&ipts->feature_lock);
 
