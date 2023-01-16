@@ -137,25 +137,6 @@ static int ipts_control_set_mem_window(struct ipts_context *ipts, struct ipts_re
 	return 0;
 }
 
-static int ipts_control_reset_sensor(struct ipts_context *ipts)
-{
-	struct ipts_feedback_header *header = NULL;
-
-	if (!ipts)
-		return -EFAULT;
-
-	if (!ipts->resources.hid2me.address)
-		return -EFAULT;
-
-	memset(ipts->resources.hid2me.address, 0, ipts->resources.hid2me.size);
-	header = (struct ipts_feedback_header *)ipts->resources.hid2me.address;
-
-	header->cmd_type = IPTS_FEEDBACK_CMD_TYPE_SOFT_RESET;
-	header->buffer = IPTS_HID2ME_BUFFER;
-
-	return ipts_control_send_feedback(ipts, IPTS_HID2ME_BUFFER);
-}
-
 static int ipts_control_get_descriptor(struct ipts_context *ipts)
 {
 	int ret = 0;
@@ -326,6 +307,34 @@ int ipts_control_send_feedback(struct ipts_context *ipts, u32 buffer)
 	return 0;
 }
 
+int ipts_control_hid2me_feedback(struct ipts_context *ipts, enum ipts_feedback_cmd_type cmd,
+				 enum ipts_feedback_data_type type, void *data, size_t size)
+{
+	struct ipts_feedback_header *header = NULL;
+
+	if (!ipts)
+		return -EFAULT;
+
+	if (!ipts->resources.hid2me.address)
+		return -EFAULT;
+
+	memset(ipts->resources.hid2me.address, 0, ipts->resources.hid2me.size);
+	header = (struct ipts_feedback_header *)ipts->resources.hid2me.address;
+
+	header->cmd_type = cmd;
+	header->data_type = type;
+	header->size = size;
+	header->buffer = IPTS_HID2ME_BUFFER;
+
+	if (size + sizeof(*header) > ipts->resources.hid2me.size)
+		return -EINVAL;
+
+	if (data && size > 0)
+		memcpy(header->payload, data, size);
+
+	return ipts_control_send_feedback(ipts, IPTS_HID2ME_BUFFER);
+}
+
 int ipts_control_refill_buffer(struct ipts_context *ipts, u32 buffer)
 {
 	/*
@@ -337,6 +346,12 @@ int ipts_control_refill_buffer(struct ipts_context *ipts, u32 buffer)
 	 */
 
 	return ipts_control_send_feedback(ipts, buffer);
+}
+
+static inline int ipts_control_reset_sensor(struct ipts_context *ipts)
+{
+	return ipts_control_hid2me_feedback(ipts, IPTS_FEEDBACK_CMD_TYPE_SOFT_RESET,
+					    IPTS_FEEDBACK_DATA_TYPE_VENDOR, NULL, 0);
 }
 
 int ipts_control_start(struct ipts_context *ipts)

@@ -30,34 +30,6 @@ static void ipts_hid_stop(struct hid_device *hid)
 {
 }
 
-static int ipts_hid_hid2me_feedback(struct ipts_context *ipts, enum ipts_feedback_data_type type,
-				    void *data, size_t size)
-{
-	struct ipts_feedback_header *header = NULL;
-
-	if (!ipts)
-		return -EFAULT;
-
-	if (!ipts->resources.hid2me.address)
-		return -EFAULT;
-
-	memset(ipts->resources.hid2me.address, 0, ipts->resources.hid2me.size);
-	header = (struct ipts_feedback_header *)ipts->resources.hid2me.address;
-
-	header->cmd_type = IPTS_FEEDBACK_CMD_TYPE_NONE;
-	header->buffer = IPTS_HID2ME_BUFFER;
-	header->data_type = type;
-	header->size = size;
-
-	if (size + sizeof(*header) > ipts->resources.hid2me.size)
-		return -EINVAL;
-
-	if (data && size > 0)
-		memcpy(header->payload, data, size);
-
-	return ipts_control_send_feedback(ipts, IPTS_HID2ME_BUFFER);
-}
-
 static int ipts_hid_switch_mode(struct ipts_context *ipts, enum ipts_mode mode)
 {
 	if (!ipts)
@@ -146,7 +118,7 @@ static int ipts_hid_get_feature(struct ipts_context *ipts, unsigned char reportn
 	memset(&ipts->feature_report, 0, sizeof(ipts->feature_report));
 	reinit_completion(&ipts->feature_event);
 
-	ret = ipts_hid_hid2me_feedback(ipts, type, buf, size);
+	ret = ipts_control_hid2me_feedback(ipts, IPTS_FEEDBACK_CMD_TYPE_NONE, type, buf, size);
 	if (ret) {
 		dev_err(ipts->dev, "Failed to send hid2me feedback: %d\n", ret);
 		goto out;
@@ -190,7 +162,7 @@ static int ipts_hid_set_feature(struct ipts_context *ipts, unsigned char reportn
 
 	buf[0] = reportnum;
 
-	ret = ipts_hid_hid2me_feedback(ipts, type, buf, size);
+	ret = ipts_control_hid2me_feedback(ipts, IPTS_FEEDBACK_CMD_TYPE_NONE, type, buf, size);
 	if (ret)
 		dev_err(ipts->dev, "Failed to send hid2me feedback: %d\n", ret);
 
@@ -249,7 +221,8 @@ static int ipts_hid_output_report(struct hid_device *hid, __u8 *data, size_t siz
 
 	ipts = hid->driver_data;
 
-	return ipts_hid_hid2me_feedback(ipts, IPTS_FEEDBACK_DATA_TYPE_OUTPUT_REPORT, data, size);
+	return ipts_control_hid2me_feedback(ipts, IPTS_FEEDBACK_CMD_TYPE_NONE,
+					    IPTS_FEEDBACK_DATA_TYPE_OUTPUT_REPORT, data, size);
 }
 
 static struct hid_ll_driver ipts_hid_driver = {

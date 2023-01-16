@@ -12,6 +12,7 @@
 #include <linux/types.h>
 
 #include "context.h"
+#include "spec-data.h"
 #include "spec-device.h"
 
 /*
@@ -61,6 +62,23 @@ int ipts_control_wait_data(struct ipts_context *ipts, bool block);
  * Returns: 0 on success, <0 on error.
 */
 int ipts_control_send_feedback(struct ipts_context *ipts, u32 buffer);
+
+/*
+ * ipts_control_hid2me_feedback() - Sends HID2ME feedback, a special type of feedback.
+ * @ipts: The IPTS driver context.
+ * @cmd: The command that will be run on the device.
+ * @type: The type of the payload that is sent to the device.
+ * @data: The payload of the feedback command.
+ * @size: The size of the payload.
+ *
+ * HID2ME feedback is a special type of feedback, because it allows interfacing with
+ * the HID API of the device at any moment, without requiring a buffer that has to
+ * be acknowledged.
+ *
+ * Returns: 0 on success, <0 on error.
+ */
+int ipts_control_hid2me_feedback(struct ipts_context *ipts, enum ipts_feedback_cmd_type cmd,
+				 enum ipts_feedback_data_type type, void *data, size_t size);
 
 /*
  * ipts_control_refill_buffer() - Acknowledges that data in a buffer has been processed.
