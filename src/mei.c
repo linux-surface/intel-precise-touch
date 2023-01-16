@@ -11,6 +11,7 @@
 #include <linux/jiffies.h>
 #include <linux/list.h>
 #include <linux/mei_cl_bus.h>
+#include <linux/printk.h>
 #include <linux/rwsem.h>
 #include <linux/types.h>
 #include <linux/wait.h>
@@ -42,6 +43,11 @@ static void ipts_mei_incoming(struct mei_cl_device *cldev)
 	struct ipts_mei *mei = &ipts->mei;
 
 	entry = devm_kzalloc(ipts->dev, sizeof(*entry), GFP_KERNEL);
+	if (!entry) {
+		pr_err("Failed to allocate new list element!");
+		return;
+	}
+
 	INIT_LIST_HEAD(&entry->list);
 
 	do {

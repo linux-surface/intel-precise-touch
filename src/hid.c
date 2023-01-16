@@ -100,6 +100,9 @@ static int ipts_hid_parse(struct hid_device *hid)
 		size += sizeof(ipts_fallback_descriptor);
 
 	buffer = kzalloc(size, GFP_KERNEL);
+	if (!buffer)
+		return -ENOMEM;
+
 	memcpy(buffer, ipts_singletouch_descriptor, sizeof(ipts_singletouch_descriptor));
 
 	if (has_native_descriptor) {
@@ -318,8 +321,10 @@ int ipts_hid_init(struct ipts_context *ipts, struct ipts_device_info info)
 
 	ipts->hid = hid_allocate_device();
 	if (IS_ERR(ipts->hid)) {
-		dev_err(ipts->dev, "Failed to allocate HID device: %ld\n", PTR_ERR(ipts->hid));
-		return PTR_ERR(ipts->hid);
+		int err = PTR_ERR(ipts->hid);
+
+		dev_err(ipts->dev, "Failed to allocate HID device: %d\n", err);
+		return err;
 	}
 
 	ipts->hid->driver_data = ipts;
