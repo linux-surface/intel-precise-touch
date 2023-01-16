@@ -103,6 +103,8 @@ static int ipts_receiver_event_loop(void *data)
 
 		if (ret != -EAGAIN)
 			return ret;
+		else
+			return 0;
 	}
 
 	ret = ipts_control_wait_flush(ipts);
@@ -111,6 +113,8 @@ static int ipts_receiver_event_loop(void *data)
 
 		if (ret != -EAGAIN)
 			return ret;
+		else
+			return 0;
 	}
 
 	return 0;
@@ -175,6 +179,8 @@ static int ipts_receiver_doorbell_loop(void *data)
 
 		if (ret != -EAGAIN)
 			return ret;
+		else
+			return 0;
 	}
 
 	ret = ipts_control_wait_flush(ipts);
@@ -183,6 +189,8 @@ static int ipts_receiver_doorbell_loop(void *data)
 
 		if (ret != -EAGAIN)
 			return ret;
+		else
+			return 0;
 	}
 
 	return 0;
