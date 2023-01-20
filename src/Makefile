@@ -11,3 +11,4 @@ ipts-objs += main.o
 ipts-objs += mei.o
 ipts-objs += receiver.o
 ipts-objs += resources.o
+ipts-objs += thread.o

@@ -19,6 +19,7 @@
 #include "hid.h"
 #include "resources.h"
 #include "spec-device.h"
+#include "thread.h"
 
 static void ipts_receiver_next_doorbell(struct ipts_context *ipts)
 {
@@ -46,20 +47,25 @@ static void ipts_receiver_backoff(time64_t last, u32 n)
 		msleep(200);
 }
 
-static int ipts_receiver_event_loop(void *data)
+static int ipts_receiver_event_loop(struct ipts_thread *thread)
 {
 	int ret = 0;
 	u32 buffer = 0;
 
-	struct ipts_context *ipts = data;
+	struct ipts_context *ipts = NULL;
 	time64_t last = ktime_get_seconds();
+
+	if (!thread)
+		return -EFAULT;
+
+	ipts = thread->data;
 
 	if (!ipts)
 		return -EFAULT;
 
 	dev_info(ipts->dev, "IPTS running in event mode\n");
 
-	while (!kthread_should_stop()) {
+	while (!ipts_thread_should_stop(thread)) {
 		for (int i = 0; i < IPTS_BUFFERS; i++) {
 			ret = ipts_control_wait_data(ipts, false);
 			if (ret == -EAGAIN)
@@ -120,7 +126,7 @@ static int ipts_receiver_event_loop(void *data)
 	return 0;
 }
 
-static int ipts_receiver_doorbell_loop(void *data)
+static int ipts_receiver_doorbell_loop(struct ipts_thread *thread)
 {
 	int ret = 0;
 	u32 buffer = 0;
@@ -128,8 +134,13 @@ static int ipts_receiver_doorbell_loop(void *data)
 	u32 doorbell = 0;
 	u32 lastdb = 0;
 
-	struct ipts_context *ipts = data;
+	struct ipts_context *ipts = NULL;
 	time64_t last = ktime_get_seconds();
+
+	if (!thread)
+		return -EFAULT;
+
+	ipts = thread->data;
 
 	if (!ipts)
 		return -EFAULT;
@@ -137,7 +148,7 @@ static int ipts_receiver_doorbell_loop(void *data)
 	dev_info(ipts->dev, "IPTS running in doorbell mode\n");
 
 	while (true) {
-		if (kthread_should_stop()) {
+		if (ipts_thread_should_stop(thread)) {
 			ret = ipts_control_request_flush(ipts);
 			if (ret) {
 				dev_err(ipts->dev, "Failed to request flush: %d\n", ret);
@@ -167,7 +178,7 @@ static int ipts_receiver_doorbell_loop(void *data)
 			lastdb++;
 		}
 
-		if (kthread_should_stop())
+		if (ipts_thread_should_stop(thread))
 			break;
 
 		ipts_receiver_backoff(last, 5);
@@ -198,21 +209,24 @@ static int ipts_receiver_doorbell_loop(void *data)
 
 int ipts_receiver_start(struct ipts_context *ipts)
 {
+	int ret = 0;
+
 	if (!ipts)
 		return -EFAULT;
 
-	if (ipts->mode == IPTS_MODE_EVENT)
-		ipts->receiver_loop = kthread_run(ipts_receiver_event_loop, ipts, "ipts_event");
-	else if (ipts->mode == IPTS_MODE_DOORBELL)
-		ipts->receiver_loop = kthread_run(ipts_receiver_doorbell_loop, ipts, "ipts_db");
-	else
-		return -EINVAL;
+	if (ipts->mode == IPTS_MODE_EVENT) {
+		ret = ipts_thread_start(&ipts->receiver_loop, ipts_receiver_event_loop, ipts,
+					"ipts_event");
+	} else if (ipts->mode == IPTS_MODE_DOORBELL) {
+		ret = ipts_thread_start(&ipts->receiver_loop, ipts_receiver_doorbell_loop, ipts,
+					"ipts_doorbell");
+	} else {
+		ret = -EINVAL;
+	}
 
-	if (IS_ERR(ipts->receiver_loop)) {
-		int err = PTR_ERR(ipts->receiver_loop);
-
-		dev_err(ipts->dev, "Failed to start receiver loop: %d\n", err);
-		return err;
+	if (ret) {
+		dev_err(ipts->dev, "Failed to start receiver loop: %d\n", ret);
+		return ret;
 	}
 
 	return 0;
@@ -225,12 +239,7 @@ int ipts_receiver_stop(struct ipts_context *ipts)
 	if (!ipts)
 		return -EFAULT;
 
-	if (!ipts->receiver_loop)
-		return 0;
-
-	ret = kthread_stop(ipts->receiver_loop);
-	ipts->receiver_loop = NULL;
-
+	ret = ipts_thread_stop(&ipts->receiver_loop);
 	if (ret) {
 		dev_err(ipts->dev, "Failed to stop receiver loop: %d\n", ret);
 		return ret;

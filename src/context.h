@@ -20,6 +20,7 @@
 #include "mei.h"
 #include "resources.h"
 #include "spec-device.h"
+#include "thread.h"
 
 struct ipts_context {
 	struct device *dev;
@@ -41,7 +42,7 @@ struct ipts_context {
 	struct ipts_device_info info;
 	struct ipts_resources resources;
 
-	struct task_struct *receiver_loop;
+	struct ipts_thread receiver_loop;
 };
 
 #endif /* IPTS_CONTEXT_H */
