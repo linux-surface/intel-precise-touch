@@ -15,16 +15,10 @@
 
 bool ipts_thread_should_stop(struct ipts_thread *thread)
 {
-	bool ret = false;
-
 	if (!thread)
 		return false;
 
-	mutex_lock(&thread->lock);
-	ret = thread->should_stop;
-	mutex_unlock(&thread->lock);
-
-	return ret;
+	return READ_ONCE(thread->should_stop);
 }
 
 static int ipts_thread_runner(void *data)
@@ -53,7 +47,6 @@ int ipts_thread_start(struct ipts_thread *thread, int (*threadfn)(struct ipts_th
 	if (!threadfn)
 		return -EFAULT;
 
-	mutex_init(&thread->lock);
 	init_completion(&thread->done);
 
 	thread->data = data;
@@ -74,9 +67,12 @@ int ipts_thread_stop(struct ipts_thread *thread)
 	if (!thread->thread)
 		return 0;
 
-	mutex_lock(&thread->lock);
-	thread->should_stop = true;
-	mutex_unlock(&thread->lock);
+	WRITE_ONCE(thread->should_stop, true);
+
+	/*
+	 * Make sure that the write has gone through before waiting.
+	 */
+	wmb();
 
 	wait_for_completion(&thread->done);
 	ret = kthread_stop(thread->thread);

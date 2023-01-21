@@ -23,8 +23,6 @@ struct ipts_thread {
 	struct task_struct *thread;
 
 	bool should_stop;
-
-	struct mutex lock;
 	struct completion done;
 
 	void *data;
