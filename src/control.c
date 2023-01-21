@@ -300,7 +300,8 @@ int ipts_control_send_feedback(struct ipts_context *ipts, u32 buffer)
 	}
 
 	/*
-	 * Explained below, we don't know what feedback data looks like so we are sending zeros.
+	 * We don't know what feedback data looks like so we are sending zeros.
+	 * See also ipts_control_refill_buffer.
 	 */
 	if (rsp.status == IPTS_STATUS_INVALID_PARAMS)
 		return 0;
