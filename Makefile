@@ -3,9 +3,6 @@
 # Makefile for the IPTS touchscreen driver
 #
 
-MODULE_NAME    := ipts
-MODULE_VERSION := 1.0.0
-
 sources += dkms.conf
 sources := Makefile
 sources += src/cmd.c
@@ -27,9 +24,8 @@ sources += src/spec-data.h
 sources += src/spec-device.h
 sources += src/spec-hid.h
 
-KVERSION := $(shell uname -r)
+KVERSION ?= $(shell uname -r)
 KDIR := /lib/modules/$(KVERSION)/build
-MDIR := /usr/src/$(MODULE_NAME)-$(MODULE_VERSION)
 
 all:
 	$(MAKE) -C $(KDIR) M=$(PWD)/src CONFIG_HID_IPTS=m modules
@@ -41,13 +37,7 @@ check:
 	$(KDIR)/scripts/checkpatch.pl -f -q --no-tree --strict --ignore EMBEDDED_FILENAME $(sources)
 
 dkms-install: $(sources)
-	cp -r $(shell pwd) $(MDIR)
-	dkms add $(MODULE_NAME)/$(MODULE_VERSION)
-	dkms build $(MODULE_NAME)/$(MODULE_VERSION)
-	dkms install $(MODULE_NAME)/$(MODULE_VERSION)
+	./dkms.sh install
 
 dkms-uninstall:
-	modprobe -r $(MODULE_NAME) || true
-	dkms uninstall $(MODULE_NAME)/$(MODULE_VERSION) || true
-	dkms remove $(MODULE_NAME)/$(MODULE_VERSION) || true
-	rm -rf $(MDIR)
+	./dkms.sh uninstall
