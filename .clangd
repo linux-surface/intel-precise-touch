@@ -13,4 +13,5 @@ CompileFlags:
     - -fno-allow-store-data-races
     - -fconserve-stack
     - -mrecord-mcount
+    - -ftrivial-auto-var-init=zero
   Compiler: clang
