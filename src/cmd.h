@@ -29,7 +29,7 @@
  * A negative timeout means to wait forever.
  *
  * Returns: 0 on success, <0 on error, -EAGAIN if no response has been received.
-*/
+ */
 int ipts_cmd_recv_timeout(struct ipts_context *ipts, enum ipts_command_code code,
 			  struct ipts_response *rsp, u64 timeout);
 
@@ -40,7 +40,7 @@ int ipts_cmd_recv_timeout(struct ipts_context *ipts, enum ipts_command_code code
  * @rsp: The address that the received response will be copied to.
  *
  * Returns: 0 on success, <0 on error, -EAGAIN if no response has been received.
-*/
+ */
 static inline int ipts_cmd_recv(struct ipts_context *ipts, enum ipts_command_code code,
 				struct ipts_response *rsp)
 {
@@ -55,7 +55,7 @@ static inline int ipts_cmd_recv(struct ipts_context *ipts, enum ipts_command_cod
  * @size: The size of the payload.
  *
  * Returns: 0 on success, <0 on error.
-*/
+ */
 int ipts_cmd_send(struct ipts_context *ipts, enum ipts_command_code code, void *data, size_t size);
 
 #endif /* IPTS_CMD_H */

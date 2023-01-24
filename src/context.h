@@ -28,6 +28,9 @@ struct ipts_context {
 
 	enum ipts_mode mode;
 
+	/*
+	 * Prevents concurrent GET_FEATURE reports.
+	 */
 	struct mutex feature_lock;
 	struct completion feature_event;
 

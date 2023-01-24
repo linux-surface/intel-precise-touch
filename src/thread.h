@@ -14,11 +14,11 @@
 #include <linux/sched.h>
 
 /*
- * This wrapper over kthread is neccessary, because calling kthread_stop makes it impossible
+ * This wrapper over kthread is necessary, because calling kthread_stop makes it impossible
  * to issue MEI commands from that thread while it shuts itself down. By using a custom
  * boolean variable and a completion object, we can call kthread_stop only when the thread
  * already finished all of its work and has returned.
-*/
+ */
 struct ipts_thread {
 	struct task_struct *thread;
 

@@ -23,7 +23,7 @@
  * All outstanding data needs to be acknowledged using feedback before the command will return.
  *
  * Returns: 0 on success, <0 on error.
-*/
+ */
 int ipts_control_request_flush(struct ipts_context *ipts);
 
 /*
@@ -31,7 +31,7 @@ int ipts_control_request_flush(struct ipts_context *ipts);
  * @ipts: The IPTS driver context.
  *
  * Returns: 0 on success, <0 on error.
-*/
+ */
 int ipts_control_wait_flush(struct ipts_context *ipts);
 
 /*
@@ -39,7 +39,7 @@ int ipts_control_wait_flush(struct ipts_context *ipts);
  * @ipts: The IPTS driver context.
  *
  * Returns: 0 on success, <0 on error.
-*/
+ */
 int ipts_control_request_data(struct ipts_context *ipts);
 
 /*
@@ -51,7 +51,7 @@ int ipts_control_request_data(struct ipts_context *ipts);
  * the doorbell will be incremented when new data is available.
  *
  * Returns: 0 on success, <0 on error, -EAGAIN if no data is available.
-*/
+ */
 int ipts_control_wait_data(struct ipts_context *ipts, bool block);
 
 /*
@@ -60,7 +60,7 @@ int ipts_control_wait_data(struct ipts_context *ipts, bool block);
  * @buffer: The ID of the buffer containing feedback data.
  *
  * Returns: 0 on success, <0 on error.
-*/
+ */
 int ipts_control_send_feedback(struct ipts_context *ipts, u32 buffer);
 
 /*
@@ -90,8 +90,8 @@ int ipts_control_hid2me_feedback(struct ipts_context *ipts, enum ipts_feedback_c
 static inline int ipts_control_refill_buffer(struct ipts_context *ipts, u32 buffer)
 {
 	/*
-	 * IPTS expects structured data in the feedback buffer matching the buffer that will be refilled.
-	 * We don't know what that data looks like, so we just keep the buffer empty.
+	 * IPTS expects structured data in the feedback buffer matching the buffer that will be
+	 + refilled. We don't know what that data looks like, so we just keep the buffer empty.
 	 * This results in an INVALID_PARAMS error, but the buffer gets refilled without an issue.
 	 * Sending a minimal structure with the buffer ID fixes the error, but breaks refilling
 	 * the buffers on some devices.

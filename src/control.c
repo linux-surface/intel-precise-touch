@@ -261,7 +261,7 @@ int ipts_control_wait_data(struct ipts_context *ipts, bool shutdown)
 
 	/*
 	 * During shutdown, it is possible that the sensor has already been disabled.
-	*/
+	 */
 	if (rsp.status == IPTS_STATUS_SENSOR_DISABLED)
 		return 0;
 
