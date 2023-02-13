@@ -49,16 +49,22 @@ int ipts_resources_init(struct ipts_resources *res, struct device *dev, size_t d
 {
 	int ret = 0;
 
+	/*
+	 * Some compilers (AOSP clang) complain about a redefined
+	 * variable when this is declared inside of the for loop.
+	 */
+	int i = 0;
+
 	if (!res)
 		return -EFAULT;
 
-	for (int i = 0; i < IPTS_BUFFERS; i++) {
+	for (i = 0; i < IPTS_BUFFERS; i++) {
 		ret = ipts_resources_alloc_buffer(&res->data[i], dev, ds);
 		if (ret)
 			goto err;
 	}
 
-	for (int i = 0; i < IPTS_BUFFERS; i++) {
+	for (i = 0; i < IPTS_BUFFERS; i++) {
 		ret = ipts_resources_alloc_buffer(&res->feedback[i], dev, fs);
 		if (ret)
 			goto err;
@@ -90,13 +96,19 @@ err:
 
 int ipts_resources_free(struct ipts_resources *res)
 {
+	/*
+	 * Some compilers (AOSP clang) complain about a redefined
+	 * variable when this is declared inside of the for loop.
+	 */
+	int i = 0;
+
 	if (!res)
 		return -EFAULT;
 
-	for (int i = 0; i < IPTS_BUFFERS; i++)
+	for (i = 0; i < IPTS_BUFFERS; i++)
 		ipts_resources_free_buffer(&res->data[i]);
 
-	for (int i = 0; i < IPTS_BUFFERS; i++)
+	for (i = 0; i < IPTS_BUFFERS; i++)
 		ipts_resources_free_buffer(&res->feedback[i]);
 
 	ipts_resources_free_buffer(&res->doorbell);
