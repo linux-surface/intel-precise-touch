@@ -237,7 +237,6 @@ static struct hid_ll_driver ipts_hid_driver = {
 
 int ipts_hid_input_data(struct ipts_context *ipts, u32 buffer)
 {
-	int ret = 0;
 	u8 *temp = NULL;
 	struct ipts_hid_header *frame = NULL;
 	struct ipts_data_header *header = NULL;
@@ -249,6 +248,9 @@ int ipts_hid_input_data(struct ipts_context *ipts, u32 buffer)
 		return -ENODEV;
 
 	header = (struct ipts_data_header *)ipts->resources.data[buffer].address;
+
+	temp = ipts->resources.report.address;
+	memset(temp, 0, ipts->resources.report.size);
 
 	if (!header)
 		return -EFAULT;
@@ -273,10 +275,6 @@ int ipts_hid_input_data(struct ipts_context *ipts, u32 buffer)
 	if (header->size + 3 + sizeof(struct ipts_hid_header) > IPTS_HID_REPORT_DATA_SIZE)
 		return -ERANGE;
 
-	temp = kzalloc(IPTS_HID_REPORT_DATA_SIZE, GFP_KERNEL);
-	if (!temp)
-		return -ENOMEM;
-
 	/*
 	 * Synthesize a HID report matching the devices that natively send HID reports
 	 */
@@ -288,10 +286,7 @@ int ipts_hid_input_data(struct ipts_context *ipts, u32 buffer)
 
 	memcpy(frame->data, header->data, header->size);
 
-	ret = hid_input_report(ipts->hid, HID_INPUT_REPORT, temp, IPTS_HID_REPORT_DATA_SIZE, 1);
-	kfree(temp);
-
-	return ret;
+	return hid_input_report(ipts->hid, HID_INPUT_REPORT, temp, IPTS_HID_REPORT_DATA_SIZE, 1);
 }
 
 int ipts_hid_init(struct ipts_context *ipts, struct ipts_device_info info)
