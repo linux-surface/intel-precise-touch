@@ -107,10 +107,6 @@ err:
 
 int ipts_resources_free(struct ipts_resources *res)
 {
-	/*
-	 * Some compilers (AOSP clang) complain about a redefined
-	 * variable when this is declared inside of the for loop.
-	 */
 	int i = 0;
 
 	if (!res)

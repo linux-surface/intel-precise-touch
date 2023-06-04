@@ -88,6 +88,7 @@ static int ipts_control_set_mode(struct ipts_context *ipts, enum ipts_mode mode)
 
 static int ipts_control_set_mem_window(struct ipts_context *ipts, struct ipts_resources *res)
 {
+	int i = 0;
 	int ret = 0;
 	struct ipts_mem_window cmd = { 0 };
 	struct ipts_response rsp = { 0 };
@@ -98,7 +99,7 @@ static int ipts_control_set_mem_window(struct ipts_context *ipts, struct ipts_re
 	if (!res)
 		return -EFAULT;
 
-	for (int i = 0; i < IPTS_BUFFERS; i++) {
+	for (i = 0; i < IPTS_BUFFERS; i++) {
 		cmd.data_addr_lower[i] = lower_32_bits(res->data[i].dma_address);
 		cmd.data_addr_upper[i] = upper_32_bits(res->data[i].dma_address);
 		cmd.feedback_addr_lower[i] = lower_32_bits(res->feedback[i].dma_address);
