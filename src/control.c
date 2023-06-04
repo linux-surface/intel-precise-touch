@@ -343,12 +343,6 @@ int ipts_control_hid2me_feedback(struct ipts_context *ipts, enum ipts_feedback_c
 	return ipts_control_send_feedback(ipts, IPTS_HID2ME_BUFFER);
 }
 
-static inline int ipts_control_reset_sensor(struct ipts_context *ipts)
-{
-	return ipts_control_hid2me_feedback(ipts, IPTS_FEEDBACK_CMD_TYPE_SOFT_RESET,
-					    IPTS_FEEDBACK_DATA_TYPE_VENDOR, NULL, 0);
-}
-
 int ipts_control_start(struct ipts_context *ipts)
 {
 	int ret = 0;
@@ -443,12 +437,6 @@ static int _ipts_control_stop(struct ipts_context *ipts)
 		return ret;
 	}
 
-	ret = ipts_control_reset_sensor(ipts);
-	if (ret) {
-		dev_err(ipts->dev, "Failed to reset sensor: %d\n", ret);
-		return ret;
-	}
-
 	ret = ipts_resources_free(&ipts->resources);
 	if (ret) {
 		dev_err(ipts->dev, "Failed to free resources: %d\n", ret);
@@ -484,7 +472,7 @@ int ipts_control_restart(struct ipts_context *ipts)
 		return ret;
 
 	/*
-	 * Give the sensor some time to come back from resetting
+	 * Wait a second to give the sensor time to fully shut down.
 	 */
 	msleep(1000);
 
