@@ -253,14 +253,19 @@ static_assert(sizeof(struct ipts_response) == 88);
 
 /**
  * struct ipts_device_info - Vendor information of the IPTS device.
- * @vendor:        Vendor ID of this device.
- * @product:       Product ID of this device.
- * @hw_version:    Hardware revision of this device.
- * @fw_version:    Firmware revision of this device.
- * @data_size:     Requested size for a data buffer.
- * @feedback_size: Requested size for a feedback buffer.
- * @mode:          Mode that the device currently operates in.
- * @max_contacts:  Maximum amount of concurrent touches the sensor can process.
+ * @vendor:         Vendor ID of this device.
+ * @product:        Product ID of this device.
+ * @hw_version:     Hardware revision of this device.
+ * @fw_version:     Firmware revision of this device.
+ * @data_size:      Requested size for a data buffer.
+ * @feedback_size:  Requested size for a feedback buffer.
+ * @mode:           Mode that the device currently operates in.
+ * @max_contacts:   Maximum amount of concurrent touches the sensor can process.
+ * @sensor_min_eds: The minimum EDS version supported by the sensor.
+ * @sensor_max_eds: The maximum EDS version supported by the sensor.
+ * @me_min_eds:     The minimum EDS version supported by the ME for communicating with the sensor.
+ * @me_max_eds:     The maximum EDS version supported by the ME for communicating with the sensor.
+ * @intf_eds:       The EDS version implemented by the interface between ME and host.
  */
 struct ipts_device_info {
 	u16 vendor;
