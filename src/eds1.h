@@ -11,7 +11,7 @@
 
 #include "context.h"
 
-/*
+/**
  * ipts_eds1_get_descriptor() - Assembles the HID descriptor of the device.
  * @ipts: The IPTS driver context.
  * @desc_buffer: A pointer to the location where the address of the allocated buffer is stored.
@@ -21,7 +21,7 @@
  */
 int ipts_eds1_get_descriptor(struct ipts_context *ipts, u8 **desc_buffer, size_t *desc_size);
 
-/*
+/**
  * ipts_eds1_raw_request() - Executes an output or feature report on the device.
  * @ipts: The IPTS driver context.
  * @buffer: The buffer containing the report.

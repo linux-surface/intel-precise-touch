@@ -15,7 +15,7 @@
 #include "spec-data.h"
 #include "spec-device.h"
 
-/*
+/**
  * ipts_control_request_flush() - Stop the data flow.
  * @ipts: The IPTS driver context.
  *
@@ -26,7 +26,7 @@
  */
 int ipts_control_request_flush(struct ipts_context *ipts);
 
-/*
+/**
  * ipts_control_wait_flush() - Wait until data flow has been stopped.
  * @ipts: The IPTS driver context.
  *
@@ -34,7 +34,7 @@ int ipts_control_request_flush(struct ipts_context *ipts);
  */
 int ipts_control_wait_flush(struct ipts_context *ipts);
 
-/*
+/**
  * ipts_control_wait_flush() - Notify the device that the driver can receive new data.
  * @ipts: The IPTS driver context.
  *
@@ -42,7 +42,7 @@ int ipts_control_wait_flush(struct ipts_context *ipts);
  */
 int ipts_control_request_data(struct ipts_context *ipts);
 
-/*
+/**
  * ipts_control_wait_data() - Wait until new data is available.
  * @ipts: The IPTS driver context.
  * @block: Whether to block execution until data is available.
@@ -54,7 +54,7 @@ int ipts_control_request_data(struct ipts_context *ipts);
  */
 int ipts_control_wait_data(struct ipts_context *ipts, bool block);
 
-/*
+/**
  * ipts_control_send_feedback() - Submits a feedback buffer to the device.
  * @ipts: The IPTS driver context.
  * @buffer: The ID of the buffer containing feedback data.
@@ -63,7 +63,7 @@ int ipts_control_wait_data(struct ipts_context *ipts, bool block);
  */
 int ipts_control_send_feedback(struct ipts_context *ipts, u32 buffer);
 
-/*
+/**
  * ipts_control_hid2me_feedback() - Sends HID2ME feedback, a special type of feedback.
  * @ipts: The IPTS driver context.
  * @cmd: The command that will be run on the device.
@@ -80,7 +80,7 @@ int ipts_control_send_feedback(struct ipts_context *ipts, u32 buffer);
 int ipts_control_hid2me_feedback(struct ipts_context *ipts, enum ipts_feedback_cmd_type cmd,
 				 enum ipts_feedback_data_type type, void *data, size_t size);
 
-/*
+/**
  * ipts_control_refill_buffer() - Acknowledges that data in a buffer has been processed.
  * @ipts: The IPTS driver context.
  * @buffer: The buffer that has been processed and can be refilled.
@@ -100,7 +100,7 @@ static inline int ipts_control_refill_buffer(struct ipts_context *ipts, u32 buff
 	return ipts_control_send_feedback(ipts, buffer);
 }
 
-/*
+/**
  * ipts_control_start() - Initialized the device and starts the data flow.
  * @ipts: The IPTS driver context.
  *
@@ -108,7 +108,7 @@ static inline int ipts_control_refill_buffer(struct ipts_context *ipts, u32 buff
  */
 int ipts_control_start(struct ipts_context *ipts);
 
-/*
+/**
  * ipts_control_stop() - Stops the data flow and resets the device.
  * @ipts: The IPTS driver context.
  *
@@ -116,7 +116,7 @@ int ipts_control_start(struct ipts_context *ipts);
  */
 int ipts_control_stop(struct ipts_context *ipts);
 
-/*
+/**
  * ipts_control_restart() - Stops the device and starts it again.
  * @ipts: The IPTS driver context.
  *
