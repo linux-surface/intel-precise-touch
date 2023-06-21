@@ -108,14 +108,14 @@ static_assert(sizeof(struct ipts_command) == 324);
 
 /**
  * enum ipts_mode - Configures what data the device produces and how its sent.
- * @IPTS_MODE_EVENT:    The device will send an event once a buffer was filled.
- *                      Older devices will return singletouch data in this mode.
- * @IPTS_MODE_DOORBELL: The device will notify the driver by incrementing the doorbell value.
- *                      Older devices will return multitouch data in this mode.
+ * @IPTS_MODE_EVENT: The device will send an event once a buffer was filled.
+ *                   Older devices will return singletouch data in this mode.
+ * @IPTS_MODE_POLL:  The device will notify the driver by incrementing the doorbell value.
+ *                   Older devices will return multitouch data in this mode.
  */
 enum ipts_mode {
 	IPTS_MODE_EVENT = 0x00,
-	IPTS_MODE_DOORBELL = 0x01,
+	IPTS_MODE_POLL = 0x01,
 };
 
 /**

@@ -383,9 +383,9 @@ int ipts_control_start(struct ipts_context *ipts)
 		}
 
 		/*
-		 * Newer devices can be directly initialized in doorbell mode.
+		 * Newer devices can be directly initialized in polling mode.
 		 */
-		ipts->mode = IPTS_MODE_DOORBELL;
+		ipts->mode = IPTS_MODE_POLL;
 	}
 
 	ret = ipts_control_set_mode(ipts, ipts->mode);

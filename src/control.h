@@ -46,8 +46,8 @@ int ipts_control_request_data(struct ipts_context *ipts);
  * @ipts: The IPTS driver context.
  * @block: Whether to block execution until data is available.
  *
- * In doorbell mode, this function will never return while the data flow is active. Instead,
- * the doorbell will be incremented when new data is available.
+ * In poll mode, this function will never return while the data flow is active. Instead,
+ * the poll will be incremented when new data is available.
  *
  * Returns: 0 on success, <0 on error, -EAGAIN if no data is available.
  */
