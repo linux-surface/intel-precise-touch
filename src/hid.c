@@ -21,6 +21,16 @@
 #include "spec-data.h"
 #include "spec-hid.h"
 
+void ipts_hid_enable(struct ipts_context *ipts)
+{
+	WRITE_ONCE(ipts->hid_active, true);
+}
+
+void ipts_hid_disable(struct ipts_context *ipts)
+{
+	WRITE_ONCE(ipts->hid_active, false);
+}
+
 static int ipts_hid_start(struct hid_device *hid)
 {
 	return 0;
@@ -45,6 +55,9 @@ static int ipts_hid_parse(struct hid_device *hid)
 
 	if (!ipts)
 		return -EFAULT;
+
+	if (!READ_ONCE(ipts->hid_active))
+		return -ENODEV;
 
 	if (ipts->info.intf_eds == 1)
 		ret = ipts_eds1_get_descriptor(ipts, &buffer, &size);
@@ -80,6 +93,9 @@ static int ipts_hid_raw_request(struct hid_device *hid, unsigned char report_id,
 	if (!ipts)
 		return -EFAULT;
 
+	if (!READ_ONCE(ipts->hid_active))
+		return -ENODEV;
+
 	if (ipts->info.intf_eds == 1) {
 		return ipts_eds1_raw_request(ipts, buffer, size, report_id, report_type,
 					     request_type);
@@ -108,6 +124,9 @@ int ipts_hid_input_data(struct ipts_context *ipts, u32 buffer)
 		return -EFAULT;
 
 	if (!ipts->hid)
+		return -ENODEV;
+
+	if (!READ_ONCE(ipts->hid_active))
 		return -ENODEV;
 
 	header = (struct ipts_data_header *)ipts->resources.data[buffer].address;
