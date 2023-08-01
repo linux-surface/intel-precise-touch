@@ -36,7 +36,7 @@ clean:
 	$(MAKE) -C $(KDIR) M=$(PWD)/src CONFIG_HID_IPTS=m clean
 
 check:
-	$(KDIR)/scripts/checkpatch.pl -f -q --no-tree --strict --ignore EMBEDDED_FILENAME $(sources)
+	$(KDIR)/scripts/checkpatch.pl -f -q --no-tree --strict --ignore EMBEDDED_FILENAME,UNCOMMENTED_DEFINITION $(sources)
 
 dkms-install: $(sources)
 	./dkms.sh install

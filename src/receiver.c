@@ -196,10 +196,10 @@ int ipts_receiver_start(struct ipts_context *ipts)
 	int ret = 0;
 
 	if (ipts->mode == IPTS_MODE_EVENT) {
-		ret = ipts_thread_start(&ipts->receiver_loop, ipts_receiver_event_loop, ipts,
+		ret = ipts_thread_start(&ipts->receiver, ipts_receiver_event_loop, ipts,
 					"ipts_event");
 	} else if (ipts->mode == IPTS_MODE_POLL) {
-		ret = ipts_thread_start(&ipts->receiver_loop, ipts_receiver_poll_loop, ipts,
+		ret = ipts_thread_start(&ipts->receiver, ipts_receiver_poll_loop, ipts,
 					"ipts_poll");
 	} else {
 		ret = -EINVAL;
@@ -217,7 +217,7 @@ int ipts_receiver_stop(struct ipts_context *ipts)
 {
 	int ret = 0;
 
-	ret = ipts_thread_stop(&ipts->receiver_loop);
+	ret = ipts_thread_stop(&ipts->receiver);
 	if (ret) {
 		dev_err(ipts->dev, "Failed to stop receiver loop: %d\n", ret);
 		return ret;
