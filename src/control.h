@@ -12,11 +12,12 @@
 
 #include "context.h"
 #include "spec-dma.h"
+#include "spec-mei.h"
 
 int ipts_control_request_flush(struct ipts_context *ipts);
 int ipts_control_wait_flush(struct ipts_context *ipts);
 int ipts_control_request_data(struct ipts_context *ipts);
-int ipts_control_wait_data(struct ipts_context *ipts, bool block);
+int ipts_control_wait_data(struct ipts_context *ipts, struct ipts_rsp_ready_for_data *response);
 int ipts_control_send_feedback(struct ipts_context *ipts, u32 buffer_index);
 int ipts_control_refill_buffer(struct ipts_context *ipts, u32 buffer_index);
 int ipts_control_hid2me_feedback(struct ipts_context *ipts, enum ipts_feedback_cmd_type cmd_type,

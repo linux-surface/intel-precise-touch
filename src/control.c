@@ -162,16 +162,12 @@ int ipts_control_request_data(struct ipts_context *ipts)
 	return ipts_mei_send(&ipts->mei, IPTS_CMD_READY_FOR_DATA, NULL, 0);
 }
 
-int ipts_control_wait_data(struct ipts_context *ipts, bool shutdown)
+int ipts_control_wait_data(struct ipts_context *ipts, struct ipts_rsp_ready_for_data *response)
 {
 	int ret = 0;
 	struct ipts_response rsp = { 0 };
 
-	if (!shutdown)
-		ret = ipts_mei_recv_timeout(&ipts->mei, IPTS_CMD_READY_FOR_DATA, &rsp, 0);
-	else
-		ret = ipts_mei_recv(&ipts->mei, IPTS_CMD_READY_FOR_DATA, &rsp);
-
+	ret = ipts_mei_recv(&ipts->mei, IPTS_CMD_READY_FOR_DATA, &rsp);
 	if (ret)
 		return ret;
 
@@ -180,6 +176,9 @@ int ipts_control_wait_data(struct ipts_context *ipts, bool shutdown)
 	 */
 	if (rsp.status == IPTS_STATUS_SENSOR_DISABLED)
 		return 0;
+
+	if (rsp.status == IPTS_STATUS_SUCCESS && response)
+		*response = rsp.payload.ready_for_data;
 
 	return rsp.status;
 }

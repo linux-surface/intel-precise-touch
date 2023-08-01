@@ -19,74 +19,36 @@
 #include "spec-mei.h"
 #include "thread.h"
 
-static void ipts_receiver_next_doorbell(struct ipts_context *ipts)
-{
-	u32 *doorbell = (u32 *)ipts->resources.doorbell.address;
-	*doorbell = *doorbell + 1;
-}
-
-static u32 ipts_receiver_current_doorbell(struct ipts_context *ipts)
-{
-	u32 *doorbell = (u32 *)ipts->resources.doorbell.address;
-	return *doorbell;
-}
-
-static void ipts_receiver_backoff(time64_t last, u32 n)
-{
-	/*
-	 * If the last change was less than n seconds ago,
-	 * sleep for a shorter period so that new data can be
-	 * processed quickly. If there was no change for more than
-	 * n seconds, sleep longer to avoid wasting CPU cycles.
-	 */
-	if (last + n > ktime_get_seconds())
-		usleep_range(1 * USEC_PER_MSEC, 5 * USEC_PER_MSEC);
-	else
-		msleep(200);
-}
-
-static int ipts_receiver_event_loop(struct ipts_thread *thread)
+static int ipts_receiver_event(struct ipts_thread *thread)
 {
 	int ret = 0;
-	u32 buffer = 0;
-
 	struct ipts_context *ipts = thread->data;
-	time64_t last = ktime_get_seconds();
 
 	dev_info(ipts->dev, "IPTS running in event mode\n");
 
 	while (!ipts_thread_should_stop(thread)) {
-		int i = 0;
+		struct ipts_rsp_ready_for_data rsp = { 0 };
 
-		for (i = 0; i < IPTS_MAX_BUFFERS; i++) {
-			ret = ipts_control_wait_data(ipts, false);
-			if (ret == -EAGAIN)
-				break;
+		ret = ipts_control_wait_data(ipts, &rsp);
+		if (ret == -EAGAIN)
+			continue;
 
-			if (ret) {
-				dev_err(ipts->dev, "Failed to wait for data: %d\n", ret);
-				continue;
-			}
-
-			buffer = ipts_receiver_current_doorbell(ipts) % IPTS_MAX_BUFFERS;
-			ipts_receiver_next_doorbell(ipts);
-
-			ret = ipts_hid_input_data(ipts, buffer);
-			if (ret)
-				dev_err(ipts->dev, "Failed to process buffer: %d\n", ret);
-
-			ret = ipts_control_refill_buffer(ipts, buffer);
-			if (ret)
-				dev_err(ipts->dev, "Failed to send feedback: %d\n", ret);
-
-			ret = ipts_control_request_data(ipts);
-			if (ret)
-				dev_err(ipts->dev, "Failed to request data: %d\n", ret);
-
-			last = ktime_get_seconds();
+		if (ret) {
+			dev_err(ipts->dev, "Failed to wait for data: %d\n", ret);
+			continue;
 		}
 
-		ipts_receiver_backoff(last, 5);
+		ret = ipts_hid_input_data(ipts, rsp.buffer_index);
+		if (ret)
+			dev_err(ipts->dev, "Failed to process buffer: %d\n", ret);
+
+		ret = ipts_control_refill_buffer(ipts, rsp.buffer_index);
+		if (ret)
+			dev_err(ipts->dev, "Failed to send feedback: %d\n", ret);
+
+		ret = ipts_control_request_data(ipts);
+		if (ret)
+			dev_err(ipts->dev, "Failed to request data: %d\n", ret);
 	}
 
 	ret = ipts_control_request_flush(ipts);
@@ -95,7 +57,7 @@ static int ipts_receiver_event_loop(struct ipts_thread *thread)
 		return ret;
 	}
 
-	ret = ipts_control_wait_data(ipts, true);
+	ret = ipts_control_wait_data(ipts, NULL);
 	if (ret) {
 		dev_err(ipts->dev, "Failed to wait for data: %d\n", ret);
 
@@ -118,16 +80,15 @@ static int ipts_receiver_event_loop(struct ipts_thread *thread)
 	return 0;
 }
 
-static int ipts_receiver_poll_loop(struct ipts_thread *thread)
+static int ipts_receiver_poll(struct ipts_thread *thread)
 {
 	int ret = 0;
-	u32 buffer = 0;
-
-	u32 doorbell = 0;
-	u32 lastdb = 0;
 
 	struct ipts_context *ipts = thread->data;
 	time64_t last = ktime_get_seconds();
+
+	u32 current_buffer = 0;
+	u32 next_buffer = 0;
 
 	dev_info(ipts->dev, "IPTS running in poll mode\n");
 
@@ -138,37 +99,50 @@ static int ipts_receiver_poll_loop(struct ipts_thread *thread)
 				dev_err(ipts->dev, "Failed to request flush: %d\n", ret);
 				return ret;
 			}
+
+			/*
+			 * We have to process all outstanding data for the flush to succeed.
+			 */
 		}
 
-		doorbell = ipts_receiver_current_doorbell(ipts);
-
 		/*
-		 * After filling up one of the data buffers, IPTS will increment
-		 * the doorbell. The value of the doorbell stands for the *next*
-		 * buffer that IPTS is going to fill.
+		 * After filling up one of the data buffers, the ME will increment the doorbell.
+		 * The value of the doorbell stands for the *next* buffer that the ME will fill.
+		 *
+		 * We read the doorbell address only once to force the loop to sleep at some point.
 		 */
-		while (lastdb != doorbell) {
-			buffer = lastdb % IPTS_MAX_BUFFERS;
+		next_buffer = *(u32 *)ipts->resources.doorbell.address;
 
-			ret = ipts_hid_input_data(ipts, buffer);
+		while (current_buffer != next_buffer) {
+			size_t index = current_buffer % IPTS_MAX_BUFFERS;
+
+			ret = ipts_hid_input_data(ipts, index);
 			if (ret)
 				dev_err(ipts->dev, "Failed to process buffer: %d\n", ret);
 
-			ret = ipts_control_refill_buffer(ipts, buffer);
+			ret = ipts_control_refill_buffer(ipts, index);
 			if (ret)
 				dev_err(ipts->dev, "Failed to send feedback: %d\n", ret);
 
 			last = ktime_get_seconds();
-			lastdb++;
+			current_buffer++;
 		}
 
 		if (ipts_thread_should_stop(thread))
 			break;
 
-		ipts_receiver_backoff(last, 5);
+		/*
+		 * If the last change was less than 5 seconds ago, sleep for a shorter period so
+		 * that new data can be processed quickly. If there was no change for more than
+		 * 5 seconds, sleep longer to avoid wasting CPU cycles.
+		 */
+		if (last + 5 > ktime_get_seconds())
+			usleep_range(1 * USEC_PER_MSEC, 5 * USEC_PER_MSEC);
+		else
+			msleep(200);
 	}
 
-	ret = ipts_control_wait_data(ipts, true);
+	ret = ipts_control_wait_data(ipts, NULL);
 	if (ret) {
 		dev_err(ipts->dev, "Failed to wait for data: %d\n", ret);
 
@@ -193,17 +167,12 @@ static int ipts_receiver_poll_loop(struct ipts_thread *thread)
 
 int ipts_receiver_start(struct ipts_context *ipts)
 {
-	int ret = 0;
+	int ret = -EINVAL;
 
-	if (ipts->mode == IPTS_MODE_EVENT) {
-		ret = ipts_thread_start(&ipts->receiver, ipts_receiver_event_loop, ipts,
-					"ipts_event");
-	} else if (ipts->mode == IPTS_MODE_POLL) {
-		ret = ipts_thread_start(&ipts->receiver, ipts_receiver_poll_loop, ipts,
-					"ipts_poll");
-	} else {
-		ret = -EINVAL;
-	}
+	if (ipts->mode == IPTS_MODE_EVENT)
+		ret = ipts_thread_start(&ipts->receiver, ipts_receiver_event, ipts, "ipts_event");
+	else if (ipts->mode == IPTS_MODE_POLL)
+		ret = ipts_thread_start(&ipts->receiver, ipts_receiver_poll, ipts, "ipts_poll");
 
 	if (ret) {
 		dev_err(ipts->dev, "Failed to start receiver loop: %d\n", ret);
