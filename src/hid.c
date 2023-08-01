@@ -43,18 +43,11 @@ static void ipts_hid_stop(struct hid_device *hid)
 static int ipts_hid_parse(struct hid_device *hid)
 {
 	int ret = 0;
-	struct ipts_context *ipts = NULL;
 
 	u8 *buffer = NULL;
 	size_t size = 0;
 
-	if (!hid)
-		return -ENODEV;
-
-	ipts = hid->driver_data;
-
-	if (!ipts)
-		return -EFAULT;
+	struct ipts_context *ipts = hid->driver_data;
 
 	if (!READ_ONCE(ipts->hid_active))
 		return -ENODEV;
@@ -83,15 +76,7 @@ static int ipts_hid_parse(struct hid_device *hid)
 static int ipts_hid_raw_request(struct hid_device *hid, unsigned char report_id, __u8 *buffer,
 				size_t size, unsigned char report_type, int request_type)
 {
-	struct ipts_context *ipts = NULL;
-
-	if (!hid)
-		return -ENODEV;
-
-	ipts = hid->driver_data;
-
-	if (!ipts)
-		return -EFAULT;
+	struct ipts_context *ipts = hid->driver_data;
 
 	if (!READ_ONCE(ipts->hid_active))
 		return -ENODEV;
@@ -117,14 +102,9 @@ static struct hid_ll_driver ipts_hid_driver = {
 int ipts_hid_input_data(struct ipts_context *ipts, u32 buffer)
 {
 	u8 *temp = NULL;
+
 	struct ipts_hid_header *frame = NULL;
 	struct ipts_data_header *header = NULL;
-
-	if (!ipts)
-		return -EFAULT;
-
-	if (!ipts->hid)
-		return -ENODEV;
 
 	if (!READ_ONCE(ipts->hid_active))
 		return -ENODEV;
@@ -133,9 +113,6 @@ int ipts_hid_input_data(struct ipts_context *ipts, u32 buffer)
 
 	temp = ipts->resources.report.address;
 	memset(temp, 0, ipts->resources.report.size);
-
-	if (!header)
-		return -EFAULT;
 
 	if (header->size == 0)
 		return 0;
@@ -175,9 +152,6 @@ int ipts_hid_init(struct ipts_context *ipts, struct ipts_device_info info)
 {
 	int ret = 0;
 
-	if (!ipts)
-		return -EFAULT;
-
 	if (ipts->hid)
 		return 0;
 
@@ -212,9 +186,6 @@ int ipts_hid_init(struct ipts_context *ipts, struct ipts_device_info info)
 
 int ipts_hid_free(struct ipts_context *ipts)
 {
-	if (!ipts)
-		return -EFAULT;
-
 	if (!ipts->hid)
 		return 0;
 
