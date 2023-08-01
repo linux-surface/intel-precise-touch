@@ -21,15 +21,22 @@
 int ipts_eds2_get_descriptor(struct ipts_context *ipts, u8 **desc_buffer, size_t *desc_size)
 {
 	u8 *buffer = NULL;
-	size_t size = sizeof(ipts_singletouch_descriptor) + ipts->descriptor.size;
+	size_t size = 0;
+
+	struct ipts_data_header *header =
+		(struct ipts_data_header *)ipts->resources.descriptor.address;
+
+	if (header->type != IPTS_DATA_TYPE_DESCRIPTOR)
+		return -ENODATA;
+
+	size = sizeof(ipts_singletouch_descriptor) + header->size - 8;
 
 	buffer = kzalloc(size, GFP_KERNEL);
 	if (!buffer)
 		return -ENOMEM;
 
 	memcpy(buffer, ipts_singletouch_descriptor, sizeof(ipts_singletouch_descriptor));
-	memcpy(&buffer[sizeof(ipts_singletouch_descriptor)], ipts->descriptor.address,
-	       ipts->descriptor.size);
+	memcpy(&buffer[sizeof(ipts_singletouch_descriptor)], &header->data[8], header->size - 8);
 
 	*desc_size = size;
 	*desc_buffer = buffer;

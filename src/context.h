@@ -33,12 +33,6 @@ struct ipts_context {
 	struct mutex feature_lock;
 	struct completion feature_event;
 
-	/*
-	 * These are not inside of struct ipts_resources
-	 * because they don't own the memory they point to.
-	 */
-	struct ipts_buffer descriptor;
-
 	bool hid_active;
 	struct hid_device *hid;
 

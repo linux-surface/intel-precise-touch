@@ -107,7 +107,6 @@ static int ipts_control_set_mem_window(struct ipts_context *ipts)
 static int ipts_control_get_descriptor(struct ipts_context *ipts)
 {
 	int ret = 0;
-	struct ipts_data_header *header = NULL;
 
 	struct ipts_get_descriptor cmd = { 0 };
 	struct ipts_response rsp = { 0 };
@@ -134,19 +133,7 @@ static int ipts_control_get_descriptor(struct ipts_context *ipts)
 	if (ret)
 		return ret;
 
-	if (rsp.status != IPTS_STATUS_SUCCESS)
-		return rsp.status;
-
-	header = (struct ipts_data_header *)ipts->resources.descriptor.address;
-
-	if (header->type == IPTS_DATA_TYPE_DESCRIPTOR) {
-		ipts->descriptor.address = &header->data[8];
-		ipts->descriptor.size = header->size - 8;
-
-		return 0;
-	}
-
-	return -ENODATA;
+	return rsp.status;
 }
 
 int ipts_control_request_flush(struct ipts_context *ipts)
