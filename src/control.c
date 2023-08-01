@@ -88,6 +88,8 @@ static int ipts_control_set_mem_window(struct ipts_context *ipts)
 	cmd.hid2me_addr_lower = lower_32_bits(ipts->resources.hid2me.dma_address);
 	cmd.hid2me_addr_upper = upper_32_bits(ipts->resources.hid2me.dma_address);
 
+	cmd.hid2me_size = ipts->resources.hid2me.size;
+
 	cmd.workqueue_size = IPTS_WORKQUEUE_SIZE;
 	cmd.workqueue_item_size = IPTS_WORKQUEUE_ITEM_SIZE;
 
