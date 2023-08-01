@@ -26,6 +26,43 @@ struct ipts_dma_buffer {
 	struct device *dma_device;
 };
 
+/**
+ * struct ipts_resources - The IPTS resource manager.
+ *
+ * This object is responsible for allocating, storing and freeing all buffers that are needed to
+ * communicate with the ME and process the data that it produces.
+ *
+ * Every buffer that owns the data it points to should go in here. Buffers that don't own the
+ * data they point to should go into &struct ipts_context.
+ *
+ * @data:
+ *     The data buffers for ME to host DMA data transfer. The size of these buffers is determined
+ *     by &struct ipts_device_info->data_size.
+ *
+ * @feedback:
+ *     The feedback buffers for host to ME DMA data transfer. The size of these buffers is
+ *     determined by &struct ipts_device_info->feedback_size.
+ *
+ * @doorbell:
+ *     The doorbell buffer. The doorbell is an unsigned 32-bit integer that the ME will increment
+ *     when new data is available.
+ *
+ * @workqueue:
+ *     The buffer that holds the workqueue offset. The offset is a 32-bit integer that is only
+ *     required when using GuC submission with vendor provided OpenCL kernels.
+ *
+ * @hid2me:
+ *     The buffer for HID2ME feedback, a special feedback buffer intended for passing HID feature
+ *     and output reports to the ME.
+ *
+ * @descriptor:
+ *     The buffer for querying the native HID descriptor on EDS v2 devices. The size of the buffer
+ *     should &struct ipts_device_info->data_size + 8.
+ *
+ * @report:
+ *     A buffer that is used to synthesize HID reports on EDS v1 devices that don't natively support
+ *     HID. The size of this buffer should be %IPTS_HID_REPORT_DATA_SIZE.
+ */
 struct ipts_resources {
 	struct ipts_dma_buffer data[IPTS_BUFFERS];
 	struct ipts_dma_buffer feedback[IPTS_BUFFERS];
@@ -33,10 +70,8 @@ struct ipts_resources {
 	struct ipts_dma_buffer doorbell;
 	struct ipts_dma_buffer workqueue;
 	struct ipts_dma_buffer hid2me;
-
 	struct ipts_dma_buffer descriptor;
 
-	// Buffer for synthesizing HID reports
 	struct ipts_buffer report;
 };
 
