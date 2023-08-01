@@ -183,13 +183,29 @@ int ipts_control_wait_data(struct ipts_context *ipts, struct ipts_rsp_ready_for_
 	return rsp.status;
 }
 
-int ipts_control_send_feedback(struct ipts_context *ipts, u32 buffer_index)
+int ipts_control_refill_buffer(struct ipts_context *ipts, struct ipts_data_buffer *buffer)
 {
 	int ret = 0;
+
 	struct ipts_cmd_feedback cmd = { 0 };
 	struct ipts_response rsp = { 0 };
 
-	cmd.buffer_index = buffer_index;
+	cmd.buffer_index = buffer->total_index % IPTS_MAX_BUFFERS;
+	cmd.transaction = buffer->transaction;
+
+	/*
+	 * struct ipts_feedback_buffer *feedback =
+	 *	(struct ipts_feedback_buffer *)ipts->resources.feedback[buffer->buffer].address;
+	 *
+	 * memset(feedback, 0, sizeof(*feedback));
+	 *
+	 * feedback->total_index = buffer->total_index;
+	 * feedback->cmd_type = IPTS_FEEDBACK_CMD_TYPE_NONE;
+	 * feedback->data_type = IPTS_FEEDBACK_DATA_TYPE_VENDOR;
+
+	 * feedback->size = 0;
+	 * feedback->protocol_ver = 0;
+	 */
 
 	ret = ipts_mei_send(&ipts->mei, IPTS_CMD_FEEDBACK, &cmd, sizeof(cmd));
 	if (ret)
@@ -198,13 +214,6 @@ int ipts_control_send_feedback(struct ipts_context *ipts, u32 buffer_index)
 	ret = ipts_mei_recv(&ipts->mei, IPTS_CMD_FEEDBACK, &rsp);
 	if (ret)
 		return ret;
-
-	return rsp.status;
-}
-
-int ipts_control_refill_buffer(struct ipts_context *ipts, u32 buffer_index)
-{
-	int ret = 0;
 
 	/*
 	 * To return a buffer to the ME and refill it, the ME expects structured data in the
@@ -216,18 +225,20 @@ int ipts_control_refill_buffer(struct ipts_context *ipts, u32 buffer_index)
 	 * the buffer on some devices.
 	 */
 
-	ret = ipts_control_send_feedback(ipts, buffer_index);
-
-	if (ret == IPTS_STATUS_INVALID_PARAMS)
+	if (rsp.status == IPTS_STATUS_INVALID_PARAMS)
 		return 0;
 
-	return ret;
+	return rsp.status;
 }
 
 int ipts_control_hid2me_feedback(struct ipts_context *ipts, enum ipts_feedback_cmd_type cmd_type,
 				 enum ipts_feedback_data_type data_type, void *data, size_t size)
 {
+	int ret = 0;
 	struct ipts_feedback_buffer *buffer = NULL;
+
+	struct ipts_cmd_feedback cmd = { 0 };
+	struct ipts_response rsp = { 0 };
 
 	memset(ipts->resources.hid2me.address, 0, ipts->resources.hid2me.size);
 	buffer = (struct ipts_feedback_buffer *)ipts->resources.hid2me.address;
@@ -235,7 +246,7 @@ int ipts_control_hid2me_feedback(struct ipts_context *ipts, enum ipts_feedback_c
 	buffer->cmd_type = cmd_type;
 	buffer->data_type = data_type;
 	buffer->size = size;
-	buffer->buffer = IPTS_HID_2_ME_BUFFER_INDEX;
+	buffer->total_index = IPTS_HID_2_ME_BUFFER_INDEX;
 
 	if (size + sizeof(*buffer) > ipts->resources.hid2me.size)
 		return -EINVAL;
@@ -243,7 +254,18 @@ int ipts_control_hid2me_feedback(struct ipts_context *ipts, enum ipts_feedback_c
 	if (data && size > 0)
 		memcpy(buffer->data, data, size);
 
-	return ipts_control_send_feedback(ipts, IPTS_HID_2_ME_BUFFER_INDEX);
+	cmd.buffer_index = IPTS_HID_2_ME_BUFFER_INDEX;
+	cmd.transaction = 0;
+
+	ret = ipts_mei_send(&ipts->mei, IPTS_CMD_FEEDBACK, &cmd, sizeof(cmd));
+	if (ret)
+		return ret;
+
+	ret = ipts_mei_recv(&ipts->mei, IPTS_CMD_FEEDBACK, &rsp);
+	if (ret)
+		return ret;
+
+	return rsp.status;
 }
 
 int ipts_control_start(struct ipts_context *ipts)

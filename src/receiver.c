@@ -16,6 +16,7 @@
 #include "control.h"
 #include "hid.h"
 #include "resources.h"
+#include "spec-dma.h"
 #include "spec-mei.h"
 #include "thread.h"
 
@@ -28,6 +29,7 @@ static int ipts_receiver_event(struct ipts_thread *thread)
 
 	while (!ipts_thread_should_stop(thread)) {
 		struct ipts_rsp_ready_for_data rsp = { 0 };
+		struct ipts_data_buffer *buffer = NULL;
 
 		ret = ipts_control_wait_data(ipts, &rsp);
 		if (ret == -EAGAIN)
@@ -38,11 +40,13 @@ static int ipts_receiver_event(struct ipts_thread *thread)
 			continue;
 		}
 
-		ret = ipts_hid_input_data(ipts, rsp.buffer_index);
+		buffer = (struct ipts_data_buffer *)ipts->resources.data[rsp.buffer_index].address;
+
+		ret = ipts_hid_input_data(ipts, buffer);
 		if (ret)
 			dev_err(ipts->dev, "Failed to process buffer: %d\n", ret);
 
-		ret = ipts_control_refill_buffer(ipts, rsp.buffer_index);
+		ret = ipts_control_refill_buffer(ipts, buffer);
 		if (ret)
 			dev_err(ipts->dev, "Failed to send feedback: %d\n", ret);
 
@@ -114,13 +118,16 @@ static int ipts_receiver_poll(struct ipts_thread *thread)
 		next_buffer = *(u32 *)ipts->resources.doorbell.address;
 
 		while (current_buffer != next_buffer) {
+			struct ipts_data_buffer *buffer = NULL;
 			size_t index = current_buffer % IPTS_MAX_BUFFERS;
 
-			ret = ipts_hid_input_data(ipts, index);
+			buffer = (struct ipts_data_buffer *)ipts->resources.data[index].address;
+
+			ret = ipts_hid_input_data(ipts, buffer);
 			if (ret)
 				dev_err(ipts->dev, "Failed to process buffer: %d\n", ret);
 
-			ret = ipts_control_refill_buffer(ipts, index);
+			ret = ipts_control_refill_buffer(ipts, buffer);
 			if (ret)
 				dev_err(ipts->dev, "Failed to send feedback: %d\n", ret);
 

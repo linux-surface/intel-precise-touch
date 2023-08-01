@@ -156,14 +156,10 @@ static int ipts_hid_handle_get_features(struct ipts_context *ipts, struct ipts_d
 	return 0;
 }
 
-int ipts_hid_input_data(struct ipts_context *ipts, size_t buffer_index)
+int ipts_hid_input_data(struct ipts_context *ipts, struct ipts_data_buffer *buffer)
 {
-	struct ipts_data_buffer *buffer = NULL;
-
 	if (!READ_ONCE(ipts->hid_active))
 		return -ENODEV;
-
-	buffer = (struct ipts_data_buffer *)ipts->resources.data[buffer_index].address;
 
 	if (buffer->size == 0)
 		return 0;
