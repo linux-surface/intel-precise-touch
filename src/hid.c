@@ -179,8 +179,10 @@ int ipts_hid_input_data(struct ipts_context *ipts, size_t buffer_index)
 	case IPTS_DATA_TYPE_GET_FEATURES:
 		return ipts_hid_handle_get_features(ipts, buffer);
 	default:
-		return 0;
+		dev_info(ipts->dev, "Unhandled data type: %d\n", buffer->type);
 	}
+
+	return 0;
 }
 
 int ipts_hid_init(struct ipts_context *ipts)
