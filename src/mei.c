@@ -18,6 +18,7 @@
 
 #include "context.h"
 #include "mei.h"
+#include "spec-device.h"
 
 static void locked_list_add(struct list_head *new, struct list_head *head,
 			    struct rw_semaphore *lock)
@@ -48,8 +49,13 @@ static void ipts_mei_incoming(struct mei_cl_device *cldev)
 
 	INIT_LIST_HEAD(&entry->list);
 
+	/*
+	 * System calls can interrupt the MEI bus API functions.
+	 * If this happens, try to repeat the call until it starts working.
+	 */
+
 	for (i = 0; i < 100; i++) {
-		ret = mei_cldev_recv(cldev, (u8 *)&entry->rsp, sizeof(entry->rsp));
+		ret = mei_cldev_recv(cldev, (u8 *)&entry->response, sizeof(entry->response));
 
 		if (ret != -EINTR)
 			break;
@@ -58,21 +64,24 @@ static void ipts_mei_incoming(struct mei_cl_device *cldev)
 	}
 
 	if (ret < 0) {
-		dev_err(ipts->dev, "Error while reading response: %ld\n", ret);
+		dev_err(ipts->dev, "Failed to read MEI message: %ld\n", ret);
 		return;
 	}
 
 	if (ret == 0) {
-		dev_err(ipts->dev, "Received empty response\n");
+		dev_err(ipts->dev, "Received empty MEI message\n");
 		return;
 	}
+
+	dev_dbg(ipts->dev, "MEI thread received message with code 0x%X and status 0x%X\n",
+		entry->response.cmd, entry->response.status);
 
 	locked_list_add(&entry->list, &ipts->mei.messages, &ipts->mei.message_lock);
 	wake_up_all(&ipts->mei.message_queue);
 }
 
 static int ipts_mei_search(struct ipts_mei *mei, enum ipts_command_code code,
-			   struct ipts_response *rsp)
+			   struct ipts_response *response)
 {
 	struct ipts_mei_message *entry = NULL;
 
@@ -83,7 +92,7 @@ static int ipts_mei_search(struct ipts_mei *mei, enum ipts_command_code code,
 	 * matching the requested command code.
 	 */
 	list_for_each_entry(entry, &mei->messages, list) {
-		if (entry->rsp.cmd == code)
+		if (entry->response.cmd == (code | IPTS_RSP_BIT))
 			break;
 	}
 
@@ -96,8 +105,14 @@ static int ipts_mei_search(struct ipts_mei *mei, enum ipts_command_code code,
 	if (!list_entry_is_head(entry, &mei->messages, list)) {
 		locked_list_del(&entry->list, &mei->message_lock);
 
-		*rsp = entry->rsp;
+		*response = entry->response;
 		devm_kfree(&mei->cldev->dev, entry);
+
+		dev_dbg(&mei->cldev->dev, "Driver read message with code 0x%X and status 0x%X\n",
+			response->cmd, response->status);
+
+		if (response->status == IPTS_STATUS_COMPAT_CHECK_FAIL)
+			response->status = IPTS_STATUS_SUCCESS;
 
 		return 0;
 	}
@@ -105,8 +120,8 @@ static int ipts_mei_search(struct ipts_mei *mei, enum ipts_command_code code,
 	return -EAGAIN;
 }
 
-int ipts_mei_recv(struct ipts_mei *mei, enum ipts_command_code code, struct ipts_response *rsp,
-		  u64 timeout)
+int ipts_mei_recv_timeout(struct ipts_mei *mei, enum ipts_command_code code,
+			  struct ipts_response *response, u64 timeout)
 {
 	int ret = 0;
 
@@ -114,17 +129,17 @@ int ipts_mei_recv(struct ipts_mei *mei, enum ipts_command_code code, struct ipts
 	 * A timeout of 0 means check and return immideately.
 	 */
 	if (timeout == 0)
-		return ipts_mei_search(mei, code, rsp);
+		return ipts_mei_search(mei, code, response);
 
 	/*
 	 * A timeout of less than 0 means to wait forever.
 	 */
 	if (timeout < 0) {
-		wait_event(mei->message_queue, ipts_mei_search(mei, code, rsp) == 0);
+		wait_event(mei->message_queue, ipts_mei_search(mei, code, response) == 0);
 		return 0;
 	}
 
-	ret = wait_event_timeout(mei->message_queue, ipts_mei_search(mei, code, rsp) == 0,
+	ret = wait_event_timeout(mei->message_queue, ipts_mei_search(mei, code, response) == 0,
 				 msecs_to_jiffies(timeout));
 
 	if (ret > 0)
@@ -133,13 +148,28 @@ int ipts_mei_recv(struct ipts_mei *mei, enum ipts_command_code code, struct ipts
 	return -EAGAIN;
 }
 
-int ipts_mei_send(struct ipts_mei *mei, void *data, size_t length)
+int ipts_mei_send(struct ipts_mei *mei, enum ipts_command_code code, void *payload, size_t size)
 {
 	int i = 0;
 	int ret = 0;
 
+	struct ipts_command cmd = { 0 };
+
+	cmd.cmd = code;
+
+	if (payload && size > 0)
+		memcpy(cmd.payload, payload, size);
+
+	dev_dbg(&mei->cldev->dev, "Driver sent message with code 0x%X and %ld bytes payload\n",
+		code, size);
+
+	/*
+	 * System calls can interrupt the MEI bus API functions.
+	 * If this happens, try to repeat the call until it starts working.
+	 */
+
 	for (i = 0; i < 100; i++) {
-		ret = mei_cldev_send(mei->cldev, (u8 *)data, length);
+		ret = mei_cldev_send(mei->cldev, (u8 *)&cmd, sizeof(cmd.cmd) + size);
 
 		if (ret != -EINTR)
 			break;
@@ -147,8 +177,10 @@ int ipts_mei_send(struct ipts_mei *mei, void *data, size_t length)
 		msleep(100);
 	}
 
-	if (ret < 0)
+	if (ret < 0) {
+		dev_err(&mei->cldev->dev, "Failed to send MEI message: %d\n", ret);
 		return ret;
+	}
 
 	return 0;
 }

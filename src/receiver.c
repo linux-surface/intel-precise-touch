@@ -12,7 +12,6 @@
 #include <linux/timekeeping.h>
 #include <linux/types.h>
 
-#include "cmd.h"
 #include "context.h"
 #include "control.h"
 #include "hid.h"

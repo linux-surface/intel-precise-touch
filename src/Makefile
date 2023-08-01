@@ -4,8 +4,7 @@
 #
 
 obj-$(CONFIG_HID_IPTS) += ipts.o
-ipts-objs := cmd.o
-ipts-objs += control.o
+ipts-objs := control.o
 ipts-objs += eds1.o
 ipts-objs += eds2.o
 ipts-objs += hid.o

@@ -5,8 +5,6 @@
 
 sources := dkms.conf
 sources += Makefile
-sources += src/cmd.c
-sources += src/cmd.h
 sources += src/context.h
 sources += src/control.c
 sources += src/control.h

@@ -12,11 +12,10 @@
 #include <linux/kthread.h>
 #include <linux/types.h>
 
-#include "cmd.h"
 #include "context.h"
 #include "control.h"
-#include "desc.h"
 #include "hid.h"
+#include "mei.h"
 #include "receiver.h"
 #include "resources.h"
 #include "spec-data.h"
@@ -33,13 +32,13 @@ static int ipts_control_get_device_info(struct ipts_context *ipts, struct ipts_d
 	if (!info)
 		return -EFAULT;
 
-	ret = ipts_cmd_send(ipts, IPTS_CMD_GET_DEVICE_INFO, NULL, 0);
+	ret = ipts_mei_send(&ipts->mei, IPTS_CMD_GET_DEVICE_INFO, NULL, 0);
 	if (ret) {
 		dev_err(ipts->dev, "GET_DEVICE_INFO: send failed: %d\n", ret);
 		return ret;
 	}
 
-	ret = ipts_cmd_recv(ipts, IPTS_CMD_GET_DEVICE_INFO, &rsp);
+	ret = ipts_mei_recv(&ipts->mei, IPTS_CMD_GET_DEVICE_INFO, &rsp);
 	if (ret) {
 		dev_err(ipts->dev, "GET_DEVICE_INFO: recv failed: %d\n", ret);
 		return ret;
@@ -65,13 +64,13 @@ static int ipts_control_set_mode(struct ipts_context *ipts, enum ipts_mode mode)
 
 	cmd.mode = mode;
 
-	ret = ipts_cmd_send(ipts, IPTS_CMD_SET_MODE, &cmd, sizeof(cmd));
+	ret = ipts_mei_send(&ipts->mei, IPTS_CMD_SET_MODE, &cmd, sizeof(cmd));
 	if (ret) {
 		dev_err(ipts->dev, "SET_MODE: send failed: %d\n", ret);
 		return ret;
 	}
 
-	ret = ipts_cmd_recv(ipts, IPTS_CMD_SET_MODE, &rsp);
+	ret = ipts_mei_recv(&ipts->mei, IPTS_CMD_SET_MODE, &rsp);
 	if (ret) {
 		dev_err(ipts->dev, "SET_MODE: recv failed: %d\n", ret);
 		return ret;
@@ -117,13 +116,13 @@ static int ipts_control_set_mem_window(struct ipts_context *ipts, struct ipts_re
 	cmd.workqueue_size = IPTS_WORKQUEUE_SIZE;
 	cmd.workqueue_item_size = IPTS_WORKQUEUE_ITEM_SIZE;
 
-	ret = ipts_cmd_send(ipts, IPTS_CMD_SET_MEM_WINDOW, &cmd, sizeof(cmd));
+	ret = ipts_mei_send(&ipts->mei, IPTS_CMD_SET_MEM_WINDOW, &cmd, sizeof(cmd));
 	if (ret) {
 		dev_err(ipts->dev, "SET_MEM_WINDOW: send failed: %d\n", ret);
 		return ret;
 	}
 
-	ret = ipts_cmd_recv(ipts, IPTS_CMD_SET_MEM_WINDOW, &rsp);
+	ret = ipts_mei_recv(&ipts->mei, IPTS_CMD_SET_MEM_WINDOW, &rsp);
 	if (ret) {
 		dev_err(ipts->dev, "SET_MEM_WINDOW: recv failed: %d\n", ret);
 		return ret;
@@ -156,13 +155,13 @@ static int ipts_control_get_descriptor(struct ipts_context *ipts)
 	cmd.addr_upper = upper_32_bits(ipts->resources.descriptor.dma_address);
 	cmd.magic = 8;
 
-	ret = ipts_cmd_send(ipts, IPTS_CMD_GET_DESCRIPTOR, &cmd, sizeof(cmd));
+	ret = ipts_mei_send(&ipts->mei, IPTS_CMD_GET_DESCRIPTOR, &cmd, sizeof(cmd));
 	if (ret) {
 		dev_err(ipts->dev, "GET_DESCRIPTOR: send failed: %d\n", ret);
 		return ret;
 	}
 
-	ret = ipts_cmd_recv(ipts, IPTS_CMD_GET_DESCRIPTOR, &rsp);
+	ret = ipts_mei_recv(&ipts->mei, IPTS_CMD_GET_DESCRIPTOR, &rsp);
 	if (ret) {
 		dev_err(ipts->dev, "GET_DESCRIPTOR: recv failed: %d\n", ret);
 		return ret;
@@ -193,7 +192,7 @@ int ipts_control_request_flush(struct ipts_context *ipts)
 	if (!ipts)
 		return -EFAULT;
 
-	ret = ipts_cmd_send(ipts, IPTS_CMD_QUIESCE_IO, &cmd, sizeof(cmd));
+	ret = ipts_mei_send(&ipts->mei, IPTS_CMD_QUIESCE_IO, &cmd, sizeof(cmd));
 	if (ret)
 		dev_err(ipts->dev, "QUIESCE_IO: send failed: %d\n", ret);
 
@@ -208,7 +207,7 @@ int ipts_control_wait_flush(struct ipts_context *ipts)
 	if (!ipts)
 		return -EFAULT;
 
-	ret = ipts_cmd_recv(ipts, IPTS_CMD_QUIESCE_IO, &rsp);
+	ret = ipts_mei_recv(&ipts->mei, IPTS_CMD_QUIESCE_IO, &rsp);
 	if (ret) {
 		dev_err(ipts->dev, "QUIESCE_IO: recv failed: %d\n", ret);
 		return ret;
@@ -232,7 +231,7 @@ int ipts_control_request_data(struct ipts_context *ipts)
 	if (!ipts)
 		return -EFAULT;
 
-	ret = ipts_cmd_send(ipts, IPTS_CMD_READY_FOR_DATA, NULL, 0);
+	ret = ipts_mei_send(&ipts->mei, IPTS_CMD_READY_FOR_DATA, NULL, 0);
 	if (ret)
 		dev_err(ipts->dev, "READY_FOR_DATA: send failed: %d\n", ret);
 
@@ -248,9 +247,9 @@ int ipts_control_wait_data(struct ipts_context *ipts, bool shutdown)
 		return -EFAULT;
 
 	if (!shutdown)
-		ret = ipts_cmd_recv_timeout(ipts, IPTS_CMD_READY_FOR_DATA, &rsp, 0);
+		ret = ipts_mei_recv_timeout(&ipts->mei, IPTS_CMD_READY_FOR_DATA, &rsp, 0);
 	else
-		ret = ipts_cmd_recv(ipts, IPTS_CMD_READY_FOR_DATA, &rsp);
+		ret = ipts_mei_recv(&ipts->mei, IPTS_CMD_READY_FOR_DATA, &rsp);
 
 	if (ret) {
 		if (ret != -EAGAIN)
@@ -287,13 +286,13 @@ int ipts_control_send_feedback(struct ipts_context *ipts, u32 buffer)
 
 	cmd.buffer = buffer;
 
-	ret = ipts_cmd_send(ipts, IPTS_CMD_FEEDBACK, &cmd, sizeof(cmd));
+	ret = ipts_mei_send(&ipts->mei, IPTS_CMD_FEEDBACK, &cmd, sizeof(cmd));
 	if (ret) {
 		dev_err(ipts->dev, "FEEDBACK: send failed: %d\n", ret);
 		return ret;
 	}
 
-	ret = ipts_cmd_recv(ipts, IPTS_CMD_FEEDBACK, &rsp);
+	ret = ipts_mei_recv(&ipts->mei, IPTS_CMD_FEEDBACK, &rsp);
 	if (ret) {
 		dev_err(ipts->dev, "FEEDBACK: recv failed: %d\n", ret);
 		return ret;
