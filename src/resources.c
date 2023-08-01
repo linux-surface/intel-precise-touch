@@ -43,19 +43,20 @@ static void ipts_resources_free_buffer(struct ipts_buffer *buffer)
 	buffer->device = NULL;
 }
 
-int ipts_resources_init(struct ipts_resources *res, struct device *dev, size_t ds, size_t fs)
+int ipts_resources_init(struct ipts_resources *res, struct device *dev,
+			struct ipts_device_info info)
 {
 	int i = 0;
 	int ret = 0;
 
 	for (i = 0; i < IPTS_BUFFERS; i++) {
-		ret = ipts_resources_alloc_buffer(&res->data[i], dev, ds);
+		ret = ipts_resources_alloc_buffer(&res->data[i], dev, info.data_size);
 		if (ret)
 			goto err;
 	}
 
 	for (i = 0; i < IPTS_BUFFERS; i++) {
-		ret = ipts_resources_alloc_buffer(&res->feedback[i], dev, fs);
+		ret = ipts_resources_alloc_buffer(&res->feedback[i], dev, info.feedback_size);
 		if (ret)
 			goto err;
 	}
@@ -68,11 +69,11 @@ int ipts_resources_init(struct ipts_resources *res, struct device *dev, size_t d
 	if (ret)
 		goto err;
 
-	ret = ipts_resources_alloc_buffer(&res->hid2me, dev, fs);
+	ret = ipts_resources_alloc_buffer(&res->hid2me, dev, info.feedback_size);
 	if (ret)
 		goto err;
 
-	ret = ipts_resources_alloc_buffer(&res->descriptor, dev, ds + 8);
+	ret = ipts_resources_alloc_buffer(&res->descriptor, dev, info.data_size + 8);
 	if (ret)
 		goto err;
 

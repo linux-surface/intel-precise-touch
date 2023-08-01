@@ -360,7 +360,7 @@ int ipts_control_start(struct ipts_context *ipts)
 
 	ipts->info = info;
 
-	ret = ipts_resources_init(&ipts->resources, ipts->dev, info.data_size, info.feedback_size);
+	ret = ipts_resources_init(&ipts->resources, ipts->dev, info);
 	if (ret) {
 		dev_err(ipts->dev, "Failed to allocate buffers: %d", ret);
 		return ret;
