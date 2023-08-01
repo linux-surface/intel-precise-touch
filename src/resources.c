@@ -48,13 +48,8 @@ static void ipts_resources_free_buffer(struct ipts_buffer *buffer)
 
 int ipts_resources_init(struct ipts_resources *res, struct device *dev, size_t ds, size_t fs)
 {
-	int ret = 0;
-
-	/*
-	 * Some compilers (AOSP clang) complain about a redefined
-	 * variable when this is declared inside of the for loop.
-	 */
 	int i = 0;
+	int ret = 0;
 
 	if (!res)
 		return -EFAULT;
