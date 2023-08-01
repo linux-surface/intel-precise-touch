@@ -5,6 +5,7 @@
  * Linux driver for Intel Precise Touch & Stylus
  */
 
+#include <linux/delay.h>
 #include <linux/device.h>
 #include <linux/errno.h>
 #include <linux/jiffies.h>
@@ -35,6 +36,7 @@ static void locked_list_del(struct list_head *entry, struct rw_semaphore *lock)
 
 static void ipts_mei_incoming(struct mei_cl_device *cldev)
 {
+	int i = 0;
 	ssize_t ret = 0;
 
 	struct ipts_mei_message *entry = NULL;
@@ -46,9 +48,14 @@ static void ipts_mei_incoming(struct mei_cl_device *cldev)
 
 	INIT_LIST_HEAD(&entry->list);
 
-	do {
+	for (i = 0; i < 100; i++) {
 		ret = mei_cldev_recv(cldev, (u8 *)&entry->rsp, sizeof(entry->rsp));
-	} while (ret == -EINTR);
+
+		if (ret != -EINTR)
+			break;
+
+		msleep(100);
+	}
 
 	if (ret < 0) {
 		dev_err(ipts->dev, "Error while reading response: %ld\n", ret);
@@ -128,11 +135,17 @@ int ipts_mei_recv(struct ipts_mei *mei, enum ipts_command_code code, struct ipts
 
 int ipts_mei_send(struct ipts_mei *mei, void *data, size_t length)
 {
+	int i = 0;
 	int ret = 0;
 
-	do {
+	for (i = 0; i < 100; i++) {
 		ret = mei_cldev_send(mei->cldev, (u8 *)data, length);
-	} while (ret == -EINTR);
+
+		if (ret != -EINTR)
+			break;
+
+		msleep(100);
+	}
 
 	if (ret < 0)
 		return ret;
