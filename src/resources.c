@@ -73,6 +73,8 @@ int ipts_resources_init(struct ipts_resources *resources, struct device *dev,
 	int i = 0;
 	int ret = 0;
 
+	size_t hid2me_size = min_t(size_t, info.feedback_size, IPTS_HID_2_ME_BUFFER_SIZE);
+
 	for (i = 0; i < IPTS_MAX_BUFFERS; i++) {
 		ret = ipts_resources_alloc_dma(&resources->data[i], dev, info.data_size);
 		if (ret)
@@ -93,7 +95,7 @@ int ipts_resources_init(struct ipts_resources *resources, struct device *dev,
 	if (ret)
 		goto err;
 
-	ret = ipts_resources_alloc_dma(&resources->hid2me, dev, info.feedback_size);
+	ret = ipts_resources_alloc_dma(&resources->hid2me, dev, hid2me_size);
 	if (ret)
 		goto err;
 
