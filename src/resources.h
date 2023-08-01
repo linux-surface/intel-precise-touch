@@ -16,20 +16,25 @@
 struct ipts_buffer {
 	u8 *address;
 	size_t size;
+};
+
+struct ipts_dma_buffer {
+	u8 *address;
+	size_t size;
 
 	dma_addr_t dma_address;
-	struct device *device;
+	struct device *dma_device;
 };
 
 struct ipts_resources {
-	struct ipts_buffer data[IPTS_BUFFERS];
-	struct ipts_buffer feedback[IPTS_BUFFERS];
+	struct ipts_dma_buffer data[IPTS_BUFFERS];
+	struct ipts_dma_buffer feedback[IPTS_BUFFERS];
 
-	struct ipts_buffer doorbell;
-	struct ipts_buffer workqueue;
-	struct ipts_buffer hid2me;
+	struct ipts_dma_buffer doorbell;
+	struct ipts_dma_buffer workqueue;
+	struct ipts_dma_buffer hid2me;
 
-	struct ipts_buffer descriptor;
+	struct ipts_dma_buffer descriptor;
 
 	// Buffer for synthesizing HID reports
 	struct ipts_buffer report;
