@@ -103,8 +103,10 @@ enum ipts_feedback_data_type {
  * @size:
  *     How many bytes of the data are following this header.
  *
- * @buffer:
- *     An ID to qualify with the feedback data to track buffer usage.
+ * @total_index:
+ *     The index of this message within all of the messages that were sent so far.
+ *     Building the modulo between this and the amount of buffers in use will yielt the
+ *     index of the buffer that this message was written to.
  *
  * @protocol_ver:
  *     Must match protocol version of the EDS.
@@ -129,7 +131,7 @@ enum ipts_feedback_data_type {
 struct ipts_data_buffer {
 	u32 type;
 	u32 size;
-	u32 buffer;
+	u32 total_index;
 	u32 protocol_ver;
 	u8 vendor_compat_ver;
 	u8 reserved1[15];
@@ -150,8 +152,9 @@ static_assert(sizeof(struct ipts_data_buffer) == 64);
  * @size:
  *     How many bytes of the data are following this header.
  *
- * @buffer:
- *     The ID of the feedback buffer containing this data.
+ * @total_index:
+ *     The index of this message within all of the messages that were sent so far.
+ *     See &struct ipts_data_buffer->total_index.
  *
  * @protocol_ver:
  *     Must match the EDS protocol version of the sensor.
@@ -171,7 +174,7 @@ static_assert(sizeof(struct ipts_data_buffer) == 64);
 struct ipts_feedback_buffer {
 	u32 cmd_type;
 	u32 size;
-	u32 buffer;
+	u32 total_index;
 	u32 protocol_ver;
 	u32 data_type;
 	u32 spi_offset;
