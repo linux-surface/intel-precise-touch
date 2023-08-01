@@ -407,7 +407,7 @@ int ipts_control_start(struct ipts_context *ipts)
 
 	ipts_hid_enable(ipts);
 
-	ret = ipts_hid_init(ipts, info);
+	ret = ipts_hid_init(ipts);
 	if (ret) {
 		dev_err(ipts->dev, "Failed to initialize HID device: %d\n", ret);
 		return ret;

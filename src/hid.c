@@ -193,7 +193,7 @@ int ipts_hid_input_data(struct ipts_context *ipts, size_t buffer_index)
 	}
 }
 
-int ipts_hid_init(struct ipts_context *ipts, struct ipts_device_info info)
+int ipts_hid_init(struct ipts_context *ipts)
 {
 	int ret = 0;
 
@@ -212,12 +212,12 @@ int ipts_hid_init(struct ipts_context *ipts, struct ipts_device_info info)
 	ipts->hid->dev.parent = ipts->dev;
 	ipts->hid->ll_driver = &ipts_hid_driver;
 
-	ipts->hid->vendor = info.vendor;
-	ipts->hid->product = info.product;
+	ipts->hid->vendor = ipts->info.vendor;
+	ipts->hid->product = ipts->info.product;
 	ipts->hid->group = HID_GROUP_GENERIC;
 
-	snprintf(ipts->hid->name, sizeof(ipts->hid->name), "IPTS %04X:%04X", info.vendor,
-		 info.product);
+	snprintf(ipts->hid->name, sizeof(ipts->hid->name), "IPTS %04X:%04X", ipts->info.vendor,
+		 ipts->info.product);
 
 	ret = hid_add_device(ipts->hid);
 	if (ret) {
