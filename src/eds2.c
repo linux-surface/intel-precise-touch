@@ -20,19 +20,8 @@
 
 int ipts_eds2_get_descriptor(struct ipts_context *ipts, u8 **desc_buffer, size_t *desc_size)
 {
-	size_t size = 0;
 	u8 *buffer = NULL;
-
-	if (!ipts)
-		return -EFAULT;
-
-	if (!desc_buffer)
-		return -EFAULT;
-
-	if (!desc_size)
-		return -EFAULT;
-
-	size = sizeof(ipts_singletouch_descriptor) + ipts->descriptor.size;
+	size_t size = sizeof(ipts_singletouch_descriptor) + ipts->descriptor.size;
 
 	buffer = kzalloc(size, GFP_KERNEL);
 	if (!buffer)
@@ -55,12 +44,6 @@ static int ipts_eds2_get_feature(struct ipts_context *ipts, u8 *buffer, size_t s
 
 	struct ipts_buffer feature = ipts->resources.feature;
 	struct ipts_data_header *response = (struct ipts_data_header *)feature.address;
-
-	if (!ipts)
-		return -EFAULT;
-
-	if (!buffer)
-		return -EFAULT;
 
 	mutex_lock(&ipts->feature_lock);
 
@@ -100,12 +83,6 @@ static int ipts_eds2_set_feature(struct ipts_context *ipts, u8 *buffer, size_t s
 {
 	int ret = 0;
 
-	if (!ipts)
-		return -EFAULT;
-
-	if (!buffer)
-		return -EFAULT;
-
 	buffer[0] = report_id;
 
 	ret = ipts_control_hid2me_feedback(ipts, IPTS_FEEDBACK_CMD_TYPE_NONE, type, buffer, size);
@@ -119,12 +96,6 @@ int ipts_eds2_raw_request(struct ipts_context *ipts, u8 *buffer, size_t size, u8
 			  enum hid_report_type report_type, enum hid_class_request request_type)
 {
 	enum ipts_feedback_data_type feedback_type = IPTS_FEEDBACK_DATA_TYPE_VENDOR;
-
-	if (!ipts)
-		return -EFAULT;
-
-	if (!buffer)
-		return -EFAULT;
 
 	if (report_type == HID_OUTPUT_REPORT && request_type == HID_REQ_SET_REPORT)
 		feedback_type = IPTS_FEEDBACK_DATA_TYPE_OUTPUT_REPORT;
