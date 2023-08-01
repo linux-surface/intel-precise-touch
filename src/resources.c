@@ -15,9 +15,6 @@
 
 static int ipts_resources_alloc_buffer(struct ipts_buffer *buffer, struct device *dev, size_t size)
 {
-	if (!buffer)
-		return -EFAULT;
-
 	if (buffer->address)
 		return 0;
 
@@ -50,9 +47,6 @@ int ipts_resources_init(struct ipts_resources *res, struct device *dev, size_t d
 {
 	int i = 0;
 	int ret = 0;
-
-	if (!res)
-		return -EFAULT;
 
 	for (i = 0; i < IPTS_BUFFERS; i++) {
 		ret = ipts_resources_alloc_buffer(&res->data[i], dev, ds);
@@ -103,9 +97,6 @@ err:
 int ipts_resources_free(struct ipts_resources *res)
 {
 	int i = 0;
-
-	if (!res)
-		return -EFAULT;
 
 	for (i = 0; i < IPTS_BUFFERS; i++)
 		ipts_resources_free_buffer(&res->data[i]);
