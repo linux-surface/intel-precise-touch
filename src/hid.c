@@ -99,53 +99,98 @@ static struct hid_ll_driver ipts_hid_driver = {
 	.raw_request = ipts_hid_raw_request,
 };
 
-int ipts_hid_input_data(struct ipts_context *ipts, u32 buffer)
+/**
+ * ipts_hid_handle_frame() - Forward an IPTS data frame to userspace.
+ *
+ * IPTS data frames are a custom format for wrapping raw multitouch data, for example capacitive
+ * heatmaps. We cannot process this data in the kernel, so we wrap it in a HID report and forward
+ * it to userspace, where a dedicated tool can do the required processing.
+ *
+ * @ipts:
+ *     The IPTS driver context.
+ *
+ * @buffer:
+ *     The data buffer containing the data frame that is being forwarded.
+ *
+ * Returns: 0 on success, negative errno code on error.
+ */
+static int ipts_hid_handle_frame(struct ipts_context *ipts, struct ipts_data_header *buffer)
 {
 	u8 *temp = NULL;
-
 	struct ipts_hid_header *frame = NULL;
-	struct ipts_data_header *header = NULL;
 
-	if (!READ_ONCE(ipts->hid_active))
-		return -ENODEV;
-
-	header = (struct ipts_data_header *)ipts->resources.data[buffer].address;
+	if (buffer->size + 3 + sizeof(struct ipts_hid_header) > IPTS_HID_REPORT_DATA_SIZE)
+		return -ERANGE;
 
 	temp = ipts->resources.report.address;
 	memset(temp, 0, ipts->resources.report.size);
 
-	if (header->size == 0)
-		return 0;
-
-	if (header->type == IPTS_DATA_TYPE_HID)
-		return hid_input_report(ipts->hid, HID_INPUT_REPORT, header->data, header->size, 1);
-
-	if (header->type == IPTS_DATA_TYPE_GET_FEATURES) {
-		ipts->feature_report.address = header->data;
-		ipts->feature_report.size = header->size;
-
-		complete_all(&ipts->feature_event);
-		return 0;
-	}
-
-	if (header->type != IPTS_DATA_TYPE_FRAME)
-		return 0;
-
-	if (header->size + 3 + sizeof(struct ipts_hid_header) > IPTS_HID_REPORT_DATA_SIZE)
-		return -ERANGE;
-
 	/*
-	 * Synthesize a HID report matching the devices that natively send HID reports
+	 * Synthesize a HID report that matches how the Surface Pro 7 transmits multitouch data.
 	 */
+
 	temp[0] = IPTS_HID_REPORT_DATA;
 
 	frame = (struct ipts_hid_header *)&temp[3];
 	frame->type = IPTS_HID_FRAME_TYPE_RAW;
-	frame->size = header->size + sizeof(*frame);
+	frame->size = buffer->size + sizeof(*frame);
 
-	memcpy(frame->data, header->data, header->size);
+	memcpy(frame->data, buffer->data, buffer->size);
 
 	return hid_input_report(ipts->hid, HID_INPUT_REPORT, temp, IPTS_HID_REPORT_DATA_SIZE, 1);
+}
+
+static int ipts_hid_handle_hid(struct ipts_context *ipts, struct ipts_data_header *buffer)
+{
+	return hid_input_report(ipts->hid, HID_INPUT_REPORT, buffer->data, buffer->size, 1);
+}
+
+/**
+ * ipts_hid_handle_get_features() - Process the answer to a GET_FEATURES request.
+ *
+ * When doing a GET_FEATURES request using HID2ME feedback, the answer will be sent in one of the
+ * normal data buffers. When we get such data, we store a pointer to it, and then signal the
+ * waiting thread that data has arrived.
+ *
+ * @ipts:
+ *     The IPTS driver context.
+ *
+ * @buffer:
+ *     The data buffer containing the result of the GET_FEATURES request.
+ *
+ * Returns: 0 on success, negative errno code on error.
+ */
+static int ipts_hid_handle_get_features(struct ipts_context *ipts, struct ipts_data_header *buffer)
+{
+	ipts->feature_report.address = buffer->data;
+	ipts->feature_report.size = buffer->size;
+
+	complete_all(&ipts->feature_event);
+	return 0;
+}
+
+int ipts_hid_input_data(struct ipts_context *ipts, size_t buffer_index)
+{
+	struct ipts_data_header *buffer = NULL;
+
+	if (!READ_ONCE(ipts->hid_active))
+		return -ENODEV;
+
+	buffer = (struct ipts_data_header *)ipts->resources.data[buffer_index].address;
+
+	if (buffer->size == 0)
+		return 0;
+
+	switch(buffer->type) {
+	case IPTS_DATA_TYPE_FRAME:
+		return ipts_hid_handle_frame(ipts, buffer);
+	case IPTS_DATA_TYPE_HID:
+		return ipts_hid_handle_hid(ipts, buffer);
+	case IPTS_DATA_TYPE_GET_FEATURES:
+		return ipts_hid_handle_get_features(ipts, buffer);
+	default:
+		return 0;
+	}
 }
 
 int ipts_hid_init(struct ipts_context *ipts, struct ipts_device_info info)
