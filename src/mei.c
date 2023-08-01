@@ -111,7 +111,17 @@ static int ipts_mei_search(struct ipts_mei *mei, enum ipts_command_code code,
 		dev_dbg(&mei->cldev->dev, "Driver read message with code 0x%X and status 0x%X\n",
 			response->cmd, response->status);
 
+		/*
+		 * Ignore all errors that the spec allows us to ignore.
+		 */
+
 		if (response->status == IPTS_STATUS_COMPAT_CHECK_FAIL)
+			response->status = IPTS_STATUS_SUCCESS;
+
+		if (response->status == IPTS_STATUS_INVALID_DEVICE_CAPS)
+			response->status = IPTS_STATUS_SUCCESS;
+
+		if (response->status == IPTS_STATUS_SENSOR_FAIL_NONFATAL)
 			response->status = IPTS_STATUS_SUCCESS;
 
 		return 0;
