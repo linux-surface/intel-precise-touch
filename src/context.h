@@ -39,6 +39,9 @@
  * @eds_rev:
  *     The maximum EDS version that both, the ME and the touch sensor implement.
  *
+ * @buffers:
+ *     How many data / feedback buffers the driver is using.
+ *
  * @mode:
  *     The current operating mode of the touch sensor.
  *
@@ -71,6 +74,7 @@ struct ipts_context {
 	struct ipts_thread receiver;
 
 	u8 eds_rev;
+	u8 buffers;
 	enum ipts_mode mode;
 	struct ipts_rsp_get_device_info info;
 

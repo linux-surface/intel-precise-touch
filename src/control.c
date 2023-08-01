@@ -70,7 +70,12 @@ static int ipts_control_set_mem_window(struct ipts_context *ipts)
 	struct ipts_cmd_set_mem_window cmd = { 0 };
 	struct ipts_response rsp = { 0 };
 
-	for (i = 0; i < IPTS_MAX_BUFFERS; i++) {
+	if (ipts->mode == IPTS_MODE_EVENT)
+		ipts->buffers = 1;
+	else
+		ipts->buffers = IPTS_MAX_BUFFERS;
+
+	for (i = 0; i < ipts->buffers; i++) {
 		dma_addr_t data_addr = ipts->resources.data[i].dma_address;
 		dma_addr_t feedback_addr = ipts->resources.feedback[i].dma_address;
 
@@ -81,19 +86,21 @@ static int ipts_control_set_mem_window(struct ipts_context *ipts)
 		cmd.feedback_addr_upper[i] = upper_32_bits(feedback_addr);
 	}
 
-	cmd.tail_offset_addr_lower = lower_32_bits(ipts->resources.workqueue.dma_address);
-	cmd.tail_offset_addr_lower = upper_32_bits(ipts->resources.workqueue.dma_address);
+	if (ipts->mode == IPTS_MODE_POLL) {
+		cmd.tail_offset_addr_lower = lower_32_bits(ipts->resources.workqueue.dma_address);
+		cmd.tail_offset_addr_lower = upper_32_bits(ipts->resources.workqueue.dma_address);
 
-	cmd.doorbell_addr_lower = lower_32_bits(ipts->resources.doorbell.dma_address);
-	cmd.doorbell_addr_upper = upper_32_bits(ipts->resources.doorbell.dma_address);
+		cmd.doorbell_addr_lower = lower_32_bits(ipts->resources.doorbell.dma_address);
+		cmd.doorbell_addr_upper = upper_32_bits(ipts->resources.doorbell.dma_address);
+
+		cmd.wq_size = IPTS_DEFAULT_WQ_SIZE;
+		cmd.wq_item_size = IPTS_DEFAULT_WQ_ITEM_SIZE;
+	}
 
 	cmd.hid2me_addr_lower = lower_32_bits(ipts->resources.hid2me.dma_address);
 	cmd.hid2me_addr_upper = upper_32_bits(ipts->resources.hid2me.dma_address);
 
 	cmd.hid2me_size = ipts->resources.hid2me.size;
-
-	cmd.wq_size = IPTS_DEFAULT_WQ_SIZE;
-	cmd.wq_item_size = IPTS_DEFAULT_WQ_ITEM_SIZE;
 
 	ret = ipts_mei_send(&ipts->mei, IPTS_CMD_SET_MEM_WINDOW, &cmd, sizeof(cmd));
 	if (ret)
@@ -190,19 +197,21 @@ int ipts_control_refill_buffer(struct ipts_context *ipts, struct ipts_data_buffe
 	struct ipts_cmd_feedback cmd = { 0 };
 	struct ipts_response rsp = { 0 };
 
-	cmd.buffer_index = buffer->total_index % IPTS_MAX_BUFFERS;
+	cmd.buffer_index = buffer->total_index % ipts->buffers;
 	cmd.transaction = buffer->transaction;
 
 	/*
+	 * size_t index = buffer->total_index % ipts->buffers;
+	 *
 	 * struct ipts_feedback_buffer *feedback =
-	 *	(struct ipts_feedback_buffer *)ipts->resources.feedback[buffer->buffer].address;
+	 *	(struct ipts_feedback_buffer *)ipts->resources.feedback[index].address;
 	 *
 	 * memset(feedback, 0, sizeof(*feedback));
 	 *
 	 * feedback->total_index = buffer->total_index;
 	 * feedback->cmd_type = IPTS_FEEDBACK_CMD_TYPE_NONE;
 	 * feedback->data_type = IPTS_FEEDBACK_DATA_TYPE_VENDOR;
-
+	 *
 	 * feedback->size = 0;
 	 * feedback->protocol_ver = 0;
 	 */

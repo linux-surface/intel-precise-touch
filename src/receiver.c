@@ -119,7 +119,7 @@ static int ipts_receiver_poll(struct ipts_thread *thread)
 
 		while (current_buffer != next_buffer) {
 			struct ipts_data_buffer *buffer = NULL;
-			size_t index = current_buffer % IPTS_MAX_BUFFERS;
+			size_t index = current_buffer % ipts->buffers;
 
 			buffer = (struct ipts_data_buffer *)ipts->resources.data[index].address;
 
