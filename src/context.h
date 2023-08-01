@@ -36,6 +36,9 @@
  * @receiver:
  *     The receiver thread that polls the ME for new data or responds to events sent by it.
  *
+ * @eds_rev:
+ *     The maximum EDS version that both, the ME and the touch sensor implement.
+ *
  * @mode:
  *     The current operating mode of the touch sensor.
  *
@@ -67,6 +70,7 @@ struct ipts_context {
 	struct ipts_resources resources;
 	struct ipts_thread receiver;
 
+	u8 eds_rev;
 	enum ipts_mode mode;
 	struct ipts_rsp_get_device_info info;
 

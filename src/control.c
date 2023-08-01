@@ -34,8 +34,10 @@ static int ipts_control_get_device_info(struct ipts_context *ipts)
 	if (ret)
 		return ret;
 
-	if (rsp.status == IPTS_STATUS_SUCCESS)
+	if (rsp.status == IPTS_STATUS_SUCCESS) {
 		ipts->info = rsp.payload.get_device_info;
+		ipts->eds_rev = min(ipts->info.sensor_eds_intf_rev, ipts->info.me_eds_intf_rev);
+	}
 
 	return rsp.status;
 }
@@ -116,7 +118,7 @@ static int ipts_control_get_descriptor(struct ipts_context *ipts)
 	 *
 	 * EDS v1 devices without native HID support will use a fallback HID descriptor.
 	 */
-	if (ipts->info.sensor_eds_intf_rev == 1)
+	if (ipts->eds_rev == 1)
 		return 0;
 
 	memset(ipts->resources.descriptor.address, 0, ipts->resources.descriptor.size);
@@ -267,7 +269,7 @@ int ipts_control_start(struct ipts_context *ipts)
 	 * EDS v1 devices have to be initialized in event mode to get fallback singletouch events
 	 * until userspace can explicitly turn on raw data once it is ready for processing.
 	 */
-	if (ipts->info.sensor_eds_intf_rev > 1)
+	if (ipts->eds_rev > 1)
 		ipts->mode = IPTS_MODE_POLL;
 
 	ret = ipts_resources_init(&ipts->resources, ipts->dev, ipts->info);

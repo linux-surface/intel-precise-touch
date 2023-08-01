@@ -42,7 +42,7 @@ static int ipts_hid_parse(struct hid_device *hid)
 	if (!READ_ONCE(ipts->hid_active))
 		return -ENODEV;
 
-	if (ipts->info.sensor_eds_intf_rev == 1)
+	if (ipts->eds_rev == 1)
 		ret = ipts_eds1_get_descriptor(ipts, &buffer, &size);
 	else
 		ret = ipts_eds2_get_descriptor(ipts, &buffer, &size);
@@ -71,7 +71,7 @@ static int ipts_hid_raw_request(struct hid_device *hid, unsigned char report_id,
 	if (!READ_ONCE(ipts->hid_active))
 		return -ENODEV;
 
-	if (ipts->info.sensor_eds_intf_rev == 1) {
+	if (ipts->eds_rev == 1) {
 		return ipts_eds1_raw_request(ipts, buffer, size, report_id, report_type,
 					     request_type);
 	} else {
