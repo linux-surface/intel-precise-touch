@@ -14,29 +14,30 @@
 
 #include "context.h"
 #include "control.h"
-#include "desc.h"
 #include "resources.h"
-#include "spec-data.h"
+#include "spec-dma.h"
+#include "spec-hid.h"
 
 int ipts_eds2_get_descriptor(struct ipts_context *ipts, u8 **desc_buffer, size_t *desc_size)
 {
 	u8 *buffer = NULL;
 	size_t size = 0;
 
-	struct ipts_data_header *header =
-		(struct ipts_data_header *)ipts->resources.descriptor.address;
+	struct ipts_data_buffer *descbuffer =
+		(struct ipts_data_buffer *)ipts->resources.descriptor.address;
 
-	if (header->type != IPTS_DATA_TYPE_DESCRIPTOR)
+	if (descbuffer->type != IPTS_DATA_TYPE_HID_DESCRIPTOR)
 		return -ENODATA;
 
-	size = sizeof(ipts_singletouch_descriptor) + header->size - 8;
+	size = sizeof(ipts_singletouch_descriptor) + descbuffer->size - 8;
 
 	buffer = kzalloc(size, GFP_KERNEL);
 	if (!buffer)
 		return -ENOMEM;
 
 	memcpy(buffer, ipts_singletouch_descriptor, sizeof(ipts_singletouch_descriptor));
-	memcpy(&buffer[sizeof(ipts_singletouch_descriptor)], &header->data[8], header->size - 8);
+	memcpy(&buffer[sizeof(ipts_singletouch_descriptor)], &descbuffer->data[8],
+	       descbuffer->size - 8);
 
 	*desc_size = size;
 	*desc_buffer = buffer;
@@ -50,7 +51,7 @@ static int ipts_eds2_get_feature(struct ipts_context *ipts, u8 *buffer, size_t s
 	int ret = 0;
 
 	struct ipts_buffer feature = ipts->resources.feature;
-	struct ipts_data_header *response = (struct ipts_data_header *)feature.address;
+	struct ipts_data_buffer *response = (struct ipts_data_buffer *)feature.address;
 
 	mutex_lock(&ipts->feature_lock);
 

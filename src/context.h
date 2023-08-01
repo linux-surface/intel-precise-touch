@@ -18,7 +18,7 @@
 
 #include "mei.h"
 #include "resources.h"
-#include "spec-device.h"
+#include "spec-mei.h"
 #include "thread.h"
 
 /**
@@ -68,7 +68,7 @@ struct ipts_context {
 	struct ipts_thread receiver;
 
 	enum ipts_mode mode;
-	struct ipts_device_info info;
+	struct ipts_rsp_get_device_info info;
 
 	struct mutex feature_lock;
 	struct completion feature_event;

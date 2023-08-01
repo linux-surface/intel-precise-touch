@@ -20,12 +20,7 @@
 #include "context.h"
 #include "control.h"
 #include "mei.h"
-#include "spec-device.h"
-
-/*
- * The MEI client ID for IPTS functionality.
- */
-#define IPTS_ID UUID_LE(0x3e8d0870, 0x271a, 0x4208, 0x8e, 0xb5, 0x9a, 0xcb, 0x94, 0x02, 0xae, 0x04)
+#include "spec-mei.h"
 
 static int ipts_set_dma_mask(struct mei_cl_device *cldev)
 {
@@ -94,7 +89,7 @@ static void ipts_remove(struct mei_cl_device *cldev)
 }
 
 static struct mei_cl_device_id ipts_device_id_table[] = {
-	{ .uuid = IPTS_ID, .version = MEI_CL_VERSION_ANY },
+	{ .uuid = MEI_UUID_IPTS, .version = MEI_CL_VERSION_ANY },
 	{},
 };
 MODULE_DEVICE_TABLE(mei, ipts_device_id_table);

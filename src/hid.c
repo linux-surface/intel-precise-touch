@@ -14,12 +14,11 @@
 #include <linux/types.h>
 
 #include "context.h"
-#include "desc.h"
 #include "eds1.h"
 #include "eds2.h"
 #include "hid.h"
 #include "resources.h"
-#include "spec-data.h"
+#include "spec-dma.h"
 #include "spec-hid.h"
 
 static int ipts_hid_start(struct hid_device *hid)
@@ -43,7 +42,7 @@ static int ipts_hid_parse(struct hid_device *hid)
 	if (!READ_ONCE(ipts->hid_active))
 		return -ENODEV;
 
-	if (ipts->info.intf_eds == 1)
+	if (ipts->info.sensor_eds_intf_rev == 1)
 		ret = ipts_eds1_get_descriptor(ipts, &buffer, &size);
 	else
 		ret = ipts_eds2_get_descriptor(ipts, &buffer, &size);
@@ -72,7 +71,7 @@ static int ipts_hid_raw_request(struct hid_device *hid, unsigned char report_id,
 	if (!READ_ONCE(ipts->hid_active))
 		return -ENODEV;
 
-	if (ipts->info.intf_eds == 1) {
+	if (ipts->info.sensor_eds_intf_rev == 1) {
 		return ipts_eds1_raw_request(ipts, buffer, size, report_id, report_type,
 					     request_type);
 	} else {
@@ -105,33 +104,31 @@ static struct hid_ll_driver ipts_hid_driver = {
  *
  * Returns: 0 on success, negative errno code on error.
  */
-static int ipts_hid_handle_frame(struct ipts_context *ipts, struct ipts_data_header *buffer)
+static int ipts_hid_handle_frame(struct ipts_context *ipts, struct ipts_data_buffer *buffer)
 {
-	u8 *temp = NULL;
-	struct ipts_hid_header *frame = NULL;
+	struct ipts_hid_report_data *report = NULL;
 
-	if (buffer->size + 3 + sizeof(struct ipts_hid_header) > IPTS_HID_REPORT_DATA_SIZE)
+	if (buffer->size + sizeof(*report) > IPTS_HID_REPORT_DATA_SIZE)
 		return -ERANGE;
 
-	temp = ipts->resources.report.address;
-	memset(temp, 0, ipts->resources.report.size);
+	report = (struct ipts_hid_report_data *)ipts->resources.report.address;
+	memset(report, 0, ipts->resources.report.size);
 
 	/*
 	 * Synthesize a HID report that matches how the Surface Pro 7 transmits multitouch data.
 	 */
 
-	temp[0] = IPTS_HID_REPORT_DATA;
+	report->report_id = IPTS_HID_REPORT_DATA;
+	report->gesture_char_quality.type = IPTS_HID_FRAME_TYPE_RAW;
+	report->gesture_char_quality.size = buffer->size + sizeof(report->gesture_char_quality);
 
-	frame = (struct ipts_hid_header *)&temp[3];
-	frame->type = IPTS_HID_FRAME_TYPE_RAW;
-	frame->size = buffer->size + sizeof(*frame);
+	memcpy(report->gesture_char_quality.data, buffer->data, buffer->size);
 
-	memcpy(frame->data, buffer->data, buffer->size);
-
-	return hid_input_report(ipts->hid, HID_INPUT_REPORT, temp, IPTS_HID_REPORT_DATA_SIZE, 1);
+	return hid_input_report(ipts->hid, HID_INPUT_REPORT, (u8 *)report,
+				IPTS_HID_REPORT_DATA_SIZE, 1);
 }
 
-static int ipts_hid_handle_hid(struct ipts_context *ipts, struct ipts_data_header *buffer)
+static int ipts_hid_handle_hid(struct ipts_context *ipts, struct ipts_data_buffer *buffer)
 {
 	return hid_input_report(ipts->hid, HID_INPUT_REPORT, buffer->data, buffer->size, 1);
 }
@@ -151,7 +148,7 @@ static int ipts_hid_handle_hid(struct ipts_context *ipts, struct ipts_data_heade
  *
  * Returns: 0 on success, negative errno code on error.
  */
-static int ipts_hid_handle_get_features(struct ipts_context *ipts, struct ipts_data_header *buffer)
+static int ipts_hid_handle_get_features(struct ipts_context *ipts, struct ipts_data_buffer *buffer)
 {
 	memcpy(ipts->resources.feature.address, buffer, ipts->resources.feature.size);
 	complete_all(&ipts->feature_event);
@@ -161,12 +158,12 @@ static int ipts_hid_handle_get_features(struct ipts_context *ipts, struct ipts_d
 
 int ipts_hid_input_data(struct ipts_context *ipts, size_t buffer_index)
 {
-	struct ipts_data_header *buffer = NULL;
+	struct ipts_data_buffer *buffer = NULL;
 
 	if (!READ_ONCE(ipts->hid_active))
 		return -ENODEV;
 
-	buffer = (struct ipts_data_header *)ipts->resources.data[buffer_index].address;
+	buffer = (struct ipts_data_buffer *)ipts->resources.data[buffer_index].address;
 
 	if (buffer->size == 0)
 		return 0;

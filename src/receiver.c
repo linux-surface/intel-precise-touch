@@ -16,7 +16,7 @@
 #include "control.h"
 #include "hid.h"
 #include "resources.h"
-#include "spec-device.h"
+#include "spec-mei.h"
 #include "thread.h"
 
 static void ipts_receiver_next_doorbell(struct ipts_context *ipts)
@@ -58,7 +58,7 @@ static int ipts_receiver_event_loop(struct ipts_thread *thread)
 	while (!ipts_thread_should_stop(thread)) {
 		int i = 0;
 
-		for (i = 0; i < IPTS_BUFFERS; i++) {
+		for (i = 0; i < IPTS_MAX_BUFFERS; i++) {
 			ret = ipts_control_wait_data(ipts, false);
 			if (ret == -EAGAIN)
 				break;
@@ -68,7 +68,7 @@ static int ipts_receiver_event_loop(struct ipts_thread *thread)
 				continue;
 			}
 
-			buffer = ipts_receiver_current_doorbell(ipts) % IPTS_BUFFERS;
+			buffer = ipts_receiver_current_doorbell(ipts) % IPTS_MAX_BUFFERS;
 			ipts_receiver_next_doorbell(ipts);
 
 			ret = ipts_hid_input_data(ipts, buffer);
@@ -148,7 +148,7 @@ static int ipts_receiver_poll_loop(struct ipts_thread *thread)
 		 * buffer that IPTS is going to fill.
 		 */
 		while (lastdb != doorbell) {
-			buffer = lastdb % IPTS_BUFFERS;
+			buffer = lastdb % IPTS_MAX_BUFFERS;
 
 			ret = ipts_hid_input_data(ipts, buffer);
 			if (ret)

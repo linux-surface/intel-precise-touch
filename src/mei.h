@@ -14,7 +14,7 @@
 #include <linux/types.h>
 #include <linux/wait.h>
 
-#include "spec-device.h"
+#include "spec-mei.h"
 
 /**
  * struct ipts_mei - Wrapper for interacting with the MEI bus.

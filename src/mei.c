@@ -18,7 +18,7 @@
 
 #include "context.h"
 #include "mei.h"
-#include "spec-device.h"
+#include "spec-mei.h"
 
 static void locked_list_add(struct list_head *new, struct list_head *head,
 			    struct rw_semaphore *lock)
@@ -92,7 +92,7 @@ static int ipts_mei_search(struct ipts_mei *mei, enum ipts_command_code code,
 	 * matching the requested command code.
 	 */
 	list_for_each_entry(entry, &mei->messages, list) {
-		if (entry->response.cmd == (code | IPTS_RSP_BIT))
+		if (entry->response.cmd == IPTS_ME_2_HOST_MSG(code))
 			break;
 	}
 
@@ -171,7 +171,7 @@ int ipts_mei_send(struct ipts_mei *mei, enum ipts_command_code code, void *paylo
 	cmd.cmd = code;
 
 	if (payload && size > 0)
-		memcpy(cmd.payload, payload, size);
+		memcpy(cmd.payload.raw, payload, size);
 
 	dev_dbg(&mei->cldev->dev, "Driver sent message with code 0x%X and %ld bytes payload\n",
 		code, size);

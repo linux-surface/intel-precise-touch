@@ -18,8 +18,8 @@
 #include "mei.h"
 #include "receiver.h"
 #include "resources.h"
-#include "spec-data.h"
-#include "spec-device.h"
+#include "spec-dma.h"
+#include "spec-mei.h"
 
 static int ipts_control_get_device_info(struct ipts_context *ipts)
 {
@@ -35,7 +35,7 @@ static int ipts_control_get_device_info(struct ipts_context *ipts)
 		return ret;
 
 	if (rsp.status == IPTS_STATUS_SUCCESS)
-		memcpy(&ipts->info, rsp.payload, sizeof(ipts->info));
+		ipts->info = rsp.payload.get_device_info;
 
 	return rsp.status;
 }
@@ -44,7 +44,7 @@ static int ipts_control_set_mode(struct ipts_context *ipts)
 {
 	int ret = 0;
 
-	struct ipts_set_mode cmd = { 0 };
+	struct ipts_cmd_set_mode cmd = { 0 };
 	struct ipts_response rsp = { 0 };
 
 	cmd.mode = ipts->mode;
@@ -65,10 +65,10 @@ static int ipts_control_set_mem_window(struct ipts_context *ipts)
 	int i = 0;
 	int ret = 0;
 
-	struct ipts_mem_window cmd = { 0 };
+	struct ipts_cmd_set_mem_window cmd = { 0 };
 	struct ipts_response rsp = { 0 };
 
-	for (i = 0; i < IPTS_BUFFERS; i++) {
+	for (i = 0; i < IPTS_MAX_BUFFERS; i++) {
 		dma_addr_t data_addr = ipts->resources.data[i].dma_address;
 		dma_addr_t feedback_addr = ipts->resources.feedback[i].dma_address;
 
@@ -79,8 +79,8 @@ static int ipts_control_set_mem_window(struct ipts_context *ipts)
 		cmd.feedback_addr_upper[i] = upper_32_bits(feedback_addr);
 	}
 
-	cmd.workqueue_addr_lower = lower_32_bits(ipts->resources.workqueue.dma_address);
-	cmd.workqueue_addr_upper = upper_32_bits(ipts->resources.workqueue.dma_address);
+	cmd.tail_offset_addr_lower = lower_32_bits(ipts->resources.workqueue.dma_address);
+	cmd.tail_offset_addr_lower = upper_32_bits(ipts->resources.workqueue.dma_address);
 
 	cmd.doorbell_addr_lower = lower_32_bits(ipts->resources.doorbell.dma_address);
 	cmd.doorbell_addr_upper = upper_32_bits(ipts->resources.doorbell.dma_address);
@@ -90,8 +90,8 @@ static int ipts_control_set_mem_window(struct ipts_context *ipts)
 
 	cmd.hid2me_size = ipts->resources.hid2me.size;
 
-	cmd.workqueue_size = IPTS_WORKQUEUE_SIZE;
-	cmd.workqueue_item_size = IPTS_WORKQUEUE_ITEM_SIZE;
+	cmd.wq_size = IPTS_DEFAULT_WQ_SIZE;
+	cmd.wq_item_size = IPTS_DEFAULT_WQ_ITEM_SIZE;
 
 	ret = ipts_mei_send(&ipts->mei, IPTS_CMD_SET_MEM_WINDOW, &cmd, sizeof(cmd));
 	if (ret)
@@ -108,7 +108,7 @@ static int ipts_control_get_descriptor(struct ipts_context *ipts)
 {
 	int ret = 0;
 
-	struct ipts_get_descriptor cmd = { 0 };
+	struct ipts_cmd_get_hid_desc cmd = { 0 };
 	struct ipts_response rsp = { 0 };
 
 	/*
@@ -116,7 +116,7 @@ static int ipts_control_get_descriptor(struct ipts_context *ipts)
 	 *
 	 * EDS v1 devices without native HID support will use a fallback HID descriptor.
 	 */
-	if (ipts->info.intf_eds == 1)
+	if (ipts->info.sensor_eds_intf_rev == 1)
 		return 0;
 
 	memset(ipts->resources.descriptor.address, 0, ipts->resources.descriptor.size);
@@ -125,11 +125,11 @@ static int ipts_control_get_descriptor(struct ipts_context *ipts)
 	cmd.addr_upper = upper_32_bits(ipts->resources.descriptor.dma_address);
 	cmd.magic = 8;
 
-	ret = ipts_mei_send(&ipts->mei, IPTS_CMD_GET_DESCRIPTOR, &cmd, sizeof(cmd));
+	ret = ipts_mei_send(&ipts->mei, IPTS_CMD_GET_HID_DESC, &cmd, sizeof(cmd));
 	if (ret)
 		return ret;
 
-	ret = ipts_mei_recv(&ipts->mei, IPTS_CMD_GET_DESCRIPTOR, &rsp);
+	ret = ipts_mei_recv(&ipts->mei, IPTS_CMD_GET_HID_DESC, &rsp);
 	if (ret)
 		return ret;
 
@@ -138,7 +138,7 @@ static int ipts_control_get_descriptor(struct ipts_context *ipts)
 
 int ipts_control_request_flush(struct ipts_context *ipts)
 {
-	struct ipts_quiesce_io cmd = { 0 };
+	struct ipts_cmd_quiesce_io cmd = { 0 };
 
 	return ipts_mei_send(&ipts->mei, IPTS_CMD_QUIESCE_IO, &cmd, sizeof(cmd));
 }
@@ -182,13 +182,13 @@ int ipts_control_wait_data(struct ipts_context *ipts, bool shutdown)
 	return rsp.status;
 }
 
-int ipts_control_send_feedback(struct ipts_context *ipts, u32 buffer)
+int ipts_control_send_feedback(struct ipts_context *ipts, u32 buffer_index)
 {
 	int ret = 0;
-	struct ipts_feedback cmd = { 0 };
+	struct ipts_cmd_feedback cmd = { 0 };
 	struct ipts_response rsp = { 0 };
 
-	cmd.buffer = buffer;
+	cmd.buffer_index = buffer_index;
 
 	ret = ipts_mei_send(&ipts->mei, IPTS_CMD_FEEDBACK, &cmd, sizeof(cmd));
 	if (ret)
@@ -201,7 +201,7 @@ int ipts_control_send_feedback(struct ipts_context *ipts, u32 buffer)
 	return rsp.status;
 }
 
-int ipts_control_refill_buffer(struct ipts_context *ipts, u32 buffer)
+int ipts_control_refill_buffer(struct ipts_context *ipts, u32 buffer_index)
 {
 	int ret = 0;
 
@@ -215,7 +215,7 @@ int ipts_control_refill_buffer(struct ipts_context *ipts, u32 buffer)
 	 * the buffer on some devices.
 	 */
 
-	ret = ipts_control_send_feedback(ipts, buffer);
+	ret = ipts_control_send_feedback(ipts, buffer_index);
 
 	if (ret == IPTS_STATUS_INVALID_PARAMS)
 		return 0;
@@ -223,26 +223,26 @@ int ipts_control_refill_buffer(struct ipts_context *ipts, u32 buffer)
 	return ret;
 }
 
-int ipts_control_hid2me_feedback(struct ipts_context *ipts, enum ipts_feedback_cmd_type cmd,
-				 enum ipts_feedback_data_type type, void *data, size_t size)
+int ipts_control_hid2me_feedback(struct ipts_context *ipts, enum ipts_feedback_cmd_type cmd_type,
+				 enum ipts_feedback_data_type data_type, void *data, size_t size)
 {
-	struct ipts_feedback_header *header = NULL;
+	struct ipts_feedback_buffer *buffer = NULL;
 
 	memset(ipts->resources.hid2me.address, 0, ipts->resources.hid2me.size);
-	header = (struct ipts_feedback_header *)ipts->resources.hid2me.address;
+	buffer = (struct ipts_feedback_buffer *)ipts->resources.hid2me.address;
 
-	header->cmd_type = cmd;
-	header->data_type = type;
-	header->size = size;
-	header->buffer = IPTS_HID2ME_BUFFER;
+	buffer->cmd_type = cmd_type;
+	buffer->data_type = data_type;
+	buffer->size = size;
+	buffer->buffer = IPTS_HID_2_ME_BUFFER_INDEX;
 
-	if (size + sizeof(*header) > ipts->resources.hid2me.size)
+	if (size + sizeof(*buffer) > ipts->resources.hid2me.size)
 		return -EINVAL;
 
 	if (data && size > 0)
-		memcpy(header->payload, data, size);
+		memcpy(buffer->data, data, size);
 
-	return ipts_control_send_feedback(ipts, IPTS_HID2ME_BUFFER);
+	return ipts_control_send_feedback(ipts, IPTS_HID_2_ME_BUFFER_INDEX);
 }
 
 int ipts_control_start(struct ipts_context *ipts)
@@ -257,7 +257,7 @@ int ipts_control_start(struct ipts_context *ipts)
 		return ret;
 	}
 
-	dev_info(ipts->dev, "IPTS EDS Version: %d\n", ipts->info.intf_eds);
+	dev_info(ipts->dev, "IPTS EDS Version: %d\n", ipts->info.sensor_eds_intf_rev);
 
 	/*
 	 * On EDS v2 devices both modes return the same data, so we always initialize the ME
@@ -267,7 +267,7 @@ int ipts_control_start(struct ipts_context *ipts)
 	 * EDS v1 devices have to be initialized in event mode to get fallback singletouch events
 	 * until userspace can explicitly turn on raw data once it is ready for processing.
 	 */
-	if (ipts->info.intf_eds > 1)
+	if (ipts->info.sensor_eds_intf_rev > 1)
 		ipts->mode = IPTS_MODE_POLL;
 
 	ret = ipts_resources_init(&ipts->resources, ipts->dev, ipts->info);

@@ -11,7 +11,7 @@
 #include <linux/device.h>
 #include <linux/types.h>
 
-#include "spec-device.h"
+#include "spec-mei.h"
 
 struct ipts_buffer {
 	u8 *address;
@@ -69,8 +69,8 @@ struct ipts_dma_buffer {
  *     &struct ipts_device_info->data_size
  */
 struct ipts_resources {
-	struct ipts_dma_buffer data[IPTS_BUFFERS];
-	struct ipts_dma_buffer feedback[IPTS_BUFFERS];
+	struct ipts_dma_buffer data[IPTS_MAX_BUFFERS];
+	struct ipts_dma_buffer feedback[IPTS_MAX_BUFFERS];
 
 	struct ipts_dma_buffer doorbell;
 	struct ipts_dma_buffer workqueue;
@@ -82,7 +82,7 @@ struct ipts_resources {
 };
 
 int ipts_resources_init(struct ipts_resources *resources, struct device *dev,
-			struct ipts_device_info info);
+			struct ipts_rsp_get_device_info info);
 int ipts_resources_free(struct ipts_resources *resources);
 
 #endif /* IPTS_RESOURCES_H */

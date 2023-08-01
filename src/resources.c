@@ -9,9 +9,9 @@
 #include <linux/slab.h>
 #include <linux/types.h>
 
-#include "desc.h"
 #include "resources.h"
-#include "spec-device.h"
+#include "spec-hid.h"
+#include "spec-mei.h"
 
 static int ipts_resources_alloc_dma(struct ipts_dma_buffer *buffer, struct device *dev, size_t size)
 {
@@ -68,18 +68,18 @@ static void ipts_resources_free_buffer(struct ipts_buffer *buffer)
 }
 
 int ipts_resources_init(struct ipts_resources *resources, struct device *dev,
-			struct ipts_device_info info)
+			struct ipts_rsp_get_device_info info)
 {
 	int i = 0;
 	int ret = 0;
 
-	for (i = 0; i < IPTS_BUFFERS; i++) {
+	for (i = 0; i < IPTS_MAX_BUFFERS; i++) {
 		ret = ipts_resources_alloc_dma(&resources->data[i], dev, info.data_size);
 		if (ret)
 			goto err;
 	}
 
-	for (i = 0; i < IPTS_BUFFERS; i++) {
+	for (i = 0; i < IPTS_MAX_BUFFERS; i++) {
 		ret = ipts_resources_alloc_dma(&resources->feedback[i], dev, info.feedback_size);
 		if (ret)
 			goto err;
@@ -121,10 +121,10 @@ int ipts_resources_free(struct ipts_resources *resources)
 {
 	int i = 0;
 
-	for (i = 0; i < IPTS_BUFFERS; i++)
+	for (i = 0; i < IPTS_MAX_BUFFERS; i++)
 		ipts_resources_free_dma(&resources->data[i]);
 
-	for (i = 0; i < IPTS_BUFFERS; i++)
+	for (i = 0; i < IPTS_MAX_BUFFERS; i++)
 		ipts_resources_free_dma(&resources->feedback[i]);
 
 	ipts_resources_free_dma(&resources->doorbell);
