@@ -26,12 +26,6 @@ static int ipts_control_get_device_info(struct ipts_context *ipts, struct ipts_d
 	int ret = 0;
 	struct ipts_response rsp = { 0 };
 
-	if (!ipts)
-		return -EFAULT;
-
-	if (!info)
-		return -EFAULT;
-
 	ret = ipts_mei_send(&ipts->mei, IPTS_CMD_GET_DEVICE_INFO, NULL, 0);
 	if (ret) {
 		dev_err(ipts->dev, "GET_DEVICE_INFO: send failed: %d\n", ret);
@@ -58,9 +52,6 @@ static int ipts_control_set_mode(struct ipts_context *ipts, enum ipts_mode mode)
 	int ret = 0;
 	struct ipts_set_mode cmd = { 0 };
 	struct ipts_response rsp = { 0 };
-
-	if (!ipts)
-		return -EFAULT;
 
 	cmd.mode = mode;
 
@@ -90,12 +81,6 @@ static int ipts_control_set_mem_window(struct ipts_context *ipts, struct ipts_re
 	int ret = 0;
 	struct ipts_mem_window cmd = { 0 };
 	struct ipts_response rsp = { 0 };
-
-	if (!ipts)
-		return -EFAULT;
-
-	if (!res)
-		return -EFAULT;
 
 	for (i = 0; i < IPTS_BUFFERS; i++) {
 		cmd.data_addr_lower[i] = lower_32_bits(res->data[i].dma_address);
@@ -143,12 +128,6 @@ static int ipts_control_get_descriptor(struct ipts_context *ipts)
 	struct ipts_get_descriptor cmd = { 0 };
 	struct ipts_response rsp = { 0 };
 
-	if (!ipts)
-		return -EFAULT;
-
-	if (!ipts->resources.descriptor.address)
-		return -EFAULT;
-
 	memset(ipts->resources.descriptor.address, 0, ipts->resources.descriptor.size);
 
 	cmd.addr_lower = lower_32_bits(ipts->resources.descriptor.dma_address);
@@ -189,9 +168,6 @@ int ipts_control_request_flush(struct ipts_context *ipts)
 	int ret = 0;
 	struct ipts_quiesce_io cmd = { 0 };
 
-	if (!ipts)
-		return -EFAULT;
-
 	ret = ipts_mei_send(&ipts->mei, IPTS_CMD_QUIESCE_IO, &cmd, sizeof(cmd));
 	if (ret)
 		dev_err(ipts->dev, "QUIESCE_IO: send failed: %d\n", ret);
@@ -203,9 +179,6 @@ int ipts_control_wait_flush(struct ipts_context *ipts)
 {
 	int ret = 0;
 	struct ipts_response rsp = { 0 };
-
-	if (!ipts)
-		return -EFAULT;
 
 	ret = ipts_mei_recv(&ipts->mei, IPTS_CMD_QUIESCE_IO, &rsp);
 	if (ret) {
@@ -225,9 +198,6 @@ int ipts_control_request_data(struct ipts_context *ipts)
 {
 	int ret = 0;
 
-	if (!ipts)
-		return -EFAULT;
-
 	ret = ipts_mei_send(&ipts->mei, IPTS_CMD_READY_FOR_DATA, NULL, 0);
 	if (ret)
 		dev_err(ipts->dev, "READY_FOR_DATA: send failed: %d\n", ret);
@@ -239,9 +209,6 @@ int ipts_control_wait_data(struct ipts_context *ipts, bool shutdown)
 {
 	int ret = 0;
 	struct ipts_response rsp = { 0 };
-
-	if (!ipts)
-		return -EFAULT;
 
 	if (!shutdown)
 		ret = ipts_mei_recv_timeout(&ipts->mei, IPTS_CMD_READY_FOR_DATA, &rsp, 0);
@@ -274,9 +241,6 @@ int ipts_control_send_feedback(struct ipts_context *ipts, u32 buffer)
 	int ret = 0;
 	struct ipts_feedback cmd = { 0 };
 	struct ipts_response rsp = { 0 };
-
-	if (!ipts)
-		return -EFAULT;
 
 	cmd.buffer = buffer;
 
@@ -312,12 +276,6 @@ int ipts_control_hid2me_feedback(struct ipts_context *ipts, enum ipts_feedback_c
 {
 	struct ipts_feedback_header *header = NULL;
 
-	if (!ipts)
-		return -EFAULT;
-
-	if (!ipts->resources.hid2me.address)
-		return -EFAULT;
-
 	memset(ipts->resources.hid2me.address, 0, ipts->resources.hid2me.size);
 	header = (struct ipts_feedback_header *)ipts->resources.hid2me.address;
 
@@ -339,9 +297,6 @@ int ipts_control_start(struct ipts_context *ipts)
 {
 	int ret = 0;
 	struct ipts_device_info info = { 0 };
-
-	if (!ipts)
-		return -EFAULT;
 
 	dev_info(ipts->dev, "Starting IPTS\n");
 
@@ -419,9 +374,6 @@ int ipts_control_start(struct ipts_context *ipts)
 static int _ipts_control_stop(struct ipts_context *ipts)
 {
 	int ret = 0;
-
-	if (!ipts)
-		return -EFAULT;
 
 	ipts_hid_disable(ipts);
 	dev_info(ipts->dev, "Stopping IPTS\n");
