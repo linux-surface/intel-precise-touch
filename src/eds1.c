@@ -18,19 +18,8 @@
 
 int ipts_eds1_get_descriptor(struct ipts_context *ipts, u8 **desc_buffer, size_t *desc_size)
 {
-	size_t size = 0;
 	u8 *buffer = NULL;
-
-	if (!ipts)
-		return -EFAULT;
-
-	if (!desc_buffer)
-		return -EFAULT;
-
-	if (!desc_size)
-		return -EFAULT;
-
-	size = sizeof(ipts_singletouch_descriptor) + sizeof(ipts_fallback_descriptor);
+	size_t size = sizeof(ipts_singletouch_descriptor) + sizeof(ipts_fallback_descriptor);
 
 	buffer = kzalloc(size, GFP_KERNEL);
 	if (!buffer)
@@ -50,9 +39,6 @@ static int ipts_eds1_switch_mode(struct ipts_context *ipts, enum ipts_mode mode)
 {
 	int ret = 0;
 
-	if (!ipts)
-		return -EFAULT;
-
 	if (ipts->mode == mode)
 		return 0;
 
@@ -69,12 +55,6 @@ int ipts_eds1_raw_request(struct ipts_context *ipts, u8 *buffer, size_t size, u8
 			  enum hid_report_type report_type, enum hid_class_request request_type)
 {
 	int ret = 0;
-
-	if (!ipts)
-		return -EFAULT;
-
-	if (!buffer)
-		return -EFAULT;
 
 	if (report_id != IPTS_HID_REPORT_SET_MODE)
 		return -EIO;
