@@ -213,9 +213,6 @@ int ipts_control_wait_flush(struct ipts_context *ipts)
 		return ret;
 	}
 
-	if (rsp.status == IPTS_STATUS_TIMEOUT)
-		return -EAGAIN;
-
 	if (rsp.status != IPTS_STATUS_SUCCESS) {
 		dev_err(ipts->dev, "QUIESCE_IO: cmd failed: %d\n", rsp.status);
 		return -EBADR;
@@ -263,9 +260,6 @@ int ipts_control_wait_data(struct ipts_context *ipts, bool shutdown)
 	 */
 	if (rsp.status == IPTS_STATUS_SENSOR_DISABLED)
 		return 0;
-
-	if (rsp.status == IPTS_STATUS_TIMEOUT)
-		return -EAGAIN;
 
 	if (rsp.status != IPTS_STATUS_SUCCESS) {
 		dev_err(ipts->dev, "READY_FOR_DATA: cmd failed: %d\n", rsp.status);

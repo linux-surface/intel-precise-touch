@@ -111,6 +111,9 @@ static int ipts_mei_search(struct ipts_mei *mei, enum ipts_command_code code,
 		dev_dbg(&mei->cldev->dev, "Driver read message with code 0x%X and status 0x%X\n",
 			response->cmd, response->status);
 
+		if (response->status == IPTS_STATUS_TIMEOUT)
+			return -EAGAIN;
+
 		/*
 		 * Ignore all errors that the spec allows us to ignore.
 		 */
