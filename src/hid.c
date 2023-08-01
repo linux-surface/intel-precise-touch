@@ -22,16 +22,6 @@
 #include "spec-data.h"
 #include "spec-hid.h"
 
-void ipts_hid_enable(struct ipts_context *ipts)
-{
-	WRITE_ONCE(ipts->hid_active, true);
-}
-
-void ipts_hid_disable(struct ipts_context *ipts)
-{
-	WRITE_ONCE(ipts->hid_active, false);
-}
-
 static int ipts_hid_start(struct hid_device *hid)
 {
 	return 0;
@@ -181,7 +171,7 @@ int ipts_hid_input_data(struct ipts_context *ipts, size_t buffer_index)
 	if (buffer->size == 0)
 		return 0;
 
-	switch(buffer->type) {
+	switch (buffer->type) {
 	case IPTS_DATA_TYPE_FRAME:
 		return ipts_hid_handle_frame(ipts, buffer);
 	case IPTS_DATA_TYPE_HID:

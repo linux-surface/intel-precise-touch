@@ -12,8 +12,15 @@
 
 #include "context.h"
 
-void ipts_hid_enable(struct ipts_context *ipts);
-void ipts_hid_disable(struct ipts_context *ipts);
+static inline void ipts_hid_enable(struct ipts_context *ipts)
+{
+	WRITE_ONCE(ipts->hid_active, true);
+}
+
+static inline void ipts_hid_disable(struct ipts_context *ipts)
+{
+	WRITE_ONCE(ipts->hid_active, false);
+}
 
 int ipts_hid_input_data(struct ipts_context *ipts, size_t buffer_index);
 
