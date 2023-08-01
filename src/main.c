@@ -20,7 +20,6 @@
 #include "context.h"
 #include "control.h"
 #include "mei.h"
-#include "receiver.h"
 #include "spec-device.h"
 
 /*
@@ -30,9 +29,6 @@
 
 static int ipts_set_dma_mask(struct mei_cl_device *cldev)
 {
-	if (!cldev)
-		return -EFAULT;
-
 	if (!dma_coerce_mask_and_coherent(&cldev->dev, DMA_BIT_MASK(64)))
 		return 0;
 
@@ -43,9 +39,6 @@ static int ipts_probe(struct mei_cl_device *cldev, const struct mei_cl_device_id
 {
 	int ret = 0;
 	struct ipts_context *ipts = NULL;
-
-	if (!cldev)
-		return -EFAULT;
 
 	ret = ipts_set_dma_mask(cldev);
 	if (ret) {
@@ -91,14 +84,7 @@ static int ipts_probe(struct mei_cl_device *cldev, const struct mei_cl_device_id
 static void ipts_remove(struct mei_cl_device *cldev)
 {
 	int ret = 0;
-	struct ipts_context *ipts = NULL;
-
-	if (!cldev) {
-		pr_err("MEI device is NULL!");
-		return;
-	}
-
-	ipts = mei_cldev_get_drvdata(cldev);
+	struct ipts_context *ipts = mei_cldev_get_drvdata(cldev);
 
 	ret = ipts_control_stop(ipts);
 	if (ret)
