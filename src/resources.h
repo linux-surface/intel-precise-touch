@@ -62,6 +62,11 @@ struct ipts_dma_buffer {
  * @report:
  *     A buffer that is used to synthesize HID reports on EDS v1 devices that don't natively support
  *     HID. The size of this buffer should be %IPTS_HID_REPORT_DATA_SIZE.
+ *
+ * @feature:
+ *     A buffer that is used to cache the answer to a GET_FEATURES request, so that the data buffer
+ *     containing it can be safely refilled by the ME. The size of this buffer must be
+ *     &struct ipts_device_info->data_size
  */
 struct ipts_resources {
 	struct ipts_dma_buffer data[IPTS_BUFFERS];
@@ -73,6 +78,7 @@ struct ipts_resources {
 	struct ipts_dma_buffer descriptor;
 
 	struct ipts_buffer report;
+	struct ipts_buffer feature;
 };
 
 int ipts_resources_init(struct ipts_resources *resources, struct device *dev,

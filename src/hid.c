@@ -18,6 +18,7 @@
 #include "eds1.h"
 #include "eds2.h"
 #include "hid.h"
+#include "resources.h"
 #include "spec-data.h"
 #include "spec-hid.h"
 
@@ -149,8 +150,8 @@ static int ipts_hid_handle_hid(struct ipts_context *ipts, struct ipts_data_heade
  * ipts_hid_handle_get_features() - Process the answer to a GET_FEATURES request.
  *
  * When doing a GET_FEATURES request using HID2ME feedback, the answer will be sent in one of the
- * normal data buffers. When we get such data, we store a pointer to it, and then signal the
- * waiting thread that data has arrived.
+ * normal data buffers. When we get such data, we copy it, and then signal the waiting HID thread
+ * that data has arrived.
  *
  * @ipts:
  *     The IPTS driver context.
@@ -162,10 +163,9 @@ static int ipts_hid_handle_hid(struct ipts_context *ipts, struct ipts_data_heade
  */
 static int ipts_hid_handle_get_features(struct ipts_context *ipts, struct ipts_data_header *buffer)
 {
-	ipts->feature_report.address = buffer->data;
-	ipts->feature_report.size = buffer->size;
-
+	memcpy(ipts->resources.feature.address, buffer, ipts->resources.feature.size);
 	complete_all(&ipts->feature_event);
+
 	return 0;
 }
 

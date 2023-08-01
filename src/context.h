@@ -37,7 +37,6 @@ struct ipts_context {
 	 * These are not inside of struct ipts_resources
 	 * because they don't own the memory they point to.
 	 */
-	struct ipts_buffer feature_report;
 	struct ipts_buffer descriptor;
 
 	bool hid_active;

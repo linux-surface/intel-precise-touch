@@ -105,6 +105,10 @@ int ipts_resources_init(struct ipts_resources *resources, struct device *dev,
 	if (ret)
 		goto err;
 
+	ret = ipts_resources_alloc_buffer(&resources->feature, info.data_size);
+	if (ret)
+		goto err;
+
 	return 0;
 
 err:
@@ -128,6 +132,7 @@ int ipts_resources_free(struct ipts_resources *resources)
 	ipts_resources_free_dma(&resources->hid2me);
 	ipts_resources_free_dma(&resources->descriptor);
 	ipts_resources_free_buffer(&resources->report);
+	ipts_resources_free_buffer(&resources->feature);
 
 	return 0;
 }

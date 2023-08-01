@@ -15,6 +15,7 @@
 #include "context.h"
 #include "control.h"
 #include "desc.h"
+#include "resources.h"
 #include "spec-data.h"
 
 int ipts_eds2_get_descriptor(struct ipts_context *ipts, u8 **desc_buffer, size_t *desc_size)
@@ -52,6 +53,9 @@ static int ipts_eds2_get_feature(struct ipts_context *ipts, u8 *buffer, size_t s
 {
 	int ret = 0;
 
+	struct ipts_buffer feature = ipts->resources.feature;
+	struct ipts_data_header *response = (struct ipts_data_header *)feature.address;
+
 	if (!ipts)
 		return -EFAULT;
 
@@ -63,7 +67,6 @@ static int ipts_eds2_get_feature(struct ipts_context *ipts, u8 *buffer, size_t s
 	memset(buffer, 0, size);
 	buffer[0] = report_id;
 
-	memset(&ipts->feature_report, 0, sizeof(ipts->feature_report));
 	reinit_completion(&ipts->feature_event);
 
 	ret = ipts_control_hid2me_feedback(ipts, IPTS_FEEDBACK_CMD_TYPE_NONE, type, buffer, size);
@@ -75,22 +78,17 @@ static int ipts_eds2_get_feature(struct ipts_context *ipts, u8 *buffer, size_t s
 	ret = wait_for_completion_timeout(&ipts->feature_event, msecs_to_jiffies(5000));
 	if (ret == 0) {
 		dev_warn(ipts->dev, "GET_FEATURES timed out!\n");
-		ret = -EIO;
+		ret = -ETIMEDOUT;
 		goto out;
 	}
 
-	if (!ipts->feature_report.address) {
-		ret = -EFAULT;
-		goto out;
-	}
-
-	if (ipts->feature_report.size > size) {
+	if (response->size > size) {
 		ret = -ETOOSMALL;
 		goto out;
 	}
 
-	ret = ipts->feature_report.size;
-	memcpy(buffer, ipts->feature_report.address, ipts->feature_report.size);
+	ret = response->size;
+	memcpy(buffer, response->data, response->size);
 
 out:
 	mutex_unlock(&ipts->feature_lock);
