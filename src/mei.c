@@ -36,19 +36,9 @@ static void locked_list_del(struct list_head *entry, struct rw_semaphore *lock)
 static void ipts_mei_incoming(struct mei_cl_device *cldev)
 {
 	ssize_t ret = 0;
+
 	struct ipts_mei_message *entry = NULL;
-	struct ipts_context *ipts = NULL;
-
-	if (!cldev) {
-		pr_err("MEI device is NULL!");
-		return;
-	}
-
-	ipts = mei_cldev_get_drvdata(cldev);
-	if (!ipts) {
-		pr_err("IPTS driver context is NULL!");
-		return;
-	}
+	struct ipts_context *ipts = mei_cldev_get_drvdata(cldev);
 
 	entry = devm_kzalloc(ipts->dev, sizeof(*entry), GFP_KERNEL);
 	if (!entry)
@@ -78,12 +68,6 @@ static int ipts_mei_search(struct ipts_mei *mei, enum ipts_command_code code,
 			   struct ipts_response *rsp)
 {
 	struct ipts_mei_message *entry = NULL;
-
-	if (!mei)
-		return -EFAULT;
-
-	if (!rsp)
-		return -EFAULT;
 
 	down_read(&mei->message_lock);
 
@@ -119,9 +103,6 @@ int ipts_mei_recv(struct ipts_mei *mei, enum ipts_command_code code, struct ipts
 {
 	int ret = 0;
 
-	if (!mei)
-		return -EFAULT;
-
 	/*
 	 * A timeout of 0 means check and return immideately.
 	 */
@@ -149,15 +130,6 @@ int ipts_mei_send(struct ipts_mei *mei, void *data, size_t length)
 {
 	int ret = 0;
 
-	if (!mei)
-		return -EFAULT;
-
-	if (!mei->cldev)
-		return -EFAULT;
-
-	if (!data)
-		return -EFAULT;
-
 	do {
 		ret = mei_cldev_send(mei->cldev, (u8 *)data, length);
 	} while (ret == -EINTR);
@@ -170,12 +142,6 @@ int ipts_mei_send(struct ipts_mei *mei, void *data, size_t length)
 
 int ipts_mei_init(struct ipts_mei *mei, struct mei_cl_device *cldev)
 {
-	if (!mei)
-		return -EFAULT;
-
-	if (!cldev)
-		return -EFAULT;
-
 	mei->cldev = cldev;
 
 	INIT_LIST_HEAD(&mei->messages);
