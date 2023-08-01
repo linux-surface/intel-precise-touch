@@ -43,45 +43,45 @@ static void ipts_resources_free_buffer(struct ipts_buffer *buffer)
 	buffer->device = NULL;
 }
 
-int ipts_resources_init(struct ipts_resources *res, struct device *dev,
+int ipts_resources_init(struct ipts_resources *resources, struct device *dev,
 			struct ipts_device_info info)
 {
 	int i = 0;
 	int ret = 0;
 
 	for (i = 0; i < IPTS_BUFFERS; i++) {
-		ret = ipts_resources_alloc_buffer(&res->data[i], dev, info.data_size);
+		ret = ipts_resources_alloc_buffer(&resources->data[i], dev, info.data_size);
 		if (ret)
 			goto err;
 	}
 
 	for (i = 0; i < IPTS_BUFFERS; i++) {
-		ret = ipts_resources_alloc_buffer(&res->feedback[i], dev, info.feedback_size);
+		ret = ipts_resources_alloc_buffer(&resources->feedback[i], dev, info.feedback_size);
 		if (ret)
 			goto err;
 	}
 
-	ret = ipts_resources_alloc_buffer(&res->doorbell, dev, sizeof(u32));
+	ret = ipts_resources_alloc_buffer(&resources->doorbell, dev, sizeof(u32));
 	if (ret)
 		goto err;
 
-	ret = ipts_resources_alloc_buffer(&res->workqueue, dev, sizeof(u32));
+	ret = ipts_resources_alloc_buffer(&resources->workqueue, dev, sizeof(u32));
 	if (ret)
 		goto err;
 
-	ret = ipts_resources_alloc_buffer(&res->hid2me, dev, info.feedback_size);
+	ret = ipts_resources_alloc_buffer(&resources->hid2me, dev, info.feedback_size);
 	if (ret)
 		goto err;
 
-	ret = ipts_resources_alloc_buffer(&res->descriptor, dev, info.data_size + 8);
+	ret = ipts_resources_alloc_buffer(&resources->descriptor, dev, info.data_size + 8);
 	if (ret)
 		goto err;
 
-	if (!res->report.address) {
-		res->report.size = IPTS_HID_REPORT_DATA_SIZE;
-		res->report.address = kzalloc(res->report.size, GFP_KERNEL);
+	if (!resources->report.address) {
+		resources->report.size = IPTS_HID_REPORT_DATA_SIZE;
+		resources->report.address = kzalloc(resources->report.size, GFP_KERNEL);
 
-		if (!res->report.address) {
+		if (!resources->report.address) {
 			ret = -ENOMEM;
 			goto err;
 		}
@@ -91,28 +91,28 @@ int ipts_resources_init(struct ipts_resources *res, struct device *dev,
 
 err:
 
-	ipts_resources_free(res);
+	ipts_resources_free(resources);
 	return ret;
 }
 
-int ipts_resources_free(struct ipts_resources *res)
+int ipts_resources_free(struct ipts_resources *resources)
 {
 	int i = 0;
 
 	for (i = 0; i < IPTS_BUFFERS; i++)
-		ipts_resources_free_buffer(&res->data[i]);
+		ipts_resources_free_buffer(&resources->data[i]);
 
 	for (i = 0; i < IPTS_BUFFERS; i++)
-		ipts_resources_free_buffer(&res->feedback[i]);
+		ipts_resources_free_buffer(&resources->feedback[i]);
 
-	ipts_resources_free_buffer(&res->doorbell);
-	ipts_resources_free_buffer(&res->workqueue);
-	ipts_resources_free_buffer(&res->hid2me);
-	ipts_resources_free_buffer(&res->descriptor);
+	ipts_resources_free_buffer(&resources->doorbell);
+	ipts_resources_free_buffer(&resources->workqueue);
+	ipts_resources_free_buffer(&resources->hid2me);
+	ipts_resources_free_buffer(&resources->descriptor);
 
-	kfree(res->report.address);
-	res->report.address = NULL;
-	res->report.size = 0;
+	kfree(resources->report.address);
+	resources->report.address = NULL;
+	resources->report.size = 0;
 
 	return 0;
 }

@@ -35,8 +35,8 @@ struct ipts_resources {
 	struct ipts_buffer report;
 };
 
-int ipts_resources_init(struct ipts_resources *res, struct device *dev,
+int ipts_resources_init(struct ipts_resources *resources, struct device *dev,
 			struct ipts_device_info info);
-int ipts_resources_free(struct ipts_resources *res);
+int ipts_resources_free(struct ipts_resources *resources);
 
 #endif /* IPTS_RESOURCES_H */
