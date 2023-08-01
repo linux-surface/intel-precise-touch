@@ -51,16 +51,8 @@ static int ipts_receiver_event_loop(struct ipts_thread *thread)
 	int ret = 0;
 	u32 buffer = 0;
 
-	struct ipts_context *ipts = NULL;
+	struct ipts_context *ipts = thread->data;
 	time64_t last = ktime_get_seconds();
-
-	if (!thread)
-		return -EFAULT;
-
-	ipts = thread->data;
-
-	if (!ipts)
-		return -EFAULT;
 
 	dev_info(ipts->dev, "IPTS running in event mode\n");
 
@@ -135,16 +127,8 @@ static int ipts_receiver_poll_loop(struct ipts_thread *thread)
 	u32 doorbell = 0;
 	u32 lastdb = 0;
 
-	struct ipts_context *ipts = NULL;
+	struct ipts_context *ipts = thread->data;
 	time64_t last = ktime_get_seconds();
-
-	if (!thread)
-		return -EFAULT;
-
-	ipts = thread->data;
-
-	if (!ipts)
-		return -EFAULT;
 
 	dev_info(ipts->dev, "IPTS running in poll mode\n");
 
@@ -212,9 +196,6 @@ int ipts_receiver_start(struct ipts_context *ipts)
 {
 	int ret = 0;
 
-	if (!ipts)
-		return -EFAULT;
-
 	if (ipts->mode == IPTS_MODE_EVENT) {
 		ret = ipts_thread_start(&ipts->receiver_loop, ipts_receiver_event_loop, ipts,
 					"ipts_event");
@@ -236,9 +217,6 @@ int ipts_receiver_start(struct ipts_context *ipts)
 int ipts_receiver_stop(struct ipts_context *ipts)
 {
 	int ret = 0;
-
-	if (!ipts)
-		return -EFAULT;
 
 	ret = ipts_thread_stop(&ipts->receiver_loop);
 	if (ret) {
