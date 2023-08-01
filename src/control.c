@@ -211,14 +211,29 @@ int ipts_control_send_feedback(struct ipts_context *ipts, u32 buffer)
 	if (ret)
 		return ret;
 
+	return rsp.status;
+}
+
+int ipts_control_refill_buffer(struct ipts_context *ipts, u32 buffer)
+{
+	int ret = 0;
+
 	/*
-	 * We don't know what feedback data looks like so we are sending zeros.
-	 * See also ipts_control_refill_buffer.
+	 * To return a buffer to the ME and refill it, the ME expects structured data in the
+	 * feedback buffer. Since this format is vendor specific and unknown, we are sending
+	 * an empty buffer instead. This successfully refills the buffer, but causes an error that
+	 * we are masking here.
+	 *
+	 * Sending a minimal structure with only the buffer ID fixes the error but breaks refilling
+	 * the buffer on some devices.
 	 */
-	if (rsp.status == IPTS_STATUS_INVALID_PARAMS)
+
+	ret = ipts_control_send_feedback(ipts, buffer);
+
+	if (ret == IPTS_STATUS_INVALID_PARAMS)
 		return 0;
 
-	return rsp.status;
+	return ret;
 }
 
 int ipts_control_hid2me_feedback(struct ipts_context *ipts, enum ipts_feedback_cmd_type cmd,

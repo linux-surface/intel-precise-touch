@@ -18,21 +18,9 @@ int ipts_control_wait_flush(struct ipts_context *ipts);
 int ipts_control_request_data(struct ipts_context *ipts);
 int ipts_control_wait_data(struct ipts_context *ipts, bool block);
 int ipts_control_send_feedback(struct ipts_context *ipts, u32 buffer);
+int ipts_control_refill_buffer(struct ipts_context *ipts, u32 buffer);
 int ipts_control_hid2me_feedback(struct ipts_context *ipts, enum ipts_feedback_cmd_type cmd,
 				 enum ipts_feedback_data_type type, void *data, size_t size);
-
-static inline int ipts_control_refill_buffer(struct ipts_context *ipts, u32 buffer)
-{
-	/*
-	 * IPTS expects structured data in the feedback buffer matching the buffer that will be
-	 * refilled. We don't know what that data looks like, so we just keep the buffer empty.
-	 * This results in an INVALID_PARAMS error, but the buffer gets refilled without an issue.
-	 * Sending a minimal structure with the buffer ID fixes the error, but breaks refilling
-	 * the buffers on some devices.
-	 */
-
-	return ipts_control_send_feedback(ipts, buffer);
-}
 
 int ipts_control_start(struct ipts_context *ipts);
 int ipts_control_stop(struct ipts_context *ipts);
