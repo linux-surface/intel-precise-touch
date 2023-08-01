@@ -21,7 +21,7 @@
 #include "spec-data.h"
 #include "spec-device.h"
 
-static int ipts_control_get_device_info(struct ipts_context *ipts, struct ipts_device_info *info)
+static int ipts_control_get_device_info(struct ipts_context *ipts)
 {
 	int ret = 0;
 	struct ipts_response rsp = { 0 };
@@ -35,18 +35,19 @@ static int ipts_control_get_device_info(struct ipts_context *ipts, struct ipts_d
 		return ret;
 
 	if (rsp.status == IPTS_STATUS_SUCCESS)
-		memcpy(info, rsp.payload, sizeof(*info));
+		memcpy(&ipts->info, rsp.payload, sizeof(ipts->info));
 
 	return rsp.status;
 }
 
-static int ipts_control_set_mode(struct ipts_context *ipts, enum ipts_mode mode)
+static int ipts_control_set_mode(struct ipts_context *ipts)
 {
 	int ret = 0;
+
 	struct ipts_set_mode cmd = { 0 };
 	struct ipts_response rsp = { 0 };
 
-	cmd.mode = mode;
+	cmd.mode = ipts->mode;
 
 	ret = ipts_mei_send(&ipts->mei, IPTS_CMD_SET_MODE, &cmd, sizeof(cmd));
 	if (ret)
@@ -59,28 +60,33 @@ static int ipts_control_set_mode(struct ipts_context *ipts, enum ipts_mode mode)
 	return rsp.status;
 }
 
-static int ipts_control_set_mem_window(struct ipts_context *ipts, struct ipts_resources *res)
+static int ipts_control_set_mem_window(struct ipts_context *ipts)
 {
 	int i = 0;
 	int ret = 0;
+
 	struct ipts_mem_window cmd = { 0 };
 	struct ipts_response rsp = { 0 };
 
 	for (i = 0; i < IPTS_BUFFERS; i++) {
-		cmd.data_addr_lower[i] = lower_32_bits(res->data[i].dma_address);
-		cmd.data_addr_upper[i] = upper_32_bits(res->data[i].dma_address);
-		cmd.feedback_addr_lower[i] = lower_32_bits(res->feedback[i].dma_address);
-		cmd.feedback_addr_upper[i] = upper_32_bits(res->feedback[i].dma_address);
+		dma_addr_t data_addr = ipts->resources.data[i].dma_address;
+		dma_addr_t feedback_addr = ipts->resources.feedback[i].dma_address;
+
+		cmd.data_addr_lower[i] = lower_32_bits(data_addr);
+		cmd.data_addr_upper[i] = upper_32_bits(data_addr);
+
+		cmd.feedback_addr_lower[i] = lower_32_bits(feedback_addr);
+		cmd.feedback_addr_upper[i] = upper_32_bits(feedback_addr);
 	}
 
-	cmd.workqueue_addr_lower = lower_32_bits(res->workqueue.dma_address);
-	cmd.workqueue_addr_upper = upper_32_bits(res->workqueue.dma_address);
+	cmd.workqueue_addr_lower = lower_32_bits(ipts->resources.workqueue.dma_address);
+	cmd.workqueue_addr_upper = upper_32_bits(ipts->resources.workqueue.dma_address);
 
-	cmd.doorbell_addr_lower = lower_32_bits(res->doorbell.dma_address);
-	cmd.doorbell_addr_upper = upper_32_bits(res->doorbell.dma_address);
+	cmd.doorbell_addr_lower = lower_32_bits(ipts->resources.doorbell.dma_address);
+	cmd.doorbell_addr_upper = upper_32_bits(ipts->resources.doorbell.dma_address);
 
-	cmd.hid2me_addr_lower = lower_32_bits(res->hid2me.dma_address);
-	cmd.hid2me_addr_upper = upper_32_bits(res->hid2me.dma_address);
+	cmd.hid2me_addr_lower = lower_32_bits(ipts->resources.hid2me.dma_address);
+	cmd.hid2me_addr_upper = upper_32_bits(ipts->resources.hid2me.dma_address);
 
 	cmd.workqueue_size = IPTS_WORKQUEUE_SIZE;
 	cmd.workqueue_item_size = IPTS_WORKQUEUE_ITEM_SIZE;
@@ -100,6 +106,7 @@ static int ipts_control_get_descriptor(struct ipts_context *ipts)
 {
 	int ret = 0;
 	struct ipts_data_header *header = NULL;
+
 	struct ipts_get_descriptor cmd = { 0 };
 	struct ipts_response rsp = { 0 };
 
@@ -237,17 +244,16 @@ int ipts_control_hid2me_feedback(struct ipts_context *ipts, enum ipts_feedback_c
 int ipts_control_start(struct ipts_context *ipts)
 {
 	int ret = 0;
-	struct ipts_device_info info = { 0 };
 
 	dev_info(ipts->dev, "Starting IPTS\n");
 
-	ret = ipts_control_get_device_info(ipts, &info);
+	ret = ipts_control_get_device_info(ipts);
 	if (ret) {
 		dev_err(ipts->dev, "Failed to get device info: %d\n", ret);
 		return ret;
 	}
 
-	ipts->info = info;
+	dev_info(ipts->dev, "IPTS EDS Version: %d\n", ipts->info.intf_eds);
 
 	/*
 	 * On EDS v2 devices both modes return the same data, so we always initialize the ME
@@ -257,16 +263,14 @@ int ipts_control_start(struct ipts_context *ipts)
 	 * EDS v1 devices have to be initialized in event mode to get fallback singletouch events
 	 * until userspace can explicitly turn on raw data once it is ready for processing.
 	 */
-	if (info.intf_eds > 1)
+	if (ipts->info.intf_eds > 1)
 		ipts->mode = IPTS_MODE_POLL;
 
-	ret = ipts_resources_init(&ipts->resources, ipts->dev, info);
+	ret = ipts_resources_init(&ipts->resources, ipts->dev, ipts->info);
 	if (ret) {
 		dev_err(ipts->dev, "Failed to allocate buffers: %d", ret);
 		return ret;
 	}
-
-	dev_info(ipts->dev, "IPTS EDS Version: %d\n", info.intf_eds);
 
 	ret = ipts_control_get_descriptor(ipts);
 	if (ret) {
@@ -274,13 +278,13 @@ int ipts_control_start(struct ipts_context *ipts)
 		return ret;
 	}
 
-	ret = ipts_control_set_mode(ipts, ipts->mode);
+	ret = ipts_control_set_mode(ipts);
 	if (ret) {
 		dev_err(ipts->dev, "Failed to set mode: %d\n", ret);
 		return ret;
 	}
 
-	ret = ipts_control_set_mem_window(ipts, &ipts->resources);
+	ret = ipts_control_set_mem_window(ipts);
 	if (ret) {
 		dev_err(ipts->dev, "Failed to set memory window: %d\n", ret);
 		return ret;
