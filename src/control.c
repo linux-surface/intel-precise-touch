@@ -103,6 +103,14 @@ static int ipts_control_get_descriptor(struct ipts_context *ipts)
 	struct ipts_get_descriptor cmd = { 0 };
 	struct ipts_response rsp = { 0 };
 
+	/*
+	 * This command is only supported on EDS v2 devices.
+	 *
+	 * EDS v1 devices without native HID support will use a fallback HID descriptor.
+	 */
+	if (ipts->info.intf_eds == 1)
+		return 0;
+
 	memset(ipts->resources.descriptor.address, 0, ipts->resources.descriptor.size);
 
 	cmd.addr_lower = lower_32_bits(ipts->resources.descriptor.dma_address);
@@ -241,6 +249,17 @@ int ipts_control_start(struct ipts_context *ipts)
 
 	ipts->info = info;
 
+	/*
+	 * On EDS v2 devices both modes return the same data, so we always initialize the ME
+	 * in poll mode. We could stay in event mode, but it has issues with handling large
+	 * amounts of data and starts to lag.
+	 *
+	 * EDS v1 devices have to be initialized in event mode to get fallback singletouch events
+	 * until userspace can explicitly turn on raw data once it is ready for processing.
+	 */
+	if (info.intf_eds > 1)
+		ipts->mode = IPTS_MODE_POLL;
+
 	ret = ipts_resources_init(&ipts->resources, ipts->dev, info);
 	if (ret) {
 		dev_err(ipts->dev, "Failed to allocate buffers: %d", ret);
@@ -249,24 +268,10 @@ int ipts_control_start(struct ipts_context *ipts)
 
 	dev_info(ipts->dev, "IPTS EDS Version: %d\n", info.intf_eds);
 
-	/*
-	 * Handle newer devices
-	 */
-	if (info.intf_eds > 1) {
-		/*
-		 * Fetching the descriptor will only work on newer devices.
-		 * For older devices, a fallback descriptor will be used.
-		 */
-		ret = ipts_control_get_descriptor(ipts);
-		if (ret) {
-			dev_err(ipts->dev, "Failed to fetch HID descriptor: %d\n", ret);
-			return ret;
-		}
-
-		/*
-		 * Newer devices can be directly initialized in polling mode.
-		 */
-		ipts->mode = IPTS_MODE_POLL;
+	ret = ipts_control_get_descriptor(ipts);
+	if (ret) {
+		dev_err(ipts->dev, "Failed to fetch HID descriptor: %d\n", ret);
+		return ret;
 	}
 
 	ret = ipts_control_set_mode(ipts, ipts->mode);
