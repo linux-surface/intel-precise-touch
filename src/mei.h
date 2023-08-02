@@ -54,7 +54,6 @@ struct ipts_mei_message {
 };
 
 int ipts_mei_send(struct ipts_mei *mei, enum ipts_command_code code, void *payload, size_t size);
-int ipts_mei_init(struct ipts_mei *mei, struct mei_cl_device *cldev);
 int ipts_mei_recv_timeout(struct ipts_mei *mei, enum ipts_command_code code,
 			  struct ipts_response *response, u64 timeout);
 
@@ -63,5 +62,7 @@ static inline int ipts_mei_recv(struct ipts_mei *mei, enum ipts_command_code cod
 {
 	return ipts_mei_recv_timeout(mei, code, response, 1 * MSEC_PER_SEC);
 }
+
+void ipts_mei_init(struct ipts_mei *mei, struct mei_cl_device *cldev);
 
 #endif /* IPTS_MEI_H */

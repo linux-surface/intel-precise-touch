@@ -385,12 +385,7 @@ static int _ipts_control_stop(struct ipts_context *ipts)
 		return ret;
 	}
 
-	ret = ipts_resources_free(&ipts->resources);
-	if (ret) {
-		dev_err(ipts->dev, "Failed to free resources: %d\n", ret);
-		return ret;
-	}
-
+	ipts_resources_free(&ipts->resources);
 	return 0;
 }
 

@@ -83,6 +83,6 @@ struct ipts_resources {
 
 int ipts_resources_init(struct ipts_resources *resources, struct device *dev,
 			struct ipts_rsp_get_device_info info);
-int ipts_resources_free(struct ipts_resources *resources);
+void ipts_resources_free(struct ipts_resources *resources);
 
 #endif /* IPTS_RESOURCES_H */

@@ -198,7 +198,7 @@ int ipts_mei_send(struct ipts_mei *mei, enum ipts_command_code code, void *paylo
 	return 0;
 }
 
-int ipts_mei_init(struct ipts_mei *mei, struct mei_cl_device *cldev)
+void ipts_mei_init(struct ipts_mei *mei, struct mei_cl_device *cldev)
 {
 	mei->cldev = cldev;
 
@@ -207,6 +207,4 @@ int ipts_mei_init(struct ipts_mei *mei, struct mei_cl_device *cldev)
 	init_rwsem(&mei->message_lock);
 
 	mei_cldev_register_rx_cb(cldev, ipts_mei_incoming);
-
-	return 0;
 }

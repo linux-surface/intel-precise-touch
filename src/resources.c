@@ -119,7 +119,7 @@ err:
 	return ret;
 }
 
-int ipts_resources_free(struct ipts_resources *resources)
+void ipts_resources_free(struct ipts_resources *resources)
 {
 	int i = 0;
 
@@ -135,6 +135,4 @@ int ipts_resources_free(struct ipts_resources *resources)
 	ipts_resources_free_dma(&resources->descriptor);
 	ipts_resources_free_buffer(&resources->report);
 	ipts_resources_free_buffer(&resources->feature);
-
-	return 0;
 }
