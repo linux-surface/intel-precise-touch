@@ -21,6 +21,22 @@
 #include "spec-dma.h"
 #include "spec-mei.h"
 
+static int ipts_control_notify_dev_ready(struct ipts_context *ipts)
+{
+	int ret = 0;
+	struct ipts_response rsp = { 0 };
+
+	ret = ipts_mei_send(&ipts->mei, IPTS_CMD_NOTIFY_DEV_READY, NULL, 0);
+	if (ret)
+		return ret;
+
+	ret = ipts_mei_recv(&ipts->mei, IPTS_CMD_NOTIFY_DEV_READY, &rsp);
+	if (ret)
+		return ret;
+
+	return rsp.status;
+}
+
 static int ipts_control_get_device_info(struct ipts_context *ipts)
 {
 	int ret = 0;
@@ -266,6 +282,12 @@ int ipts_control_start(struct ipts_context *ipts)
 	int ret = 0;
 
 	dev_info(ipts->dev, "Starting IPTS\n");
+
+	ret = ipts_control_notify_dev_ready(ipts);
+	if (ret) {
+		dev_err(ipts->dev, "Failed to probe the touch sensor: %d\n", ret);
+		return ret;
+	}
 
 	ret = ipts_control_get_device_info(ipts);
 	if (ret) {
