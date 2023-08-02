@@ -273,7 +273,24 @@ int ipts_control_start(struct ipts_context *ipts)
 		return ret;
 	}
 
-	dev_info(ipts->dev, "IPTS EDS Version: %d\n", ipts->info.sensor_eds_intf_rev);
+	dev_dbg(ipts->dev, "IPTS Device Info:\n");
+	dev_dbg(ipts->dev, "vendor = %04X\n", ipts->info.vendor);
+	dev_dbg(ipts->dev, "product = %04X\n", ipts->info.product);
+	dev_dbg(ipts->dev, "hw_rev = %d\n", ipts->info.hw_rev);
+	dev_dbg(ipts->dev, "fw_rev = %d\n", ipts->info.fw_rev);
+	dev_dbg(ipts->dev, "data_size = %d\n", ipts->info.data_size);
+	dev_dbg(ipts->dev, "feedback_size = %d\n", ipts->info.feedback_size);
+	dev_dbg(ipts->dev, "sensor_mode = %d\n", ipts->info.sensor_mode);
+	dev_dbg(ipts->dev, "max_touch_points = %d\n", ipts->info.max_touch_points);
+	dev_dbg(ipts->dev, "spi_frequency = %d\n", ipts->info.spi_frequency);
+	dev_dbg(ipts->dev, "spi_io_mode = %d\n", ipts->info.spi_io_mode);
+	dev_dbg(ipts->dev, "sensor_minor_eds_rev = %d\n", ipts->info.sensor_minor_eds_rev);
+	dev_dbg(ipts->dev, "sensor_major_eds_rev = %d\n", ipts->info.sensor_major_eds_rev);
+	dev_dbg(ipts->dev, "me_minor_eds_rev = %d\n", ipts->info.me_minor_eds_rev);
+	dev_dbg(ipts->dev, "me_major_eds_rev = %d\n", ipts->info.me_major_eds_rev);
+	dev_dbg(ipts->dev, "sensor_eds_intf_rev = %d\n", ipts->info.sensor_eds_intf_rev);
+	dev_dbg(ipts->dev, "me_eds_intf_rev = %d\n", ipts->info.me_eds_intf_rev);
+	dev_dbg(ipts->dev, "vendor_compat_ver = %d\n", ipts->info.vendor_compat_ver);
 
 	/*
 	 * On EDS v2 devices both modes return the same data, so we always initialize the ME
