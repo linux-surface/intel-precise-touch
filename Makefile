@@ -28,11 +28,13 @@ sources += src/thread.h
 KVERSION ?= $(shell uname -r)
 KDIR := /lib/modules/$(KVERSION)/build
 
+DEBUG ?= y
+
 all:
-	$(MAKE) -C $(KDIR) M=$(PWD)/src CONFIG_HID_IPTS=m modules
+	$(MAKE) -C $(KDIR) M=$(PWD)/src CONFIG_HID_IPTS=m IPTS_DEBUG=$(DEBUG) modules
 
 clean:
-	$(MAKE) -C $(KDIR) M=$(PWD)/src CONFIG_HID_IPTS=m clean
+	$(MAKE) -C $(KDIR) M=$(PWD)/src CONFIG_HID_IPTS=m IPTS_DEBUG=$(DEBUG) clean
 
 check:
 	$(KDIR)/scripts/checkpatch.pl -f -q --no-tree --strict --ignore EMBEDDED_FILENAME,UNCOMMENTED_DEFINITION $(sources)
