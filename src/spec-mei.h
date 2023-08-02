@@ -139,13 +139,6 @@
  *     Once filled, a data buffer will not be touched again by the ME until the host explicitly
  *     returns it to the ME using feedback.
  *
- *     Note: The proper data format for refilling a buffer is vendor specific and currently
- *           unknown. Sending a fully zeroed buffer does work, but will trigger an invalid
- *           parameters error. The host can ignore this and continue normally.
- *
- *           Filling in only the buffer ID (&struct ipts_feedback_buffer->buffer) fixes the error,
- *           but feedback will silently stop working on some devices.
- *
  *     H2M: &struct ipts_cmd_feedback, M2H: &struct ipts_rsp_feedback
  *
  * @IPTS_CMD_CLEAR_MEM_WINDOW:

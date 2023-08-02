@@ -193,28 +193,25 @@ int ipts_control_wait_data(struct ipts_context *ipts, struct ipts_rsp_ready_for_
 int ipts_control_refill_buffer(struct ipts_context *ipts, struct ipts_data_buffer *buffer)
 {
 	int ret = 0;
+	size_t index = buffer->total_index % ipts->buffers;
+
+	struct ipts_feedback_buffer *feedback =
+		(struct ipts_feedback_buffer *)ipts->resources.feedback[index].address;
 
 	struct ipts_cmd_feedback cmd = { 0 };
 	struct ipts_response rsp = { 0 };
 
-	cmd.buffer_index = buffer->total_index % ipts->buffers;
+	cmd.buffer_index = index;
 	cmd.transaction = buffer->transaction;
 
-	/*
-	 * size_t index = buffer->total_index % ipts->buffers;
-	 *
-	 * struct ipts_feedback_buffer *feedback =
-	 *	(struct ipts_feedback_buffer *)ipts->resources.feedback[index].address;
-	 *
-	 * memset(feedback, 0, sizeof(*feedback));
-	 *
-	 * feedback->total_index = buffer->total_index;
-	 * feedback->cmd_type = IPTS_FEEDBACK_CMD_TYPE_NONE;
-	 * feedback->data_type = IPTS_FEEDBACK_DATA_TYPE_VENDOR;
-	 *
-	 * feedback->size = 0;
-	 * feedback->protocol_ver = 0;
-	 */
+	memset(feedback, 0, sizeof(*feedback));
+
+	feedback->total_index = buffer->total_index;
+	feedback->cmd_type = IPTS_FEEDBACK_CMD_TYPE_NONE;
+	feedback->data_type = IPTS_FEEDBACK_DATA_TYPE_VENDOR;
+
+	feedback->size = 0;
+	feedback->protocol_ver = buffer->protocol_ver;
 
 	ret = ipts_mei_send(&ipts->mei, IPTS_CMD_FEEDBACK, &cmd, sizeof(cmd));
 	if (ret)
@@ -223,19 +220,6 @@ int ipts_control_refill_buffer(struct ipts_context *ipts, struct ipts_data_buffe
 	ret = ipts_mei_recv(&ipts->mei, IPTS_CMD_FEEDBACK, &rsp);
 	if (ret)
 		return ret;
-
-	/*
-	 * To return a buffer to the ME and refill it, the ME expects structured data in the
-	 * feedback buffer. Since this format is vendor specific and unknown, we are sending
-	 * an empty buffer instead. This successfully refills the buffer, but causes an error that
-	 * we are masking here.
-	 *
-	 * Sending a minimal structure with only the buffer ID fixes the error but breaks refilling
-	 * the buffer on some devices.
-	 */
-
-	if (rsp.status == IPTS_STATUS_INVALID_PARAMS)
-		return 0;
 
 	return rsp.status;
 }
