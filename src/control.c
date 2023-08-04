@@ -222,12 +222,23 @@ int ipts_control_refill_buffer(struct ipts_context *ipts, struct ipts_data_buffe
 
 	memset(feedback, 0, sizeof(*feedback));
 
-	feedback->total_index = buffer->total_index;
-	feedback->cmd_type = IPTS_FEEDBACK_CMD_TYPE_NONE;
-	feedback->data_type = IPTS_FEEDBACK_DATA_TYPE_VENDOR;
+	/*
+	 * The ME expects vendor specific data in the feedback buffer.
+	 *
+	 * On devices implementing EDS interface revison 2, the following will cause the feedback
+	 * to silently fail and not refill the buffer.
+	 *
+	 * Sending a buffer full of zeros triggers an invalid parameters error, but the ME will
+	 * properly refill the buffer.
+	 */
+	if (ipts->eds_rev == 1) {
+		feedback->total_index = buffer->total_index;
+		feedback->cmd_type = IPTS_FEEDBACK_CMD_TYPE_NONE;
+		feedback->data_type = IPTS_FEEDBACK_DATA_TYPE_VENDOR;
 
-	feedback->size = 0;
-	feedback->protocol_ver = buffer->protocol_ver;
+		feedback->size = 0;
+		feedback->protocol_ver = buffer->protocol_ver;
+	}
 
 	ret = ipts_mei_send(&ipts->mei, IPTS_CMD_FEEDBACK, &cmd, sizeof(cmd));
 	if (ret)
@@ -236,6 +247,9 @@ int ipts_control_refill_buffer(struct ipts_context *ipts, struct ipts_data_buffe
 	ret = ipts_mei_recv(&ipts->mei, IPTS_CMD_FEEDBACK, &rsp);
 	if (ret)
 		return ret;
+
+	if (ipts->eds_rev > 1 && rsp.status == IPTS_STATUS_INVALID_PARAMS)
+		return 0;
 
 	return rsp.status;
 }
