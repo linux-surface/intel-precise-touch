@@ -66,7 +66,13 @@ static int ipts_eds2_get_feature(struct ipts_context *ipts, u8 *buffer, size_t s
 		goto out;
 	}
 
-	ret = wait_for_completion_timeout(&ipts->feature_event, msecs_to_jiffies(5000));
+	/*
+	 * Sometimes the answer to a GET_FEATURES request can take 10 seconds or more to arrive.
+	 * Lets just wait for a long time to be sure.
+	 */
+	ret = wait_for_completion_timeout(&ipts->feature_event,
+					  msecs_to_jiffies(30 * MSEC_PER_SEC));
+
 	if (ret == 0) {
 		dev_warn(ipts->dev, "GET_FEATURES timed out!\n");
 		ret = -ETIMEDOUT;
