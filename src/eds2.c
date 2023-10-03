@@ -18,6 +18,14 @@
 #include "spec-dma.h"
 #include "spec-hid.h"
 
+/**
+ * GET_FEATURES_TIMEOUT - How long to wait for the reply to a GET_FEATURES request.
+ *
+ * Sometimes the answer can take 10 seconds or more to arrive,
+ * so lets just wait for a long time to be sure.
+ */
+#define GET_FEATURES_TIMEOUT 30 * MSEC_PER_SEC
+
 int ipts_eds2_get_descriptor(struct ipts_context *ipts, u8 **desc_buffer, size_t *desc_size)
 {
 	u8 *buffer = NULL;
@@ -66,12 +74,8 @@ static int ipts_eds2_get_feature(struct ipts_context *ipts, u8 *buffer, size_t s
 		goto out;
 	}
 
-	/*
-	 * Sometimes the answer to a GET_FEATURES request can take 10 seconds or more to arrive.
-	 * Lets just wait for a long time to be sure.
-	 */
 	ret = wait_for_completion_timeout(&ipts->feature_event,
-					  msecs_to_jiffies(30 * MSEC_PER_SEC));
+					  msecs_to_jiffies(GET_FEATURES_TIMEOUT));
 
 	if (ret == 0) {
 		dev_warn(ipts->dev, "GET_FEATURES timed out!\n");

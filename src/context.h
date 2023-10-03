@@ -36,8 +36,8 @@
  * @receiver:
  *     The receiver thread that polls the ME for new data or responds to events sent by it.
  *
- * @eds_rev:
- *     The maximum EDS version that both, the ME and the touch sensor implement.
+ * @eds_intf_rev:
+ *     The maximum EDS interface revision that both, the ME and the touch sensor implement.
  *
  * @buffers:
  *     How many data / feedback buffers the driver is using.
@@ -49,16 +49,11 @@
  *     Information about the device we are driving.
  *
  * @feature_lock:
- *     Lock that prevents stops userspace from issuing multiple HID_GET_FEATURE requests at the
- *     same time.
+ *     Prevents userspace from issuing multiple HID_GET_FEATURE requests at the same time.
  *
  * @feature_event:
  *     The answer to a GET_FEATURE request is sent through a standard IPTS data buffer.
  *     Using this event, the HID interface can wait until the receiver thread has read it.
- *
- * @feature_report:
- *     Once the receiver thread has read the answer to a GET_FEATURE request, it will store
- *     its address in this buffer. Does not own the memory it points to.
  *
  * @hid_active:
  *     Whether the HID interface should be accepting requests from userspace at the moment.
@@ -73,14 +68,13 @@ struct ipts_context {
 	struct ipts_resources resources;
 	struct ipts_thread receiver;
 
-	u8 eds_rev;
+	u8 eds_intf_rev;
 	u8 buffers;
 	enum ipts_mode mode;
 	struct ipts_rsp_get_device_info info;
 
 	struct mutex feature_lock;
 	struct completion feature_event;
-	struct ipts_buffer feature_report;
 
 	bool hid_active;
 	struct hid_device *hid;

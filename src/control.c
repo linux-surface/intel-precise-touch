@@ -52,7 +52,8 @@ static int ipts_control_get_device_info(struct ipts_context *ipts)
 
 	if (rsp.status == IPTS_STATUS_SUCCESS) {
 		ipts->info = rsp.payload.get_device_info;
-		ipts->eds_rev = min(ipts->info.sensor_eds_intf_rev, ipts->info.me_eds_intf_rev);
+		ipts->eds_intf_rev =
+			min(ipts->info.sensor_eds_intf_rev, ipts->info.me_eds_intf_rev);
 	}
 
 	return rsp.status;
@@ -103,11 +104,14 @@ static int ipts_control_set_mem_window(struct ipts_context *ipts)
 	}
 
 	if (ipts->mode == IPTS_MODE_POLL) {
-		cmd.tail_offset_addr_lower = lower_32_bits(ipts->resources.workqueue.dma_address);
-		cmd.tail_offset_addr_lower = upper_32_bits(ipts->resources.workqueue.dma_address);
+		dma_addr_t wq_addr = ipts->resources.workqueue.dma_address;
+		dma_addr_t db_addr = ipts->resources.doorbell.dma_address;
 
-		cmd.doorbell_addr_lower = lower_32_bits(ipts->resources.doorbell.dma_address);
-		cmd.doorbell_addr_upper = upper_32_bits(ipts->resources.doorbell.dma_address);
+		cmd.tail_offset_addr_lower = lower_32_bits(wq_addr);
+		cmd.tail_offset_addr_lower = upper_32_bits(wq_addr);
+
+		cmd.doorbell_addr_lower = lower_32_bits(db_addr);
+		cmd.doorbell_addr_upper = upper_32_bits(db_addr);
 
 		cmd.wq_size = IPTS_DEFAULT_WQ_SIZE;
 		cmd.wq_item_size = IPTS_DEFAULT_WQ_ITEM_SIZE;
@@ -141,7 +145,7 @@ static int ipts_control_get_descriptor(struct ipts_context *ipts)
 	 *
 	 * EDS v1 devices without native HID support will use a fallback HID descriptor.
 	 */
-	if (ipts->eds_rev == 1)
+	if (ipts->eds_intf_rev == 1)
 		return 0;
 
 	memset(ipts->resources.descriptor.address, 0, ipts->resources.descriptor.size);
@@ -231,7 +235,7 @@ int ipts_control_refill_buffer(struct ipts_context *ipts, struct ipts_data_buffe
 	 * Sending a buffer full of zeros triggers an invalid parameters error, but the ME will
 	 * properly refill the buffer.
 	 */
-	if (ipts->eds_rev == 1) {
+	if (ipts->eds_intf_rev == 1) {
 		feedback->total_index = buffer->total_index;
 		feedback->cmd_type = IPTS_FEEDBACK_CMD_TYPE_NONE;
 		feedback->data_type = IPTS_FEEDBACK_DATA_TYPE_VENDOR;
@@ -248,7 +252,7 @@ int ipts_control_refill_buffer(struct ipts_context *ipts, struct ipts_data_buffe
 	if (ret)
 		return ret;
 
-	if (ipts->eds_rev > 1 && rsp.status == IPTS_STATUS_INVALID_PARAMS)
+	if (ipts->eds_intf_rev > 1 && rsp.status == IPTS_STATUS_INVALID_PARAMS)
 		return 0;
 
 	return rsp.status;
@@ -336,7 +340,7 @@ int ipts_control_start(struct ipts_context *ipts)
 	 * EDS v1 devices have to be initialized in event mode to get fallback singletouch events
 	 * until userspace can explicitly turn on raw data once it is ready for processing.
 	 */
-	if (ipts->eds_rev > 1)
+	if (ipts->eds_intf_rev > 1)
 		ipts->mode = IPTS_MODE_POLL;
 
 	ret = ipts_resources_init(&ipts->resources, ipts->dev, ipts->info);

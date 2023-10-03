@@ -14,7 +14,7 @@
 #include <linux/mei.h>
 #include <linux/types.h>
 
-/*
+/**
  * MEI_UUID_IPTS - The MEI client ID for IPTS functionality.
  */
 #define MEI_UUID_IPTS                                                                              \
@@ -51,8 +51,8 @@
  * Setting &struct ipts_cmd_feedback->buffer_index to this value indicates that the ME should
  * get feedback data from the HID2ME buffer.
  *
- * HID2ME feedback is only implemented on devices where both the ME and the touch sensor implement
- * EDS v2. These devices natively support HID and have a queryable HID descriptor.
+ * HID2ME feedback is only implemented on devices where both, ME and touch sensor, implement EDS
+ * interface revision 2. These devices natively support HID and have a queryable HID descriptor.
  */
 #define IPTS_HID_2_ME_BUFFER_INDEX IPTS_MAX_BUFFERS
 
@@ -296,7 +296,7 @@ enum ipts_status {
  * enum ipts_mode - The operation mode of the ME.
  *
  * This mode defines, how the ME will notify the host about new data.
- * On devices implementing EDS v1, it will additionally change the type of data that is sent.
+ * On EDS v1 devices, it will additionally change the type of data that is sent.
  *
  * @IPTS_MODE_EVENT:
  *      In event mode, the ME indicates new data by producing a response to
@@ -767,14 +767,14 @@ static_assert(sizeof(struct ipts_command) == 324);
  *     Major version number of EDS spec supported by ME.
  *
  * @sensor_eds_intf_rev:
- *     EDS Interface Revision Number supported by sensor.
+ *     EDS interface revision supported by sensor.
  *
  * @me_eds_intf_rev:
- *     EDS Interface Revision Number supported by ME.
+ *     EDS interface revision supported by ME.
  *
  * @vendor_compat_ver:
- *     Vendor specific version number that indicates which binary processing firmware is compatible
- *     with this device. Only relevant when using GuC submission.
+ *     Vendor specific version number that indicates compatibility with GPGPU kernels.
+ *     Only relevant when using GuC submission.
  *
  * @reserved2:
  *     For future expansion.
